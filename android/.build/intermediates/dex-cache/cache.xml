@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="false"
+        jar="/home/ant/DevTools/android-studio/gradle/m2repository/com/google/code/gson/gson/2.2.4/gson-2.2.4.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="a60a5e993c98c864010053cb901b7eab25306568">
+        <dex dex="/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/pre-dexed/debug/gson-2.2.4_9d5e79c25095fac5ba8e48a99f0779e0799856f7.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/home/ant/.gradle/caches/modules-2/files-2.1/com.amazonaws/aws-android-sdk-cognito/2.2.22/9bef9beddb1b7579713905702d8219d516bd3954/aws-android-sdk-cognito-2.2.22.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="9bef9beddb1b7579713905702d8219d516bd3954">
+        <dex dex="/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/pre-dexed/debug/aws-android-sdk-cognito-2.2.22_c5c4c342c3d0e87026f901011c33e2a14d8642ba.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/home/ant/.gradle/caches/modules-2/files-2.1/com.amazonaws/aws-android-sdk-core/2.2.22/c6789de00db9d1f93faec881fa0c1f5960fb8a15/aws-android-sdk-core-2.2.22.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="c6789de00db9d1f93faec881fa0c1f5960fb8a15">
+        <dex dex="/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/pre-dexed/debug/aws-android-sdk-core-2.2.22_ae36235d029913fc6cc737e35014694d9703c7c6.jar" />
+    </item>
+
+</items>

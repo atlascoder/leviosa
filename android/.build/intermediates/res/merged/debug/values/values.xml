@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="bundled_in_assets">
+        <!-- %%INSERT_BUNDLED_IN_ASSETS%% -->
+    </array>
+    <array name="bundled_in_lib">
+        <!-- %%INSERT_BUNDLED_IN_LIB%% -->
+    </array>
+    <array name="bundled_libs">
+        <!-- %%INSERT_EXTRA_LIBS%% -->
+    </array>
+    <array name="qt_libs">
+         <!-- %%INSERT_QT_LIBS%% -->
+     </array>
+    <array name="qt_sources">
+        <item>https://download.qt.io/ministro/android/qt5/qt-5.9</item>
+    </array>
+    <string name="fatal_error_msg">Your application encountered a fatal error and cannot continue.</string>
+    <string name="ministro_needed_msg">This application requires Ministro service. Would you like to install it?</string>
+    <string name="ministro_not_found_msg">Can\'t find Ministro service.\nThe application can\'t start.</string>
+    <string name="unsupported_android_version">Unsupported Android version.</string>
+</resources>

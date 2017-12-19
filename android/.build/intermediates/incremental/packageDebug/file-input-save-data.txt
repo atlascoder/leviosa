@@ -1,0 +1,21 @@
+#Internal package file, do not edit.
+#Tue Dec 19 06:28:47 EET 2017
+2.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
+5.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main/classes.dex
+5.set=DEX
+3.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
+2.set=JAVA_RESOURCE
+4.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
+count=6
+0.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/res/layout/splash.xml
+5.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main
+4.set=ANDROID_RESOURCE
+1.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-core.properties
+1.set=JAVA_RESOURCE
+2.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-cognito.properties
+0.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
+3.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/resources.arsc
+3.set=ANDROID_RESOURCE
+1.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
+4.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/AndroidManifest.xml
+0.set=ANDROID_RESOURCE

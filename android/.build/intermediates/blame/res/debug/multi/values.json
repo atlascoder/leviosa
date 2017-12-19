@@ -1,0 +1,188 @@
+[
+    {
+        "outputFile": "/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/incremental/mergeDebugResources/merged.dir/values/values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 2,
+                    "startColumn": 4,
+                    "startOffset": 55,
+                    "endLine": 4,
+                    "endColumn": 12,
+                    "endOffset": 146
+                },
+                "from": {
+                    "file": "/home/ant/DevProjects/leviosa/app/leviosa/android/res/values/libs.xml",
+                    "position": {
+                        "startLine": 20,
+                        "startColumn": 4,
+                        "startOffset": 546,
+                        "endLine": 22,
+                        "endColumn": 12,
+                        "endOffset": 637
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 5,
+                    "startColumn": 4,
+                    "startOffset": 151,
+                    "endLine": 7,
+                    "endColumn": 12,
+                    "endOffset": 236
+                },
+                "from": {
+                    "file": "/home/ant/DevProjects/leviosa/app/leviosa/android/res/values/libs.xml",
+                    "position": {
+                        "startLine": 17,
+                        "startColumn": 4,
+                        "startOffset": 456,
+                        "endLine": 19,
+                        "endColumn": 12,
+                        "endOffset": 541
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 8,
+                    "startColumn": 4,
+                    "startOffset": 241,
+                    "endLine": 10,
+                    "endColumn": 12,
+                    "endOffset": 320
+                },
+                "from": {
+                    "file": "/home/ant/DevProjects/leviosa/app/leviosa/android/res/values/libs.xml",
+                    "position": {
+                        "startLine": 9,
+                        "startColumn": 4,
+                        "startOffset": 291,
+                        "endLine": 11,
+                        "endColumn": 12,
+                        "endOffset": 370
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 11,
+                    "startColumn": 4,
+                    "startOffset": 325,
+                    "endLine": 13,
+                    "endColumn": 13,
+                    "endOffset": 398
+                },
+                "from": {
+                    "file": "/home/ant/DevProjects/leviosa/app/leviosa/android/res/values/libs.xml",
+                    "position": {
+                        "startLine": 13,
+                        "startColumn": 5,
+                        "startOffset": 377,
+                        "endLine": 15,
+                        "endColumn": 13,
+                        "endOffset": 450
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 14,
+                    "startColumn": 4,
+                    "startOffset": 403,
+                    "endLine": 16,
+                    "endColumn": 12,
+                    "endOffset": 513
+                },
+                "from": {
+                    "file": "/home/ant/DevProjects/leviosa/app/leviosa/android/res/values/libs.xml",
+                    "position": {
+                        "startLine": 2,
+                        "startColumn": 4,
+                        "startOffset": 55,
+                        "endLine": 4,
+                        "endColumn": 12,
+                        "endOffset": 165
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 17,
+                    "startColumn": 4,
+                    "startOffset": 518,
+                    "endColumn": 107,
+                    "endOffset": 621
+                },
+                "from": {
+                    "file": "/home/ant/Qt/5.9.3/android_armv7/src/android/java/res/values/strings.xml",
+                    "position": {
+                        "startLine": 5,
+                        "startColumn": 4,
+                        "startOffset": 319,
+                        "endColumn": 107,
+                        "endOffset": 422
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 18,
+                    "startColumn": 4,
+                    "startOffset": 626,
+                    "endColumn": 121,
+                    "endOffset": 743
+                },
+                "from": {
+                    "file": "/home/ant/Qt/5.9.3/android_armv7/src/android/java/res/values/strings.xml",
+                    "position": {
+                        "startLine": 4,
+                        "startColumn": 4,
+                        "startOffset": 197,
+                        "endColumn": 121,
+                        "endOffset": 314
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 19,
+                    "startColumn": 4,
+                    "startOffset": 748,
+                    "endColumn": 111,
+                    "endOffset": 855
+                },
+                "from": {
+                    "file": "/home/ant/Qt/5.9.3/android_armv7/src/android/java/res/values/strings.xml",
+                    "position": {
+                        "startLine": 3,
+                        "startColumn": 4,
+                        "startOffset": 85,
+                        "endColumn": 111,
+                        "endOffset": 192
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 20,
+                    "startColumn": 4,
+                    "startOffset": 860,
+                    "endColumn": 84,
+                    "endOffset": 940
+                },
+                "from": {
+                    "file": "/home/ant/Qt/5.9.3/android_armv7/src/android/java/res/values/strings.xml",
+                    "position": {
+                        "startLine": 6,
+                        "startColumn": 4,
+                        "startOffset": 427,
+                        "endColumn": 84,
+                        "endOffset": 507
+                    }
+                }
+            }
+        ]
+    }
+]
