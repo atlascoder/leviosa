@@ -2,64 +2,24 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
+import com.atlascoder.ShadesGroupsModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
-Page {
+LeviosaPage {
 	id: newShadesGroupPage
-	visible: true
-	width: 480
-	height: 800
 
-	signal menuClicked()
+    property int controllerId : -1
 
-	header: ToolBar {
-		id: toolbar
-		height: DefTheme.toolbarHeight
-		background: Rectangle {
-			anchors.fill: parent
-			color: DefTheme.mainColorDark
-			layer.enabled: true
-			layer.effect: DropShadow {
-				anchors.fill: parent
-				transparentBorder: true
-				radius: 3
-			}
-		}
-		RowLayout {
-			anchors.fill: parent
-			ToolButton {
-				id: menuButton
-				Image {
-					id: menuIcon
-					fillMode: Image.PreserveAspectFit
-					source: "img/002-left-arrow.svg"
-					anchors.fill: parent
-					anchors.margins: width / 4
-				}
-				onClicked: menuClicked()
-			}
-			Label {
-				id: pageTitle
-				text: "New shades group"
-				verticalAlignment: Qt.AlignVCenter
-				horizontalAlignment: Qt.AlignHCenter
-				Layout.fillWidth: true
-				color: DefTheme.mainTextColor
-				font.pixelSize: parent.height / 2
-			}
-			ToolButton{
-				id: addButton
-				enabled: false
-			}
-		}
-	}
+    title: "New Shades Group"
+    enableMenuAction: false
+    enableAddAction: false
 
-	background: Rectangle {
-		anchors.fill: parent
-		color: DefTheme.mainColorBg
-	}
-	
+    ShadesGroupsModel {
+        id: shadesGroupsModel
+        controllerId: newShadesGroupPage.controllerId
+    }
+
 	Column {
 		anchors.top: parent.top
 		anchors.left: parent.left
@@ -70,35 +30,12 @@ Page {
 			text: "Name:"
 		}
 		TextField {
+            id: groupName
 			width: parent.width
 			height: 40
 			horizontalAlignment: Qt.AlignHCenter
 			verticalAlignment: Qt.AlignVCenter
 			font.pixelSize: height*0.6
-			background: Rectangle {
-				anchors.fill: parent
-				color: DefTheme.mainInputBg
-			}
-		}
-
-		Text {
-			text: "Position:"
-		}
-
-		ComboBox {
-			id: positionCB
-			width: parent.width
-			height: 40
-			model: ["First", "After X", "After Y"]
-			contentItem: Text {
-				leftPadding: positionCB.indicator.width + positionCB.spacing
-				rightPadding: positionCB.indicator.width + positionCB.spacing
-				text: positionCB.displayText
-				font.pixelSize: height * 0.6
-				horizontalAlignment: Text.AlignHCenter
-				verticalAlignment: Text.AlignVCenter
-				elide: Text.ElideRight
-			}
 			background: Rectangle {
 				anchors.fill: parent
 				color: DefTheme.mainInputBg
@@ -122,6 +59,7 @@ Page {
 				anchors.left: parent.left
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: menuClicked()
 			}
 
 			ActionButton {
@@ -132,6 +70,10 @@ Page {
 				anchors.right: parent.right
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: {
+                    shadesGroupsModel.addShadesGroupWithData(newShadesGroupPage.controllerId, groupName.text);
+                    menuClicked();
+                }
 			}
 
 		}

@@ -1,6 +1,7 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
+#include <QString>
 
 class Schedule
 {
@@ -8,16 +9,6 @@ public:
     Schedule();
 
     enum class WeekDay { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
-    enum class Scope { Controller, ShadesGroup };
-
-    int id() const;
-    void setId(int id);
-
-    Scope scope() const;
-    void setScope(int scope);
-
-    int fKey() const;
-    void setFKey(int fKey);
 
     int days() const;
     void setDays(int days);
@@ -34,14 +25,20 @@ public:
     int closeAtHour() const;
     int closeAtMinute() const;
 
+    QString openAtText() const;
+    QString closeAtText() const;
+
+    float openAtUS() const;
+    void setOpenAtUS(const float openAtUS);
+
+    float closeAtUS() const;
+    void setCloseAtUS(const float closeAtUS);
+
     bool scheduledForDay(WeekDay weekDay) const;
     void setScheduledForDay(WeekDay weekDay);
     void clearScheduledForDay(WeekDay weekDay);
 
 private:
-    int mId;
-    Scope mScope;
-    int mFKey;
     char mDaysMask;
     int mOpenAt;
     int mCloseAt;

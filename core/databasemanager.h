@@ -6,6 +6,8 @@
 #include "locationdao.h"
 #include "controllerdao.h"
 #include "shadesgroupdao.h"
+#include "UserDAO.h"
+#include "BasicDAO.h"
 
 class QSqlDatabase;
 
@@ -21,6 +23,13 @@ public:
     const LocationDao locationDao;
     const ControllerDao controllerDao;
     const ShadesGroupDao shadesGroupsDao;
+    const UserDAO userDAO;
+
+    const BasicDAO<UserLocation> locationsDao;
+    const BasicDAO<LocationController> controllersDao;
+    const BasicDAO<ShadeGroup> shadeGroupsDao;
+
+    void clear() const;
 protected:
     DatabaseManager(const QString &path = DATABASE_FILENAME);
     DatabaseManager& operator=(const DatabaseManager& rhs);

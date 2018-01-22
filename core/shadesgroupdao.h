@@ -1,7 +1,7 @@
 #ifndef SHADESGROUPDAO_H
 #define SHADESGROUPDAO_H
 
-#include "shadesgroup.h"
+#include "shadegroup.h"
 #include <memory>
 
 class QSqlDatabase;
@@ -13,13 +13,15 @@ public:
     explicit ShadesGroupDao(QSqlDatabase& database);
     void init() const;
 
-    void addShadesGroup(ShadesGroup& shadesGroup) const;
-    void addShadesGroupInController(int controllerId, ShadesGroup& shadesGroup) const;
+    void addShadesGroup(ShadeGroup& shadesGroup) const;
+    void addShadesGroupInController(int controllerId, ShadeGroup& shadesGroup) const;
 
     void removeShadesGroup(int id) const;
-    void updateShadesGroup(const ShadesGroup& shadesGroup) const;
+    void updateShadesGroup(const ShadeGroup& shadesGroup) const;
     void removeShadesGroupsFromController(int controllerId) const;
-    std::unique_ptr<std::vector<std::unique_ptr<ShadesGroup>>> shadesGroupsForController(int controllerId) const;
+    std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> shadesGroupsForController(int controllerId) const;
+
+    void clear() const;
 };
 
 #endif // SHADESGROUPDAO_H

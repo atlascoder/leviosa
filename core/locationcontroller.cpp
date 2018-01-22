@@ -1,19 +1,9 @@
 #include "locationcontroller.h"
 
 LocationController::LocationController(const int locationId):
-    mId(-1), mLocationId(locationId), mName("A Controller"), mPosition(0)
+    Syncable(), mLocationId(locationId), mName("A Controller")
 {
 
-}
-
-int LocationController::id() const
-{
-    return mId;
-}
-
-void LocationController::setId(const int id)
-{
-    mId = id;
 }
 
 int LocationController::locationId() const
@@ -46,12 +36,22 @@ void LocationController::setMac(const QString &mac)
     mMac = mac;
 }
 
-int LocationController::position() const
+QString LocationController::ipAddress() const
 {
-    return mPosition;
+    return mIpAddress;
 }
 
-void LocationController::setPosition(int position)
+void LocationController::setIpAddress(const QString &ipAddress)
 {
-    mPosition = position;
+    mIpAddress = ipAddress;
+}
+
+bool LocationController::isWlan() const
+{
+    return mIsWLAN;
+}
+
+void LocationController::setIsWlan(bool isWlan)
+{
+    mIsWLAN = isWlan;
 }

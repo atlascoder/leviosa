@@ -1,40 +1,84 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
+import com.atlascoder.ShadesGroupsModel 1.0
+import com.atlascoder.Shade 1.0
 
-ListView {
-	anchors.fill: parent
-	spacing: 16
-	headerPositioning: ListView.InlineHeader
+Item {
+    id: rootItem
+    anchors.fill:parent
 
-	signal editShadesGroup(string n)
-	signal editGroupSchedule(string n)
+    property int controllerId : -1
 
-	model: shadeGroups
+    signal cmd(int channel, int cmd)
 
-	header: Item {
-		id: headerItem
-		width: parent.width
-		height: 16
-	}
+    signal openGroupEdit(int cid, int gid)
 
-	footer: AllShadesControl {
-		z: 2
-	}
+    onVisibleChanged: {
+        if(rootItem.visible)
+        {
+            shadesGroupsModel.controllerId = controllerId;
+            allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
+        }
+    }
 
-	footerPositioning: ListView.OverlayFooter
+    ShadesGroupsModel {
+        id: shadesGroupsModel
+        controllerId: rootItem.controllerId
+        onModelReset: {
+            allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
+        }
+    }
 
-	property ListModel shadeGroups: ListModel {}
+    AllShadesControl {
+        id: allShadesControl
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        visible: shadesGroupsModel.rowCount() > 1
+        z:1
+        onCmdShade: function(shade_state){
+            cmd(0, shade_state);
+        }
+    }
 
+    GridView {
+        id: gridView
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: allShadesControl.top
 
-	delegate: Item {
-		width: parent.width
-		ShadeControl {
-			anchors.horizontalCenter: parent.horizontalCenter
-			width: parent.width*0.95
-			title: name
-			onEdit: editShadesGroup(name)
-			onOpenSchedule: editGroupSchedule(name)
-		}
-		height: childrenRect.height
-	}
+        cellWidth: height > width ? (width / 2) : (width / 3)
+        cellHeight: height > width ? (height / 3) : (height / 2)
+
+        signal editShadesGroup(string n)
+        signal editGroupSchedule(string n)
+
+        model: shadesGroupsModel
+
+        delegate: Item {
+            width: gridView.cellWidth
+            height: gridView.cellHeight
+            ShadeControl {
+                anchors.centerIn: parent
+                width: parent.width * 0.95
+                height: parent.height * 0.95
+                title: model.name
+                shadeState: model.shadeState
+                days: model.days
+                openAtText: model.openAtText
+                closeAtText: model.closeAtText
+
+                channel: model.channel
+
+                onEdit: openGroupEdit(controllerId, model.id)
+
+                onCmdShade: function(gid, shade_state){
+                    model.shadeState = shade_state;
+                    cmd(gid, shade_state);
+                }
+
+            }
+        }
+    }
 }

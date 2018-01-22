@@ -4,18 +4,17 @@
 #include <QString>
 #include "shade.h"
 #include "schedule.h"
+#include "positioned.h"
+#include "Syncable.h"
 
-class ShadesGroup : public Shade, public Schedule
+class ShadeGroup : public Shade, public Schedule, public Positioned, public Syncable
 {
-    int mId;
     int mControllerId;
+    char mChannel;
     QString mName;
-    int mPosition;
 public:
-    explicit ShadesGroup(int controllerId);
-
-    int id() const;
-    void setId(int id);
+    ShadeGroup(int controllerId);
+    ShadeGroup();
 
     int controllerId() const;
     void setControllerId(int controllerId);
@@ -23,8 +22,8 @@ public:
     QString name() const;
     void setName(const QString& name);
 
-    int position() const;
-    void setPosition(int position);
+    char channel() const;
+    void setChannel(char channel);
 };
 
 #endif // SHADESGROUP_H

@@ -1,14 +1,8 @@
-QT += quick svg network
+QT += quick svg network sql concurrent
 CONFIG += c++11
 
 android {
     QT += androidextras
-    SOURCES += \
-        esptouchtask.cpp \
-        esptouch.cpp
-    HEADERS += \
-        esptouchtask.h \
-        esptouch.h
     DISTFILES += \
         android/AndroidManifest.xml \
         android/gradle/wrapper/gradle-wrapper.jar \
@@ -16,18 +10,181 @@ android {
         android/res/values/libs.xml \
         android/build.gradle \
         android/gradle/wrapper/gradle-wrapper.properties \
-        android/gradlew.bat \
-        android/AndroidManifest.xml \
-        android/gradle/wrapper/gradle-wrapper.jar \
-        android/gradlew \
-        android/res/values/libs.xml \
-        android/build.gradle \
-        android/gradle/wrapper/gradle-wrapper.properties \
-        android/gradlew.bat \
-        ../../../qt/esptouch/EsptouchTaskClient.java \
+        android/src/com/atlascoder/
+
+    HEADERS += \
+        esptouch/EspTouchTaskAndroid.h
+
+    SOURCES += \
+        esptouch/EspTouchTaskAndroid.cpp
 
     ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
+
+    LIBS += -L$$PWD/../../qt-zero-conf/build-Android-arm/android-build/lib -lQtZeroConf
+    INCLUDEPATH += $$PWD/../qt-zero-conf/QtZeroConf
 }
+
+ios {
+    app_launch_images.files = $$PWD/ios/SplashScreen.xib $$PWD/ios/leviosa-logo.png
+    QMAKE_BUNDLE_DATA = app_launch_images
+    QMAKE_INFO_PLIST = $$PWD/ios/Info.plist
+
+    include(QtZeroConf/qtzeroconf.pri)
+    DEFINES= QZEROCONF_STATIC
+
+    SC_IOS = $$PWD/../../esptouch-qt-ios
+
+    OBJECTIVE_HEADERS += \
+        $$PWD/ios/src/Reachability.h \
+        $$PWD/ios/src/ReachabiltyListener.h \
+        $$SC_IOS/ESPDataCode.h \
+        $$SC_IOS/ESPDatumCode.h \
+        $$SC_IOS/ESPGuideCode.h \
+        $$SC_IOS/ESPTouchGenerator.h \
+        $$SC_IOS/ESPTouchResult.h \
+        $$SC_IOS/ESPTouchTaskParameter.h \
+        $$SC_IOS/ESPUDPSocketClient.h \
+        $$SC_IOS/ESPUDPSocketServer.h \
+        $$SC_IOS/ESPVersionMacro.h \
+        $$SC_IOS/ESP_ByteUtil.h \
+        $$SC_IOS/ESP_CRC8.h \
+        $$SC_IOS/ESP_NetUtil.h \
+        $$SC_IOS/ESP_WifiUtil.h \
+        $$SC_IOS/ESPTouchTask.h \
+        $$SC_IOS/ESPTouchDelegate.h \
+        $$SC_IOS/ESPTouchHolder.h
+
+
+    OBJECTIVE_SOURCES += \
+        $$PWD/ios/src/Reachability.mm \
+        $$PWD/ios/src/ReachabilityListener.mm \
+        $$SC_IOS/ESPDataCode.mm \
+        $$SC_IOS/ESPDatumCode.mm \
+        $$SC_IOS/ESPGuideCode.mm \
+        $$SC_IOS/ESPTouchGenerator.mm \
+        $$SC_IOS/ESPTouchResult.mm \
+        $$SC_IOS/ESPTouchTaskParameter.mm \
+        $$SC_IOS/ESPUDPSocketClient.mm \
+        $$SC_IOS/ESPUDPSocketServer.mm \
+        $$SC_IOS/ESP_ByteUtil.mm \
+        $$SC_IOS/ESP_CRC8.mm \
+        $$SC_IOS/ESP_NetUtil.mm \
+        $$SC_IOS/ESP_WifiUtil.mm \
+        $$SC_IOS/ESPTouchTask.mm \
+        $$SC_IOS/ESPTouchHolder.mm
+
+    HEADERS += \
+        esptouch/EspTouchTaskIOS.h
+
+    SOURCES += \
+        esptouch/EspTouchTaskIOS.cpp
+
+    LIBS += -framework SystemConfiguration
+
+    AWS = /Users/anton.titkov/DevLibs/aws-sdk-cpp/ios/aws-cpp-sdk
+
+    LIBS += -L$$AWS-core -laws-cpp-sdk-core \
+                -L$$AWS-iam -laws-cpp-sdk-iam \
+                -L$$AWS-access-management -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
+                -L$$AWS-iot -laws-cpp-sdk-iot \
+                -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
+                -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
+                -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
+                -L/Users/anton.titkov/DevLibs/libcurl/lib -lcurl
+
+    AWS_H = /Users/anton.titkov/DevLibs/aws-sdk-cpp/src/aws-sdk-cpp/aws-cpp-sdk
+
+    INCLUDEPATH += $$AWS_H-core/include \
+                    $$AWS_H-iam/include \
+                    $$AWS_H-access-management/include \
+                    $$AWS_H-cognito-identity/include \
+                    $$AWS_H-cognito-idp/include \
+                    $$AWS_H-iot/include \
+                    $$AWS_H-cognito-sync/include \
+                    $$AWS_H-identity-management/include
+
+}
+
+macos {
+
+    # import QtZeroConf https://github.com/jbagg/QtZeroConf
+    include(QtZeroConf/qtzeroconf.pri)
+    DEFINES= QZEROCONF_STATIC
+
+    AWS = /Users/anton.titkov/DevLibs/aws-sdk-cpp/host/aws-cpp-sdk
+
+    LIBS += -L$$AWS-core -laws-cpp-sdk-core \
+                -L$$AWS-iam -laws-cpp-sdk-iam \
+                -L$$AWS-access-management -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
+                -L$$AWS-iot -laws-cpp-sdk-iot \
+                -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
+                -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
+                -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
+                -lcurl
+
+    AWS_H = /Users/anton.titkov/DevLibs/aws-sdk-cpp/src/aws-sdk-cpp/aws-cpp-sdk
+
+    INCLUDEPATH += $$AWS_H-core/include \
+                    $$AWS_H-iam/include \
+                    $$AWS_H-access-management/include \
+                    $$AWS_H-cognito-identity/include \
+                    $$AWS_H-cognito-idp/include \
+                    $$AWS_H-iot/include \
+                    $$AWS_H-cognito-sync/include \
+                    $$AWS_H-identity-management/include
+}
+
+HEADERS += \
+    EspTouchSetup.h \
+    core/WlanAPI.h \
+    core/WanAPI.h \
+    core/User.h \
+    core/UserDAO.h \
+    aws/CognitoSyncAPI.h \
+    aws/IdToken.h \
+    aws/Jwt.h \
+    aws/AccessToken.h \
+    aws/RefreshToken.h \
+    aws/ClientConfig.h \
+    core/Syncable.h \
+    CurrentUser.h \
+    aws/CredentialsRequest.h \
+    aws/AuthRequest.h \
+    UserLogin.h \
+    core/SyncableModel.h \
+    UserData.h \
+    core/shadegroup.h \
+    core/BasicDAO.h
+
+SOURCES += \
+    EspTouchSetup.cpp \
+    core/WlanAPI.cpp \
+    core/WanAPI.cpp \
+    core/User.cpp \
+    core/UserDAO.cpp \
+    aws/CognitoSyncAPI.cpp \
+    aws/IdToken.cpp \
+    aws/Jwt.cpp \
+    aws/AccessToken.cpp \
+    aws/RefreshToken.cpp \
+    aws/ClientConfig.cpp \
+    CurrentUser.cpp \
+    aws/CredentialsRequest.cpp \
+    aws/AuthRequest.cpp \
+    UserLogin.cpp \
+    core/SyncableModel.cpp \
+    UserData.cpp \
+    core/shadegroup.cpp \
+    core/BasicDAO.cpp
+
+# import Boost lib
+INCLUDEPATH += /Users/anton.titkov/DevLibs/boost-cpp
+
+#import Crypto++ lib
+INCLUDEPATH += /Users/anton.titkov/DevLibs/cryptopp/build-host/include
+LIBS += -L/Users/anton.titkov/DevLibs/cryptopp/build-host/lib -lcryptopp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -40,23 +197,35 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += main.cpp \
-    location.cpp \
-    networkmonitor.cpp
-
-#linux-g++{
-#    INCLUDEPATH += /home/ant/DevTools/aws-sdk-cpp
-#    LIBS += -L/usr/local/lib -laws-cpp-sdk-core -laws-cpp-sdk-s3 \
-#        -laws-cpp-sdk-cognito-sync -laws-cpp-sdk-cognito-idp -laws-cpp-sdk-cognito-identity \
-#        -laws-cpp-sdk-s3
-#}
-
+SOURCES += \
+    networkmonitor.cpp \
+    core/controllerdao.cpp \
+    core/controllerdiscovery.cpp \
+    core/controllermodel.cpp \
+    core/databasemanager.cpp \
+    core/locationcontroller.cpp \
+    core/locationdao.cpp \
+    core/locationmodel.cpp \
+    core/mdnsdiscothread.cpp \
+    core/schedule.cpp \
+    core/shade.cpp \
+    core/shadesgroupdao.cpp \
+    core/shadesgroupmodel.cpp \
+    core/userlocation.cpp \
+    core/positioned.cpp \
+    main.cpp
 
 RESOURCES += qml.qrc
 
+#LIBS += -L/Users/anton.titkov/DevProjects/leviosa/leviosa-core -lleviosa-core
+
+#INCLUDEPATH += /Users/anton.titkov/DevProjects/leviosa/leviosa-core
+
+#DEPENDPATH += /Users/anton.titkov/DevProjects/leviosa/leviosa-core
+
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
-QML_IMPORT_PATH =
+#QML_IMPORT_PATH = styles
 
 # Additional import path used to resolve QML modules just for Qt Quick Designer
 QML_DESIGNER_IMPORT_PATH =
@@ -67,12 +236,18 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    location.h \
-    networkmonitor.h
-
-
-DISTFILES += \
-    data.qmodel
-
-
-STATECHARTS +=
+    networkmonitor.h \
+    core/controllerdao.h \
+    core/controllerdiscovery.h \
+    core/controllermodel.h \
+    core/databasemanager.h \
+    core/locationcontroller.h \
+    core/locationdao.h \
+    core/locationmodel.h \
+    core/mdnsdiscothread.h \
+    core/schedule.h \
+    core/shade.h \
+    core/shadesgroupdao.h \
+    core/shadesgroupmodel.h \
+    core/userlocation.h \
+    core/positioned.h

@@ -15,12 +15,12 @@
           <task>generateDebugSources</task>
         </afterSyncTasks>
         <option name="ALLOW_USER_CONFIGURATION" value="false" />
-        <option name="RES_FOLDER_RELATIVE_PATH" value="/../../../../../Qt/5.9.3/android_armv7/src/android/java/res" />
-        <option name="RES_FOLDERS_RELATIVE_PATH" value="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res;file://$MODULE_DIR$/res" />
+        <option name="RES_FOLDER_RELATIVE_PATH" value="/../../../../Qt/5.9.3/android_x86/src/android/java/res" />
+        <option name="RES_FOLDERS_RELATIVE_PATH" value="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res;file://$MODULE_DIR$/res" />
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="false">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7">
     <output url="file://$MODULE_DIR$/.build/intermediates/classes/debug" />
     <output-test url="file://$MODULE_DIR$/.build/intermediates/classes/test/debug" />
     <exclude-output />
@@ -60,13 +60,6 @@
       <sourceFolder url="file://$MODULE_DIR$/aidl" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/shaders" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/res" type="java-test-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/assets" type="java-test-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/aidl" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/rs" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/src/test/shaders" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/res" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/resources" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/assets" type="java-test-resource" />
@@ -74,6 +67,13 @@
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/rs" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/shaders" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/res" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/assets" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/aidl" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/rs" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test/shaders" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/.build/intermediates/assets" />
       <excludeFolder url="file://$MODULE_DIR$/.build/intermediates/blame" />
       <excludeFolder url="file://$MODULE_DIR$/.build/intermediates/classes" />
@@ -91,16 +91,17 @@
       <excludeFolder url="file://$MODULE_DIR$/.build/outputs" />
       <excludeFolder url="file://$MODULE_DIR$/.build/tmp" />
     </content>
-    <content url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res">
-      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res" type="java-resource" />
+    <content url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res">
+      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res" type="java-resource" />
     </content>
-    <content url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/src">
-      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/src" isTestSource="false" />
+    <content url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/src">
+      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/src" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Android API 25 Platform (1)" jdkType="Android SDK" />
+    <orderEntry type="jdk" jdkName="Android API 27 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="gson-2.2.4" level="project" />
-    <orderEntry type="library" exported="" name="aws-android-sdk-cognito-2.2.22" level="project" />
-    <orderEntry type="library" exported="" name="aws-android-sdk-core-2.2.22" level="project" />
+    <orderEntry type="library" exported="" name="com.amazonaws:aws-android-sdk-core:2.2.22@jar" level="project" />
+    <orderEntry type="library" exported="" name="com.amazonaws:aws-android-sdk-cognito:2.2.22@jar" level="project" />
+    <orderEntry type="library" exported="" name="com.google.code.gson:gson:2.2.4@jar" level="project" />
+    <orderEntry type="library" exported="" name="android-android-27" level="project" />
   </component>
 </module>

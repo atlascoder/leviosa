@@ -2,6 +2,7 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
+import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
 import "libs/aws-sdk.js" as AWS
@@ -18,9 +19,16 @@ Page {
 		color: DefTheme.mainColorBg
 	}
 
-	signal signedUp()
-	signal restore()
+    signal signedIn()
+    signal restore()
 	signal authenticate()
+
+    UserLogin {
+        id: currentUser
+        email: emailInput.text
+        password: passwordInput.text
+        password2: passwordConfirmInput.text
+    }
 
 	Column {
 		id: column
@@ -48,10 +56,15 @@ Page {
 			anchors.horizontalCenter: parent.horizontalCenter
 		}
 
-        Rectangle {
-			height: registerPage.height * 0.02
+        Text {
+            id: hintText
+            height: registerPage.height * 0.08
             width: parent.width
-            color: "#00000000"
+            text: currentUser.lastMessage
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
+            font.pixelSize: 16
         }
 
         Rectangle {
@@ -90,7 +103,6 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
-				focus: true
 			}
 
             Rectangle {
@@ -134,7 +146,7 @@ Page {
 					anchors.fill: parent
 					visible: !(parent.focus || parent.text.length > 0)
 					color: "#b1b1b1"
-					text: "enter a password"
+                    text: "enter password"
 					verticalAlignment: Text.AlignVCenter
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
@@ -202,67 +214,29 @@ Page {
 
 		}
 
-        Rectangle {
-			id: signUpButton
-			color: DefTheme.mainColorLight
-			border.color: DefTheme.mainColorLight
+        Button {
+            id: signUpButton
             width: parent.width
-			height: registerPage.height * 0.08
-            radius: height * 0.4
+            height: registerPage.height * 0.08
+            background: Rectangle{
+                anchors.fill:parent
+                color: DefTheme.mainColorLight
+                border.color: DefTheme.mainColorLight
+                radius: height * 0.4
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    radius: signUpButton.down ? 1 : 3
+                }
+            }
             Text {
-				color: DefTheme.mainTextColor
+                color:DefTheme.mainTextColor
+                opacity: signUpButton.enabled ? 1 : 0.3
                 anchors.centerIn: parent
                 font.pixelSize: parent.height / 2
-				text: qsTr("SIGN UP")
+                text: qsTr("SIGN UP")
             }
-			function signUp(email, pwd){
-
-				var poolData = {
-					UserPoolId : 'us-east-2_upLJUtE0q',
-					ClientId : '1bilbv38m3hrogdkmmdfe9ufq5'
-				};
-				console.log(DefTheme.AWS.toString());
-				console.log(AWS.Cognito.CognitoIdentityServiceProvider.toString());
-				console.log(AWS.AWS.CognitoIdentityServiceProvider.CognitoUserPool);
-
-				var userPool = new AWS.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
-
-				var attributeList = [];
-
-				var dataEmail = {
-					Name : 'email',
-					Value : email
-				};
-
-				var attributeEmail = new AWS.CognitoIdentityServiceProvider.CognitoUserAttribute(dataEmail);
-
-				attributeList.push(attributeEmail);
-
-				var reg_result;
-
-				userPool.signUp('username', 'password', attributeList, null, function(err, result){
-					if (err) {
-						alert(err);
-						return;
-					}
-					cognitoUser = result.user;
-					reg_result = result;
-					console.log('user name is ' + cognitoUser.getUsername());
-				});
-				return reg_result;
-			}
-			MouseArea {
-				anchors.fill: parent
-				onClicked: {
-					if(signUpButton.signUp(emailInput.text, passwordInput.text)){
-						signedUp();
-						console.log("SignUp success");
-					}
-					else{
-						console.log("SignUp failed");
-					}
-				}
-			}
+            onClicked: currentUser.signUp()
         }
 
         Rectangle {
@@ -349,7 +323,103 @@ Page {
 				text: qsTr("Have account already?")
 			}
         }
+
     }
 
+    Item {
+        id: busyPane
+        visible: false
+        anchors.fill: parent
+        Rectangle {
+            anchors.fill: parent
+            opacity: 0.7
+        }
 
+        BusyIndicator {
+            id: busyIndicator
+            anchors.centerIn: parent
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {}
+        }
+    }
+
+    states:[
+        State {
+            name: "NotReady"
+            when: currentUser.authState === UserLogin.BadInputs
+            PropertyChanges {
+                target: signUpButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainWarningAccent
+            }
+        },
+        State {
+            name: "Ready"
+            when: currentUser.authState === UserLogin.Ready
+            PropertyChanges {
+                target: signUpButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainPositiveAccent
+            }
+        },
+        State {
+            name: "Registering"
+            when: currentUser.authState === UserLogin.Registering
+            PropertyChanges {
+                target: signUpButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: true
+            }
+        },
+        State {
+            name: "Authenticating"
+            when: currentUser.authState === UserLogin.Authenticating
+            PropertyChanges {
+                target: signUpButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: true
+            }
+        },
+        State {
+            name: "Authenticated"
+            when: currentUser.authState === UserLogin.Authenticated
+            StateChangeScript {
+                script: {
+                    registerPage.signedIn();
+                }
+            }
+        },
+        State {
+            name: "Failed"
+            when: currentUser.authState == UserLogin.Failed
+            PropertyChanges {
+                target: signUpButton
+                enabled: false
+            }
+
+            PropertyChanges {
+                target: busyPane
+                visible: false
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainNegativeAccent
+            }
+        }
+    ]
 }

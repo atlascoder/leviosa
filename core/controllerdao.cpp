@@ -24,7 +24,9 @@ void ControllerDao::init() const
                             "locationId INTEGER, " \
                             "name TEXT, " \
                             "mac TEXT, " \
-                            "position INTEGER" \
+                            "position INTEGER, " \
+                            "syncs INTEGER DEFAULT 0, " \
+                            "lastModified INTEGER DEFAULT 0" \
                            ")"));
     }
 }
@@ -32,11 +34,13 @@ void ControllerDao::init() const
 void ControllerDao::addController(LocationController &controller) const
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO location_controllers (locationId, name, mac, position) VALUES (:locationId, :name, :mac, :postition)");
+    query.prepare("INSERT INTO location_controllers (locationId, name, mac, position, syncs, lastModified) VALUES (:locationId, :name, :mac, :position, :syncs, :lastModified)");
     query.bindValue(":locationId", controller.locationId());
     query.bindValue(":name", controller.name());
     query.bindValue(":mac", controller.mac().toUpper());
     query.bindValue(":position", controller.position());
+    query.bindValue(":syncs", controller.syncs());
+    query.bindValue(":lastModified", controller.lastModified());
     query.exec();
     controller.setId(query.lastInsertId().toInt());
 }
@@ -58,12 +62,14 @@ void ControllerDao::removeController(int id) const
 void ControllerDao::updateController(const LocationController &controller) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("UPDATE location_controllers SET locationId = :locationId, name = :name, mac = :mac, position = :position WHERE id IS :id");
+    query.prepare("UPDATE location_controllers SET locationId = :locationId, name = :name, mac = :mac, position = :position, syncs=:syncs, lastModified=:lastModified WHERE id=:id");
     query.bindValue(":locationId", controller.locationId());
     query.bindValue(":name", controller.name());
     query.bindValue(":mac", controller.mac().toUpper());
     query.bindValue(":position", controller.position());
     query.bindValue(":id", controller.id());
+    query.bindValue(":syncs", controller.syncs());
+    query.bindValue(":lastModified", controller.lastModified());
     query.exec();
     if(query.lastError().isValid())
         QTextStream(stdout) << "CTRLR update error: " << query.lastError().text() << endl;
@@ -99,6 +105,8 @@ unique_ptr<vector<unique_ptr<LocationController>>> ControllerDao::controllersFor
         ctrlr->setName(query.value("name").toString());
         ctrlr->setMac(query.value("mac").toString());
         ctrlr->setPosition(query.value("position").toInt());
+        ctrlr->setSyncs(query.value("syncs").toInt());
+        ctrlr->setLastModified(query.value("lastModified").toInt());
         list->push_back(move(ctrlr));
     }
     return list;
@@ -161,4 +169,10 @@ bool ControllerDao::validateMac(const QString &mac) const
         QTextStream(stdout) << "CTRLR validate mac '" << mac << "` success." << endl;
         return true;
     }
+}
+
+void ControllerDao::clear() const
+{
+    QSqlQuery query(mDatabase);
+    query.exec("DELETE FROM location_controllers");
 }

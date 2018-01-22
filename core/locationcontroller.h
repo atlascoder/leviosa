@@ -2,19 +2,20 @@
 #define LOCATIONCONTROLLER_H
 
 #include <QString>
+#include "shade.h"
+#include "schedule.h"
+#include "positioned.h"
+#include "Syncable.h"
 
-class LocationController
+class LocationController: public Shade, public Schedule, public Positioned, public Syncable
 {
-    int mId;
     int mLocationId;
     QString mName;
     QString mMac;
-    int mPosition;
+    bool mIsWLAN;
+    QString mIpAddress;
 public:
     explicit LocationController(int locationId = 0);
-
-    int id() const;
-    void setId(const int id);
 
     int locationId() const;
     void setLocationId(int locationId);
@@ -25,8 +26,12 @@ public:
     QString mac() const;
     void setMac(const QString& mac);
 
-    int position() const;
-    void setPosition(int position);
+    bool isWlan() const;
+    void setIsWlan(bool isWlan);
+
+    QString ipAddress() const;
+    void setIpAddress(const QString& ipAddress);
+
 };
 
 #endif // LOCATIONCONTROLLER_H

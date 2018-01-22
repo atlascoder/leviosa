@@ -2,63 +2,28 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
+import com.atlascoder.ControllersModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
-Page {
+LeviosaPage {
 	id: editController
-	visible: true
-	width: 480
-	height: 800
+    property int locationId : -1
+    property int controllerId : -1
+    enableMenuAction: false
 
-	signal menuClicked()
+    title: "Edit controller"
 
-	header: ToolBar {
-		id: toolbar
-		height: DefTheme.toolbarHeight
-		background: Rectangle {
-			anchors.fill: parent
-			color: DefTheme.mainColorDark
-			layer.enabled: true
-			layer.effect: DropShadow {
-				anchors.fill: parent
-				transparentBorder: true
-				radius: 3
-			}
-		}
-		RowLayout {
-			anchors.fill: parent
-			ToolButton {
-				id: menuButton
-				Image {
-					id: menuIcon
-					fillMode: Image.PreserveAspectFit
-					source: "img/002-left-arrow.svg"
-					anchors.fill: parent
-					anchors.margins: width / 4
-				}
-				onClicked: menuClicked()
-			}
-			Label {
-				id: pageTitle
-				text: "Edit controller"
-				verticalAlignment: Qt.AlignVCenter
-				horizontalAlignment: Qt.AlignHCenter
-				Layout.fillWidth: true
-				color: DefTheme.mainTextColor
-				font.pixelSize: parent.height / 2
-			}
-			ToolButton{
-				id: addButton
-				enabled: false
-			}
-		}
-	}
-
-	background: Rectangle {
-		anchors.fill: parent
-		color: DefTheme.mainColorBg
-	}
+    ControllersModel {
+        id: controllersModel
+        locationId: editController.locationId
+        selectedControllerId: editController.controllerId
+        onSelectedControllerIdChanged: {
+            showBefore.model = positionOrder;
+            showBefore.visible = rowCount();
+            showBefore.currentIndex = selectedControllerPosition;
+        }
+    }
 
 	Column {
 		anchors.top: parent.top
@@ -70,6 +35,7 @@ Page {
 			text: "Name:"
 		}
 		TextField {
+            id: controllerName
 			width: parent.width
 			height: 40
 			horizontalAlignment: Qt.AlignHCenter
@@ -79,6 +45,7 @@ Page {
 				anchors.fill: parent
 				color: DefTheme.mainInputBg
 			}
+            text: controllersModel.selectedControllerName
 		}
 
 		Text {
@@ -92,8 +59,35 @@ Page {
 			verticalAlignment: Qt.AlignVCenter
 			font.pixelSize: height*0.6
 			color: DefTheme.mainDisabledTextColor
-			text: "12:12:12:12:12:12"
+            text: controllersModel.selectedControllerMac
 		}
+
+        Text {
+            text: "Show before:"
+            visible: controllersModel.rowCount() > 1
+        }
+
+        ComboBox {
+            id: showBefore
+            width: parent.width
+            height: 40
+            model: controllersModel.positionOrder
+            visible: controllersModel.rowCount() > 1
+            displayText: currentText
+            contentItem: Text {
+                leftPadding: showBefore.indicator.width + showBefore.spacing
+                rightPadding: showBefore.spacing
+                font.pixelSize: height * 0.6
+                text: showBefore.displayText
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                anchors.fill: parent
+                color: DefTheme.mainInputBg
+            }
+        }
 
 		Item {
 			width: parent.width
@@ -112,6 +106,7 @@ Page {
 				anchors.left: parent.left
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: menuClicked()
 			}
 
 			ActionButton {
@@ -122,6 +117,10 @@ Page {
 				anchors.right: parent.right
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: {
+                    controllersModel.updateControllerWithData(editController.controllerId, controllerName.text, showBefore.currentIndex);
+                    menuClicked();
+                }
 			}
 
 		}

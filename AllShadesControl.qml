@@ -1,155 +1,42 @@
-import QtQuick 2.0
+import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtGraphicalEffects 1.0
+import com.atlascoder.Shade 1.0
 import "DefaultTheme.js" as DefTheme
 
 Rectangle {
-	width: parent.width
-	height: width / 4
-	color: '#e1e1e1'
+    id: rootItem
+    width: parent.width
+    height: width / 5 > 120 ? 120 : width / 5
+    color: DefTheme.mainColorLight
+
+    property int shadeState : Shade.Interim
+
+    signal cmdShade(int cmd)
+
+    border.width: 0
+    border.color: "#00000000"
 
 	layer.enabled: true
 	layer.effect: DropShadow {
-		radius: 3
+        radius: 3
 		transparentBorder: true
-		verticalOffset: -1
 	}
 
-	Rectangle {
-		id: title
-		height: width/12
-		color: DefTheme.secColor
-		border.width: 0
-		anchors.top: parent.top
-		anchors.topMargin: 0
-		anchors.right: parent.right
-		anchors.rightMargin: 0
+    Item {
+        id: upButton
+        width: parent.width / 6
+        anchors.leftMargin: 6
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
 		anchors.left: parent.left
-		anchors.leftMargin: 0
 
-		Text {
-			id: titleText
-			x: 159
-			y: 8
-			color: DefTheme.mainTextColor
-			text: qsTr("ALL")
-			font.pixelSize: parent.height*0.75
-			elide: Text.ElideRight
-			font.bold: true
-			horizontalAlignment: Text.AlignHCenter
-			anchors.horizontalCenter: parent.horizontalCenter
-			anchors.verticalCenter: parent.verticalCenter
-
-			MouseArea {
-				anchors.fill: parent
-				onPressAndHold: {
-					console.log('change group name')
-				}
-			}
-		}
-
-
-		Image {
-			id: scheduleIcon
-			x: 437
-			y: 44
-			width: height
-			height: parent.height*0.8
-			anchors.verticalCenter: parent.verticalCenter
-			anchors.rightMargin: width/4
-			anchors.right: parent.right
-			fillMode: Image.PreserveAspectFit
-			source: "img/schedule-b.svg"
-			MouseArea {
-				anchors.fill: parent
-				onClicked: {
-					console.log('open schedule')
-				}
-			}
-		}
-	}
-
-	Slider {
-		id: slider
-		x: 100
-		width: parent.width*0.6
-		anchors.bottom: parent.bottom
-		anchors.bottomMargin: 0
-		anchors.top: title.bottom
-		anchors.topMargin: 0
-		anchors.horizontalCenterOffset: 0
-		anchors.horizontalCenter: parent.horizontalCenter
-		orientation: Qt.Horizontal
-		stepSize: 25
-		to: 100
-		value: 50
-		handle.height: height * 0.4
-		handle.width: height * 0.4
-		onValueChanged: {
-			positionPercentage.text = value + ' %'
-		}
-		Text {
-			id: positionPercentage
-			anchors.horizontalCenter: slider.handle.horizontalCenter
-			text: parent.value + '%'
-			font.pixelSize: parent.height / 5
-			anchors.bottom: parent.bottom
-			anchors.bottomMargin: 4
-			verticalAlignment: Text.AlignVCenter
-			horizontalAlignment: Text.AlignHCenter
-		}
-
-		background: Rectangle {
-			x: parent.leftPadding
-			y: parent.topPadding + parent.availableHeight / 2 - height / 2
-			implicitWidth: 200
-			implicitHeight: 4
-			width: parent.availableWidth
-			height: implicitHeight
-			radius: 2
-			color: "#bdbebf"
-
-//			Rectangle {
-//				width: parent.parent.visualPosition * parent.width
-//				height: parent.height
-//				color: "#21be2b"
-//				radius: 2
-//			}
-		}
-	}
-
-	Image {
-		id: upIcon
-		y: 48
-		width: height
-		height: parent.height / 2
-		fillMode: Image.PreserveAspectFit
-		anchors.leftMargin: parent.height / 8
-		anchors.left: parent.left
-		anchors.verticalCenterOffset: parent.height/6
-		anchors.verticalCenter: parent.verticalCenter
-		source: "img/window-frame.svg"
-
-		Text {
-			id: upText
-			width: parent.width
-			text: qsTr("OPEN")
-			anchors.top: parent.top
-			anchors.topMargin: 4
-			horizontalAlignment: Text.AlignHCenter
-			verticalAlignment: Text.AlignTop
-			wrapMode: Text.WordWrap
-			font.pixelSize: parent.height / 5
-			anchors.horizontalCenter: parent.horizontalCenter
-		}
-
-		Image {
-			id: openIndicator
-			width: parent.width
-			source: "img/move-up.svg"
-			fillMode: Image.PreserveAspectFit
-			anchors.bottom: parent.bottom
-			anchors.bottomMargin: 8
+        Text {
+            id: upText
+            text: "OPENED"
+            visible: false
+            anchors.centerIn: parent
+            font.pixelSize: parent.width / 4
 		}
 
 		SequentialAnimation {
@@ -159,75 +46,57 @@ Rectangle {
 				from: 1.0
 				to: 0
 				duration: 250
-				target: openIndicator
+                target: upIcon
 			}
 			PropertyAnimation {
 				property: "opacity"
 				from: 0
 				to: 1
 				duration: 250
-				target: openIndicator
+                target: upIcon
 			}
 			loops: Animation.Infinite
 		}
 
+        Image {
+            id: upIcon
+            anchors.fill: parent
+            anchors.margins: width / 8
+            source: "img/010-arrows.svg"
+            fillMode: Image.PreserveAspectFit
+        }
 
 		MouseArea {
-		  id: upTouchListener
-		  opacity: 1
-		  anchors.fill: parent
-		  onClicked: {
-			  if (openingAnimation.running){
-				openingAnimation.complete();
-				openingAnimation.stop();
-				upText.text = "OPEN";
-			  }
-			  else{
-				openingAnimation.start();
-				  upText.text = "TAP TO STOP";
-			  }
-			  console.log("Up command");
-		  }
+            id: upTouchListener
+            anchors.topMargin: 0
+            anchors.fill: parent
 		}
 	}
 
-	Image {
-		id: downIcon
-		x: 408
-		y: 48
-		width: height
-		height: parent.height / 2
-		fillMode: Image.PreserveAspectFit
-		anchors.rightMargin: parent.height / 8
+    Rectangle {
+        height: parent.height * 0.9
+        anchors.verticalCenter: parent.verticalCenter
+        width: 1
+        anchors.left: upButton.right
+        anchors.leftMargin: 6
+        color: "#000000"
+        opacity: 0.1
+    }
+
+    Item {
+        id: downButton
+        width: parent.width / 6
+        anchors.rightMargin: 6
 		anchors.right: parent.right
-		anchors.verticalCenterOffset: parent.height/6
-		anchors.verticalCenter: parent.verticalCenter
-		source: "img/window-frame.svg"
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
 
 		Text {
 			id: downText
-			x: -376
-			y: 25
-			width: parent.width
-			text: qsTr("CLOSE")
-			anchors.bottom: parent.bottom
-			anchors.bottomMargin: 8
-			fontSizeMode: Text.FixedSize
-			verticalAlignment: Text.AlignBottom
-			horizontalAlignment: Text.AlignHCenter
-			wrapMode: Text.WordWrap
-			font.pixelSize: parent.height / 5
-			opacity: 1
-			anchors.horizontalCenter: parent.horizontalCenter
-		}
-
-		Image {
-			id: closeIndicator
-			width: parent.width
-			anchors.top: parent.top
-			anchors.topMargin: 4
-			fillMode: Image.PreserveAspectFit
-			source: "img/move-down.svg"
+            text: "CLOSED"
+            visible: false
+            anchors.centerIn: parent
+            font.pixelSize: parent.width / 4
 		}
 
 		SequentialAnimation {
@@ -237,33 +106,376 @@ Rectangle {
 				from: 1.0
 				to: 0
 				duration: 250
-				target: closeIndicator
+                target: downIcon
 			}
 			PropertyAnimation {
 				property: "opacity"
 				from: 0
 				to: 1
 				duration: 250
-				target: closeIndicator
+                target: downIcon
 			}
 			loops: Animation.Infinite
 		}
 
+        Image {
+            id: downIcon
+            rotation: 180
+            anchors.fill: parent
+            anchors.margins: width / 8
+            fillMode: Image.PreserveAspectFit
+            source: "img/010-arrows.svg"
+        }
+
 		MouseArea {
 			id: downTouchListener
 			anchors.fill: parent
-			onClicked: {
-				if (closingAnimation.running){
-				  closingAnimation.complete();
-				  closingAnimation.stop();
-				  downText.text = "CLOSE";
-				}
-				else{
-				  closingAnimation.start();
-				  downText.text = "TAP TO STOP";
-				}
-				console.log("Down command")
-			}
 		}
+
 	}
+
+    Rectangle {
+        height: parent.height * 0.9
+        anchors.verticalCenter: parent.verticalCenter
+        width: 1
+        anchors.right: downButton.left
+        anchors.rightMargin: 6
+        color: "#000000"
+        opacity: 0.1
+    }
+
+    Text {
+        id: scheduleBar
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: downButton.left
+        anchors.left: upButton.right
+        text: "ALL\nshades"
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        font.pixelSize: parent.height / 4
+    }
+
+    Timer {
+        id: actionTimer
+        interval: 5000
+    }
+
+    function updateShadeState(shadeState){
+        cmdShade(shadeState);
+        rootItem.shadeState = shadeState;
+    }
+
+    states: [
+        State {
+            name: "opened"
+            when: rootItem.shadeState === Shade.Opened
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Open)
+                onPressAndHold: updateShadeState(Shade.Open)
+            }
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Down)
+                onPressAndHold: updateShadeState(Shade.Close)
+            }
+
+            PropertyChanges {
+                target: upIcon
+                source: "img/ic_open.png"
+                anchors.topMargin: 7
+                anchors.bottomMargin: 7
+                anchors.leftMargin: 7
+                anchors.rightMargin: 7
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+        },
+        State {
+            name: "closed"
+            when: rootItem.shadeState === Shade.Closed
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Close)
+                onPressAndHold: updateShadeState(Shade.Close)
+            }
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Up)
+                onPressAndHold: updateShadeState(Shade.Open)
+            }
+
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downIcon
+                rotation: 0
+                source: "img/ic_close.png"
+                visible: true
+            }
+        },
+        State {
+            name: "fullOpened"
+            when: rootItem.shadeState === Shade.FullOpened
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Down)
+                onPressAndHold: updateShadeState(Shade.Close)
+            }
+
+            PropertyChanges {
+                target: upIcon
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: true
+            }
+        },
+        State {
+            name: "fullClosed"
+            when: rootItem.shadeState === Shade.FullClosed
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Up)
+                onPressAndHold: updateShadeState(Shade.Open)
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downIcon
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downText
+                visible: true
+            }
+        },
+        State {
+            name: "opening"
+            when: rootItem.shadeState === Shade.Open
+
+            PropertyChanges {
+                target: downIcon
+                source: "img/001-circle.svg"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Interim)
+                onPressAndHold: updateShadeState(Shade.Interim)
+            }
+            PropertyChanges {
+                target: openingAnimation
+                running: true
+            }
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: true
+                onTriggered: {
+                    rootItem.state = "fullOpened"
+                }
+            }
+            PropertyChanges {
+                target: upIcon
+                source: "img/ic_open.png"
+            }
+        },
+        State {
+            name: "closing"
+            when: rootItem.shadeState === Shade.Close
+
+            PropertyChanges {
+                target: upIcon
+                source: "img/001-circle.svg"
+                visible: true
+            }
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Interim)
+                onPressAndHold: updateShadeState(Shade.Interim)
+            }
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+            PropertyChanges {
+                target: closingAnimation
+                running: true
+            }
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: true
+                onTriggered: {
+                    rootItem.state = "fullClosed"
+                }
+            }
+
+            PropertyChanges {
+                target: downIcon
+                rotation: 0
+                source: "img/ic_close.png"
+            }
+        },
+        State {
+            name: "up"
+            when: rootItem.shadeState === Shade.Up
+
+            PropertyChanges {
+                target: downIcon
+                source: "img/001-circle.svg"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Interim)
+                onPressAndHold: updateShadeState(Shade.Interim)
+            }
+            PropertyChanges {
+                target: openingAnimation
+                running: true
+            }
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: true
+                onTriggered: {
+                    rootItem.state = "opened"
+                }
+            }
+        },
+        State {
+            name: "down"
+            when: rootItem.shadeState === Shade.Down
+
+            PropertyChanges {
+                target: upIcon
+                source: "img/001-circle.svg"
+                visible: true
+            }
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Interim)
+                onPressAndHold: updateShadeState(Shade.Interim)
+            }
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: {}
+                onPressAndHold: {}
+            }
+            PropertyChanges {
+                target: closingAnimation
+                running: true
+            }
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: true
+                onTriggered: {
+                    rootItem.state = "closed"
+                }
+            }
+        },
+        State {
+            name: "interim"
+            when: rootItem.shadeState === Shade.Interim
+
+            PropertyChanges {
+                target: upIcon
+                source: "img/010-arrows.svg"
+                visible: true
+            }
+            PropertyChanges {
+                target: downIcon
+                source: "img/010-arrows.svg"
+                visible: true
+            }
+            PropertyChanges {
+                target: downTouchListener
+                onClicked: updateShadeState(Shade.Down)
+                onPressAndHold: updateShadeState(Shade.Close)
+            }
+            PropertyChanges {
+                target: upTouchListener
+                onClicked: updateShadeState(Shade.Up)
+                onPressAndHold: updateShadeState(Shade.Open)
+            }
+            StateChangeScript {
+                id: stopAnimation
+                script: { openingAnimation.complete(); closingAnimation.complete(); }
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: false
+
+            }
+        }
+    ]
+
 }

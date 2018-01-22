@@ -3,6 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
+import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -20,6 +21,14 @@ Page {
 		anchors.fill: parent
 		color: DefTheme.mainColorBg
 	}
+
+    UserLogin{
+        id: currentUser
+        email: emailInput.text
+        password: passwordInput.text
+        password2: passwordInput.text
+    }
+
 
 	Column {
 		id: column
@@ -49,28 +58,40 @@ Page {
 		}
 
 
-        Rectangle {
-			height: authPage.height * 0.02
+        Text {
+            id: hintText
+            height: authPage.height * 0.08
             width: parent.width
-            color: "#00000000"
+            text: currentUser.lastMessage
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
+            font.pixelSize: 16
+            color: authPage.state != "NotReady" && authPage.state != "Failed" ? DefTheme.mainPositiveAccent : DefTheme.mainNegativeAccent
         }
 
         Rectangle {
+            id: emailRow
 			height: authPage.height * 0.08
             width: parent.width
 
             color: "#00000000"
 
-            Image {
+            Item {
                 id: emailIcon
-				source: "img/003-black-back-closed-envelope-shape.svg"
                 height: parent.height / 2
-                antialiasing: true
-                fillMode: Image.PreserveAspectFit
                 width: height
-                x: 10
                 anchors.verticalCenter: parent.verticalCenter
+                x: 10
+                Image {
+                    id: emailPic
+                    height: parent.height
+                    width: parent.width
+                    source: "img/003-black-back-closed-envelope-shape.svg"
+                    anchors.centerIn: parent
+                }
             }
+
 
             TextInput {
                 id: emailInput
@@ -85,7 +106,7 @@ Page {
 					anchors.fill: parent
 					visible: !(parent.focus || parent.text.length > 0)
 					color: "#b1b1b1"
-					text: "input your email"
+                    text: "enter your email"
 					verticalAlignment: Text.AlignVCenter
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
@@ -104,19 +125,24 @@ Page {
         }
 
         Rectangle {
+            id: passwordRow
 			height: authPage.height * 0.08
             width: parent.width
             color: "#00000000"
 
-            Image {
+            Item {
                 id: passwordIcon
-				source: "img/001-write.svg"
                 height: parent.height / 2
-                antialiasing: true
-                fillMode: Image.PreserveAspectFit
                 width: height
                 x: 10
                 anchors.verticalCenter: parent.verticalCenter
+                Image {
+                    id: passwordPic
+                    source: "img/001-write.svg"
+                    anchors.fill: parent
+                    anchors.centerIn: parent
+                }
+
             }
 
             TextInput {
@@ -134,7 +160,7 @@ Page {
 					anchors.fill: parent
 					visible: !(parent.focus || parent.text.length > 0)
 					color: "#b1b1b1"
-					text: "input password"
+                    text: "enter password"
 					verticalAlignment: Text.AlignVCenter
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
@@ -152,24 +178,29 @@ Page {
 
         }
 
-        Rectangle {
-			color: DefTheme.mainColorLight
-			border.color: DefTheme.mainColorLight
+        Button {
+            id: signInButton
             width: parent.width
-			height: authPage.height * 0.08
-            radius: height * 0.4
+            height: authPage.height * 0.08
+            background: Rectangle{
+                anchors.fill:parent
+                color: DefTheme.mainColorLight
+                border.color: DefTheme.mainColorLight
+                radius: height * 0.4
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    radius: signInButton.down ? 1 : 3
+                }
+            }
             Text {
-				color: DefTheme.mainTextColor
+                color:DefTheme.mainTextColor
+                opacity: signInButton.enabled ? 1 : 0.3
                 anchors.centerIn: parent
                 font.pixelSize: parent.height / 2
                 text: qsTr("SIGN IN")
             }
-			MouseArea {
-				anchors.fill: parent
-				onClicked: {
-					signedIn();
-				}
-			}
+            onClicked: currentUser.signIn()
         }
 
         Rectangle {
@@ -260,5 +291,93 @@ Page {
         }
     }
 
+    Item {
+        id: busyPane
+        visible: false
+        anchors.fill: parent
+        Rectangle {
+            anchors.fill: parent
+            opacity: 0.7
+        }
+
+        BusyIndicator {
+            id: busyIndicator
+            anchors.centerIn: parent
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {}
+        }
+    }
+
+    states:[
+        State {
+            name: "NotReady"
+            when: currentUser.authState === UserLogin.BadInputs
+            PropertyChanges {
+                target: signInButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainWarningAccent
+            }
+        },
+        State {
+            name: "Ready"
+            when: currentUser.authState === UserLogin.Ready
+            PropertyChanges {
+                target: signInButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainPositiveAccent
+            }
+        },
+        State {
+            name: "Authenticating"
+            when: currentUser.authState === UserLogin.Authenticating
+            PropertyChanges {
+                target: signInButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: true
+            }
+        },
+        State {
+            name: "Authenticated"
+            when: currentUser.authState === UserLogin.Authenticated
+            PropertyChanges {
+                target: signInButton
+                enabled: false
+            }
+            StateChangeScript {
+                name: "openApp"
+                script: {
+                    authPage.signedIn();
+                }
+            }
+        },
+        State {
+            name: "Failed"
+            when: currentUser.authState === UserLogin.Failed
+            PropertyChanges {
+                target: signInButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: hintText
+                color: DefTheme.mainNegativeAccent
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: false
+            }
+        }
+    ]
 
 }

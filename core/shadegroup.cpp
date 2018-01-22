@@ -1,47 +1,43 @@
-#include "shadesgroup.h"
+#include "shadegroup.h"
 
-ShadesGroup::ShadesGroup(int controllerId):
-    Shade(-1), mId(-1), mControllerId(controllerId), mName("Motor shade"), mPosition(0)
+ShadeGroup::ShadeGroup(int controllerId):
+    Shade(), Schedule(), Syncable(), mControllerId(controllerId), mName("Motor shade")
+{
+
+}
+ShadeGroup::ShadeGroup():
+    Shade(), Schedule(), Syncable(), mControllerId(-1), mName("Motor shade")
 {
 
 }
 
-int ShadesGroup::id() const
-{
-    return mId;
-}
-
-void ShadesGroup::setId(int id)
-{
-    mId = id;
-}
-
-int ShadesGroup::controllerId() const
+int ShadeGroup::controllerId() const
 {
     return mControllerId;
 }
 
-void ShadesGroup::setControllerId(int controllerId)
+void ShadeGroup::setControllerId(int controllerId)
 {
     mControllerId = controllerId;
 }
 
-QString ShadesGroup::name() const
+QString ShadeGroup::name() const
 {
     return mName;
 }
 
-void ShadesGroup::setName(const QString &name)
+void ShadeGroup::setName(const QString &name)
 {
     mName = name;
 }
 
-int ShadesGroup::position() const
+char ShadeGroup::channel() const
 {
-    return mPosition;
+    return mChannel;
 }
 
-void ShadesGroup::setPosition(int position)
+void ShadeGroup::setChannel(char channel)
 {
-    mPosition = position;
+    mChannel = channel;
 }
+

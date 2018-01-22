@@ -24,6 +24,8 @@ public:
     bool validateName(const QString& name, int locationId) const;
     bool validateMac(const QString& mac) const;
     int lastPosition(int locationId) const;
+
+    void clear() const;
 };
 
 #endif // CONTROLLERDAO_H

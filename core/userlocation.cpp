@@ -1,18 +1,10 @@
 #include "userlocation.h"
-
+#include <QJsonDocument>
+#include <QJsonObject>
 
 UserLocation::UserLocation(const QString &name):
-    mId(-1), mName(name), mUtcOffset(0), mIsLocal(false), mIsOnline(false)
+    Syncable(), mName(name), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
-}
-
-int UserLocation::id() const {
-    return mId;
-}
-
-void UserLocation::setId(const int id)
-{
-    mId = id;
 }
 
 QString UserLocation::bssid() const
@@ -55,24 +47,14 @@ void UserLocation::setUtcOffset(int offset)
     mUtcOffset = offset;
 }
 
-int UserLocation::position() const
+bool UserLocation::isOnWlan() const
 {
-    return mPosition;
+    return mIsOnWlan;
 }
 
-void UserLocation::setPosition(int position)
+void UserLocation::setIsOnWlan(bool isOnWlan)
 {
-    mPosition = position;
-}
-
-bool UserLocation::isLocal() const
-{
-    return mIsLocal;
-}
-
-void UserLocation::setLocal(bool isLocal)
-{
-    mIsLocal = isLocal;
+    mIsOnWlan = isOnWlan;
 }
 
 bool UserLocation::isOnline() const
@@ -83,4 +65,37 @@ bool UserLocation::isOnline() const
 void UserLocation::setOnline(bool isOnline)
 {
     mIsOnline = isOnline;
+}
+
+QString UserLocation::syncContent() const
+{
+    QJsonObject json;
+    json.insert("name", mName);
+    json.insert("bssid", mBssid);
+    json.insert("utcOffset", QJsonValue(mUtcOffset));
+    json.insert("position", QJsonValue(position()));
+    return QString(QJsonDocument(json).toJson());
+}
+
+void UserLocation::setSyncContent(const QString &syncContent)
+{
+    setUpdated(false);
+    QJsonParseError error;
+    QJsonDocument json = QJsonDocument::fromJson(QByteArray::fromStdString(syncContent.toStdString()), &error);
+    if(error.error != error.NoError || !json.isObject()) return;
+    QJsonObject obj = json.object();
+
+    if(!obj.contains("name")) return;
+    mName = obj.value("name").toString();
+
+    if(!obj.contains("bssid")) return;
+    mBssid = obj.value("bssid").toString();
+
+    if(!obj.contains("utcOffset")) return;
+    mUtcOffset = obj.value("utcOffset").toInt();
+
+    if(!obj.contains("position")) return;
+    setPosition(obj.value("position").toInt());
+
+    setUpdated(true);
 }

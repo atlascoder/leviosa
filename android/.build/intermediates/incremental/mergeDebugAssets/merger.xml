@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/home/ant/DevProjects/leviosa/app/leviosa/android/assets"/><source path="/home/ant/DevProjects/leviosa/app/leviosa/android/.build/generated/assets/shaders/debug"/></dataSet><dataSet config="debug"><source path="/home/ant/DevProjects/leviosa/app/leviosa/android/src/debug/assets"/></dataSet></merger>
+<merger version="3"><dataSet config="main"><source path="/Users/anton.titkov/DevProjects/leviosa/leviosa/android/assets"/><source path="/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/generated/assets/shaders/debug"/></dataSet><dataSet config="debug"><source path="/Users/anton.titkov/DevProjects/leviosa/leviosa/android/src/debug/assets"/></dataSet></merger>

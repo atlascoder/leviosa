@@ -1,6 +1,7 @@
 #include "ClientConfig.h"
 
-ClientConfig::ClientConfig()
+ClientConfig & ClientConfig::instance()
 {
-
+    static ClientConfig singleton;
+    return singleton;
 }

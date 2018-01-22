@@ -4,6 +4,8 @@
 #include <QObject>
 #include "mdnsdiscothread.h"
 #include <memory>
+#include "QtZeroConf/qzeroconf.h"
+#include "QtZeroConf/qzeroconfservice.h"
 
 class ControllerDiscovery : public QObject
 {
@@ -12,7 +14,7 @@ class ControllerDiscovery : public QObject
     Q_PROPERTY(bool isRunning READ running WRITE setRunning NOTIFY runningChanged)
 public:
     ControllerDiscovery(QObject* parent = 0);
-    ~ControllerDiscovery();
+    virtual ~ControllerDiscovery();
 
     Q_INVOKABLE void discovery();
 
@@ -21,6 +23,9 @@ public:
 
     bool running() const;
     void setRunning(bool isRunning);
+    QZeroConf mZeroConf;
+public slots:
+    void serviceFound(QZeroConfService conf);
 signals:
     void found(const QString& mac, const QString& ip);
     void started();
@@ -29,8 +34,6 @@ signals:
 private:
     int mTimeoutSec;
     bool mIsRunning;
-
-    std::unique_ptr<MDNSDiscoThread> mThread;
 
     void stop();
     void onFinished();

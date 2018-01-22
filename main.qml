@@ -2,8 +2,7 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
-
-import com.atlascoder.netmon 1.0
+import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -17,174 +16,296 @@ ApplicationWindow {
 
 	signal authenticate
 	signal register
-	signal restore
+    signal changePassword
+
 	signal signedIn
 	signal signedUp
-	signal signedOut
 	signal espTouchStart
 	signal espTouchFinish
 
-	NetMon {
-		id: netmon
-	}
+    UserLogin {
+        id: userLogin
+    }
 
-	StackView {
+    Component {
+        id: welcomePage
+        Loader {
+            sourceComponent: WelcomePage {
+                anchors.fill: parent
+                onAuthenticate: pager.replace(pager.currentItem, authPage)
+                onRegister: pager.replace(pager.currentItem, regPage)
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: authPage
+        Loader {
+            sourceComponent: AuthPage {
+                onRegister: pager.replace(pager.currentItem, regPage)
+                onSignedIn: pager.replace(pager.currentItem, locationsPage)
+                onRestore: pager.replace(pager.currentItem, restorePage);
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: regPage
+        Loader {
+            sourceComponent: RegPage {
+                onAuthenticate: pager.replace(pager.currentItem, authPage)
+                onRestore: pager.replace(pager.currentItem, restorePage)
+                onSignedIn: pager.replace(pager.currentItem, locationsPage)
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: restorePage
+        Loader {
+            sourceComponent: RestorePage {
+                onSignIn: pager.replace(pager.currentItem, authPage)
+                onRegister: pager.replace(pager.currentItem, regPage)
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: changePasswordPage
+        Loader {
+            sourceComponent: ChangePwdPage {
+                onCancel: pager.pop()
+                onRestore: pager.replace(pager.currentItem, restorePage)
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+
+    Component {
+        id: locationsPage
+        Loader {
+            sourceComponent: LocationsPage {
+                onMenuClicked: drawer.open()
+                onOpenLocation: function(id){
+                    pager.push(locationPage, {"locationId": id});
+                }
+                onEditLocation: function(id){
+                    pager.push(editLocationPage, {"locationId": id})
+                }
+                onAddClicked: pager.push(newLocationPage)
+            }
+
+            StackView.onActivating: {
+                drawer.interactive = true;
+                item.init();
+            }
+
+            StackView.onDeactivating: {
+                item.pause();
+            }
+
+        }
+    }
+
+    Component {
+        id: newLocationPage
+        Loader {
+            sourceComponent: NewLocationPage {
+                onMenuClicked: pager.pop()
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: editLocationPage
+        Loader {
+            property int locationId: -1
+            sourceComponent: EditLocationPage {
+                onMenuClicked: {
+                    pager.pop()
+                    if(pager.currentItem.id === locationsPage)
+                        pager.replace(pager.currentItem, locationsPage);
+                }
+            }
+            onLoaded: {
+                item.locationId = locationId
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: locationPage
+        Loader {
+            property int locationId: -1
+            sourceComponent: LocationPage {
+                locationId: pager.selectedLocationId
+                onMenuClicked: pager.pop()
+                onEditController: function(id){
+                    pager.selectedControllerId = id;
+                    pager.push(editControllerPage)
+                }
+                onEditGroup:function(cid, gid){
+                    pager.selectedShadesGroupId = gid;
+                    pager.selectedControllerId = cid;
+                    console.log("edit cid:gid " + cid + ":" + gid);
+                    pager.push(editShadesGroupPage);
+                }
+                onEditSchedule: function(cid, gid){
+                    pager.selectedControllerId = cid;
+                    pager.selectedShadesGroupId = gid;
+                    pager.push(editGroupSchedule);
+                }
+                onAddGroup: function(controllerId){
+                    pager.selectedControllerId = controllerId;
+                    pager.push(newShadesGroupPage);
+                }
+                onSetupController: function(locationId){
+                    pager.selectedLocationId = locationId;
+                    pager.push(espTouchPage);
+                }
+                onTitleLongPressed: {
+                    pager.push(editLocationPage)
+                }
+            }
+            onLoaded: {
+                item.locationId = locationId
+            }
+            StackView.onActivated: {
+                drawer.interactive = true;
+            }
+        }
+    }
+
+    Component {
+        id: newShadesGroupPage
+        Loader {
+            sourceComponent: NewShadesGroupPage {
+                controllerId: pager.selectedControllerId
+                onMenuClicked: pager.pop()
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: editShadesGroupPage
+        Loader {
+            sourceComponent: EditShadesGroupPage {
+                controllerId: pager.selectedControllerId;
+                shadesGroupId: pager.selectedShadesGroupId;
+                onMenuClicked: pager.pop();
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: editGroupSchedule
+        Loader {
+            sourceComponent: EditGroupSchedule {
+                controllerId: pager.selectedControllerId
+                shadesGroupId: pager.selectedShadesGroupId
+                onMenuClicked: pager.pop()
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: editControllerPage
+        Loader {
+            sourceComponent: EditControllerPage {
+                locationId: pager.selectedLocationId
+                controllerId: pager.selectedControllerId
+                onMenuClicked: pager.pop()
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: newControllerPage
+        Loader {
+            sourceComponent: NewControllerPage {
+                onMenuClicked: pager.pop()
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    Component {
+        id: espTouchPage
+        Loader {
+            sourceComponent: EspTouchPage {
+                onEspTouchFinshed: pager.replace(pager.currentItem, locationsPage)
+                StackView.onActivated: {
+                    pageTitle = "Controller setup"
+                }
+                onMenuClicked: {
+                    pager.pop()
+                }
+            }
+            StackView.onActivated: {
+                drawer.interactive = false;
+            }
+        }
+    }
+
+    StackView {
 		id: pager
 		anchors.fill: parent
-		initialItem: welcomePage
 
-		Component {
-			id: welcomePage
-			Loader {
-				sourceComponent: WelcomePage {
-					anchors.fill: parent
-					onAuthenticate: pager.replace(pager.currentItem, authPage)
-					onRegister: pager.replace(pager.currentItem, regPage)
-				}
-			}
-		}
+        Component.onCompleted: {
+            if(userLogin.authState===UserLogin.Authenticated)
+                pager.push(pager.initialItem, locationsPage);
+            else
+                pager.push(pager.initialItem, welcomePage);
+        }
 
-		Component {
-			id: authPage
-			Loader {
-				sourceComponent: AuthPage {
-					onRegister: pager.replace(pager.currentItem, regPage)
-					onSignedIn: pager.replace(pager.currentItem, locationsPage)
-					onRestore: pager.replace(pager.currentItem, welcomePage);
-				}
-			}
-		}
+        property string selectedBss
 
-		Component {
-			id: regPage
-			Loader {
-				sourceComponent: RegPage {
-					onAuthenticate: pager.replace(pager.currentItem, authPage)
-					onRestore: pager.replace(pager.currentItem, welcomePage)
-					onSignedUp: pager.replace(pager.currentItem, espTouchPage)
-				}
-			}
-		}
-		property string selectedBss
-		Component {
-			id: locationsPage
-			Loader {
-				sourceComponent: LocationsPage {
-					onMenuClicked: drawer.open()
-					onOpenLocation: function(bss){
-						pager.selectedBss = bss;
-						pager.push(locationPage);
-					}
-					onEditLocation: function(name){
-						pager.selectedBss = name;
-						pager.push(editLocationPage)
-					}
-					onAddClicked: pager.push(newLocationPage)
-				}
-				onLoaded: {
-					drawer.interactive = true;
-				}
-			}
-		}
+        property int selectedLocationId : -1
+        property int selectedControllerId : -1
+        property int selectedShadesGroupId : -1
 
-		Component {
-			id: newLocationPage
-			Loader {
-				sourceComponent: NewLocationPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: editLocationPage
-			Loader {
-				sourceComponent: EditLocationPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: locationPage
-			Loader {
-				sourceComponent: LocationPage {
-					bss: pager.selectedBss
-					onMenuClicked: pager.pop()
-					onEditController: pager.push(editControllerPage)
-					onEditGroup: pager.push(editShadesGroupPage)
-					onEditSchedule: pager.push(editGroupSchedule)
-					onAddGroup: function(cntlr){
-						pager.push(newShadesGroupPage)
-					}
-				}
-			}
-		}
-
-		Component {
-			id: newShadesGroupPage
-			Loader {
-				sourceComponent: NewShadesGroupPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: editShadesGroupPage
-			Loader {
-				sourceComponent: EditShadesGroupPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: editGroupSchedule
-			Loader {
-				sourceComponent: EditGroupSchedule {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: editControllerPage
-			Loader {
-				sourceComponent: EditControllerPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: newControllerPage
-			Loader {
-				sourceComponent: NewControllerPage {
-					onMenuClicked: pager.pop()
-				}
-			}
-		}
-
-		Component {
-			id: espTouchPage
-			Loader {
-				sourceComponent: EspTouchPage {
-					onEspTouchFinshed: pager.replace(pager.currentItem, locationsPage)
-					StackView.onActivated: {
-						pageTitle = "Controller setup"
-					}
-				}
-			}
-		}
 	}
 
 	Drawer {
 		id: drawer
 		width:  0.66 * applicationWindow.width
 		height: applicationWindow.height
-		edge: Qt.LeftEdge
-		interactive: false
+        edge: Qt.LeftEdge
 		background: Rectangle {
 			color: DefTheme.secColorLight
 		}
@@ -198,24 +319,25 @@ ApplicationWindow {
 				height: parent.width / 8
 				anchors.horizontalCenter: parent.horizontalCenter
 				verticalAlignment: Qt.AlignVCenter
-				text: "customer@gmail.com"
+                text: userLogin.email
 				font.pixelSize: 16
 				color: DefTheme.secTextColor
 				font.bold: true
 			}
 
-			Button {
-				anchors.horizontalCenter: parent.horizontalCenter
-				text: "Sign Out"
-				onClicked: {
-					signedOut();
-					drawer.close();
-					drawer.interactive = false;
-					pager.replace(pager.currentItem, welcomePage);
-				}
-			}
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Sign Out"
+                onClicked: {
+                    userLogin.signOut();
+                    drawer.close();
+                    drawer.interactive = false;
+                    pager.clear();
+                    pager.push(welcomePage);
+                }
+            }
 
-			Rectangle {
+            Rectangle {
 				width: parent.width
 				height: 2
 				color: DefTheme.secColorDark
@@ -223,7 +345,7 @@ ApplicationWindow {
 
 			Button {
 				width: parent.width
-				text: "Connect Controller to WiFi"
+                text: "Setup Controller"
 				onClicked: {
 					drawer.close()
 					pager.push(espTouchPage);
@@ -246,8 +368,22 @@ ApplicationWindow {
 				}
 			}
 
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
 
-		}
+            Button {
+                width: parent.width
+                text: "Change password"
+                onClicked: {
+                    drawer.close();
+                    drawer.interactive = false;
+                    pager.push(pager.currentItem, changePasswordPage)
+                }
+            }
+        }
 	}
 
 	onClosing: {
@@ -257,12 +393,21 @@ ApplicationWindow {
 		}
 	}
 
-	Text {
-		id: networkState
-		anchors.bottom: parent.bottom
-		anchors.margins: 10
-		anchors.horizontalCenter: parent.horizontalCenter
-		font.pixelSize: parent.hight / 12
-		text: netmon.onlineState
-	}
+    Rectangle {
+        anchors.fill: parent
+        id: disconnected
+        color: "#a0a0a0a0"
+        visible: !netMonitor.connected
+        MouseArea {
+            anchors.fill: parent
+            enabled: parent.visible
+        }
+
+        Text {
+            anchors.centerIn: parent
+            color: "#ff0000"
+            text: "Connection required!"
+        }
+    }
+
 }

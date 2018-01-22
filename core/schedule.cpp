@@ -1,39 +1,9 @@
 #include "schedule.h"
 
 Schedule::Schedule():
-    mId(-1), mScope(Scope::Controller), mFKey(-1), mDaysMask(0), mOpenAt(8*60), mCloseAt(19*60)
+    mDaysMask(0), mOpenAt(8*60), mCloseAt(19*60)
 {
 
-}
-
-int Schedule::id() const
-{
-    return mId;
-}
-
-void Schedule::setId(int id)
-{
-    mId = id;
-}
-
-Schedule::Scope Schedule::scope() const
-{
-    return mScope;
-}
-
-void Schedule::setScope(int scope)
-{
-    mScope = static_cast<Schedule::Scope>(scope);
-}
-
-int Schedule::fKey() const
-{
-    return mFKey;
-}
-
-void Schedule::setFKey(int fKey)
-{
-    mFKey = fKey;
 }
 
 int Schedule::days() const
@@ -99,4 +69,68 @@ void Schedule::setScheduledForDay(WeekDay weekDay)
 void Schedule::clearScheduledForDay(WeekDay weekDay)
 {
     mDaysMask ^= (1 << static_cast<int>(weekDay));
+}
+
+QString Schedule::openAtText() const
+{
+    QString str;
+    float t = openAtUS();
+    if(t < 0)
+        str.sprintf("%d:%02d %s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
+    else
+        str.sprintf("%d:%02d %s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
+    return str;
+}
+
+QString Schedule::closeAtText() const
+{
+    QString str;
+    float t = closeAtUS();
+    if(t < 0)
+        str.sprintf("%d:%02d %s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
+    else
+        str.sprintf("%d:%02d %s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
+    return str;
+}
+
+float Schedule::openAtUS() const
+{
+    float f = static_cast<float>(mOpenAt);
+    if(f < 60)
+        return 12 + f / 60;
+    else if(f < 60 * 13)
+        return -f / 60;
+    else
+        return f / 60 - 12;
+}
+
+void Schedule::setOpenAtUS(const float openAtUS)
+{
+    if(openAtUS < 0){
+        setOpenAt(static_cast<int>(-openAtUS*60));
+    }
+    else {
+        setOpenAt(static_cast<int>((openAtUS+12) * 60) % 1440);
+    }
+}
+
+float Schedule::closeAtUS() const
+{
+    float f = static_cast<float>(mCloseAt);
+    if(f < 60)
+        return 12 + f / 60;
+    else if(f < 60 * 13)
+        return -f / 60;
+    else
+        return f / 60 - 12;
+}
+
+void Schedule::setCloseAtUS(const float closeAtUS)
+{
+    if(closeAtUS < 0){
+        setCloseAt(static_cast<int>(-closeAtUS*60));
+    }
+    else{
+        setCloseAt(static_cast<int>((closeAtUS+12)*60) % 1440);
+    }
 }

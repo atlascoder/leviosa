@@ -2,22 +2,19 @@
 #define USERLOCATION_H
 
 #include <QString>
+#include "positioned.h"
+#include "Syncable.h"
 
-class UserLocation
+class UserLocation : public Positioned, public Syncable
 {
-    int mId;
     QString mBssid;
     QString mSsid;
     QString mName;
     int mUtcOffset;
-    int mPosition;
-    bool mIsLocal;
+    bool mIsOnWlan;
     bool mIsOnline;
 public:
     explicit UserLocation(const QString &name = "My Home");
-
-    int id() const;
-    void setId(const int id);
 
     QString bssid() const;
     void setBssid(const QString &bssid);
@@ -31,14 +28,15 @@ public:
     int utcOffset() const;
     void setUtcOffset(int offset);
 
-    int position() const;
-    void setPosition(int position);
-
-    bool isLocal() const;
-    void setLocal(bool isLocal);
+    bool isOnWlan() const;
+    void setIsOnWlan(bool onWlan);
 
     bool isOnline() const;
     void setOnline(bool isOnline);
+
+    QString syncContent() const override;
+    void setSyncContent(const QString & syncContent) override;
+
 };
 
 #endif // USERLOCATION_H

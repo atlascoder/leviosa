@@ -1,27 +1,23 @@
 #ifndef SHADE_H
 #define SHADE_H
 
-class Shade
+#include <QObject>
+
+class Shade : public QObject
 {
+    Q_OBJECT
 public:
-    explicit Shade(int id);
+    Shade();
 
-    enum class State { Undefined, Middle, Opened, Closed, Opening, Closing };
+    enum ShadeState { Interim, Opened, Closed, Open, Close, Up, Down, FullOpened, FullClosed };
 
-    int id() const;
-    void setId(int id);
+    Q_ENUMS(ShadeState)
 
-    State getState() const;
-    void setState(State state);
-
-    void open();
-    void close();
-    void stop();
+    ShadeState state() const;
+    void setState(ShadeState state);
 
 private:
-    int mId;
-    State mState;
-
+    ShadeState mState;
 };
 
 #endif // SHADE_H

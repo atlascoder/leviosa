@@ -3,6 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtQuick.Controls.Styles 1.4
 import QtGraphicalEffects 1.0
+import com.atlascoder.LocationsModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -13,6 +14,10 @@ Page {
 	height: 800
 
 	signal menuClicked()
+
+    LocationsModel {
+        id: locationModel
+    }
 
 	header: ToolBar {
 		id: toolbar
@@ -76,6 +81,7 @@ Page {
 			text: "Name:"
 		}
 		TextField {
+            id: locationName
 			width: parent.width
 			height: 40
 			horizontalAlignment: Qt.AlignHCenter
@@ -91,15 +97,20 @@ Page {
 			text: "Time zone:"
 		}
 
+        Timezones {
+            id: tzones
+        }
+
 		ComboBox {
 			id: timezoneCB
 			width: parent.width
 			height: 40
-			model: ["Eastern", "Central", "Mountain", "Pacific", "Alaska", "Hawaii"]
+            model: tzones.model
+            textRole: "name"
 			contentItem: Text {
 				leftPadding: timezoneCB.indicator.width + timezoneCB.spacing
-				rightPadding: timezoneCB.indicator.width + timezoneCB.spacing
-				text: timezoneCB.displayText
+                rightPadding: timezoneCB.spacing
+                text: timezoneCB.displayText
 				font.pixelSize: height * 0.6
 				horizontalAlignment: Text.AlignHCenter
 				verticalAlignment: Text.AlignVCenter
@@ -110,7 +121,6 @@ Page {
 				color: DefTheme.mainInputBg
 			}
 		}
-
 
 		Text {
 			text: "WiFi access point MAC:"
@@ -123,7 +133,7 @@ Page {
 			verticalAlignment: Qt.AlignVCenter
 			font.pixelSize: height*0.6
 			color: DefTheme.mainDisabledTextColor
-			text: "12:12:12:12:12:12"
+            text: netMonitor.bssid
 		}
 
 		Item {
@@ -153,6 +163,10 @@ Page {
 				anchors.right: parent.right
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: {
+                    locationModel.addLocationWithData(locationName.text, tzones.model.get(timezoneCB.currentIndex).utcOffset, netMonitor.ssid, netMonitor.bssid);
+                    menuClicked();
+                }
 			}
 
 		}

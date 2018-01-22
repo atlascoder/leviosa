@@ -1,21 +1,21 @@
 #Internal package file, do not edit.
-#Tue Dec 19 06:28:47 EET 2017
-2.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
-5.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main/classes.dex
-5.set=DEX
-3.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
-2.set=JAVA_RESOURCE
-4.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
+#Sat Jan 06 22:12:45 EET 2018
+2.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_
+5.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_/AndroidManifest.xml
+5.set=ANDROID_RESOURCE
+3.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_
+2.set=ANDROID_RESOURCE
+4.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
 count=6
-0.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/res/layout/splash.xml
-5.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main
-4.set=ANDROID_RESOURCE
-1.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-core.properties
-1.set=JAVA_RESOURCE
-2.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-cognito.properties
-0.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_
-3.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/resources.arsc
+0.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-core.properties
+5.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_
+4.set=JAVA_RESOURCE
+1.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main/classes.dex
+1.set=DEX
+2.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_/resources.arsc
+0.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
+3.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/resources-debug.ap_/res/layout/splash.xml
 3.set=ANDROID_RESOURCE
-1.base=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar
-4.file=/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/resources-debug.ap_/AndroidManifest.xml
-0.set=ANDROID_RESOURCE
+1.base=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/dex/debug/folders/1000/1f/main
+4.file=/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar/fabric/com.amazonaws.aws-android-sdk-cognito.properties
+0.set=JAVA_RESOURCE

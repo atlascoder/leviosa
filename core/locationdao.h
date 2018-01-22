@@ -16,6 +16,12 @@ public:
     void updateLocation(const UserLocation &location) const;
     void removeLocation(UserLocation &location) const;
     std::unique_ptr<std::vector<std::unique_ptr<UserLocation>>> locations() const;
+    void persistLocation(UserLocation &location) const;
+    void markDeleted(int id) const;
+    std::unique_ptr<std::vector<int>> deletedIds() const;
+    void destroyDeleted(int id) const;
+
+    void clear() const;
 private:
     QSqlDatabase &mDatabase;
 };

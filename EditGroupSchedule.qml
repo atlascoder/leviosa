@@ -3,63 +3,54 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import QtQuick.Extras 1.4
+import com.atlascoder.ShadesGroupsModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
-Page {
+LeviosaPage {
 	id: editGroupSchedule
-	visible: true
-	width: 480
-	height: 800
 
-	signal menuClicked()
+    enableAddAction: false
+    enableMenuAction: false
 
-	header: ToolBar {
-		id: toolbar
-		height: DefTheme.toolbarHeight
-		background: Rectangle {
-			anchors.fill: parent
-			color: DefTheme.mainColorDark
-			layer.enabled: true
-			layer.effect: DropShadow {
-				anchors.fill: parent
-				transparentBorder: true
-				radius: 3
-			}
-		}
-		RowLayout {
-			anchors.fill: parent
-			ToolButton {
-				id: menuButton
-				Image {
-					id: menuIcon
-					fillMode: Image.PreserveAspectFit
-					source: "img/002-left-arrow.svg"
-					anchors.fill: parent
-					anchors.margins: width / 4
-				}
-				onClicked: menuClicked()
-			}
-			Label {
-				id: pageTitle
-				text: "Set schedule"
-				verticalAlignment: Qt.AlignVCenter
-				horizontalAlignment: Qt.AlignHCenter
-				Layout.fillWidth: true
-				color: DefTheme.mainTextColor
-				font.pixelSize: parent.height / 2
-			}
-			ToolButton{
-				id: addButton
-				enabled: false
-			}
-		}
-	}
+    property int controllerId : -1
+    property int shadesGroupId : -1
 
-	background: Rectangle {
-		anchors.fill: parent
-		color: DefTheme.mainColorBg
-	}
+    ShadesGroupsModel {
+        id: shadesGroupsModel
+        controllerId: editGroupSchedule.controllerId
+        selectedGroupId: editGroupSchedule.shadesGroupId
+        onSelectedGroupIdChanged: {
+
+            if(selectedGroupOpenAt >= 13*60){
+                openSlider.value = (selectedGroupOpenAt - 12*60) / 60;
+                openTimePM.checked = true;
+            }
+            else if(selectedGroupOpenAt < 60){
+                openSlider.value = (selectedGroupOpenAt - 60) / 60;
+                openTimePM.checked = true;
+            }
+            else{
+                openSlider.value = selectedGroupOpenAt / 60;
+                openTimePM.checked = false;
+            }
+
+            if(selectedGroupCloseAt >= 13*60){
+                closeSlider.value = (selectedGroupCloseAt - 12*60) / 60;
+                closeTimePM.checked = true;
+            }
+            else if(selectedGroupCloseAt < 60){
+                closeSlider.value = (selectedGroupCloseAt - 60) / 60;
+                closeTimePM.checked = true;
+            }
+            else{
+                closeSlider.value = selectedGroupCloseAt / 60;
+                closeTimePM.checked = false;
+            }
+        }
+    }
+
+    title: "Schedule for " + shadesGroupsModel.selectedGroupName
 
 	Column {
 		anchors.top: parent.top
@@ -73,33 +64,47 @@ Page {
 		Row {
 			width: parent.width
 			WeekDayCheckBox {
+                id: sunday
 				text: "Sun"
 				width: parent.width / 7
+                checked: (shadesGroupsModel.selectedGroupDays & 1) != 0
 			}
 			WeekDayCheckBox {
+                id: monday
 				text: "Mon"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 1)) != 0
+            }
 			WeekDayCheckBox {
+                id: tuesday
 				text: "Tue"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 2)) != 0
+            }
 			WeekDayCheckBox {
+                id: wednesday
 				text: "Wed"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 3)) != 0
+            }
 			WeekDayCheckBox {
+                id: thursday
 				text: "Thu"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 4)) != 0
+            }
 			WeekDayCheckBox {
+                id: friday
 				text: "Fri"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 5)) != 0
+            }
 			WeekDayCheckBox {
+                id: saturday
 				text: "Sat"
 				width: parent.width / 7
-			}
+                checked: (shadesGroupsModel.selectedGroupDays & (1 << 6)) != 0
+            }
 		}
 
 		Text {
@@ -260,6 +265,7 @@ Page {
 				anchors.left: parent.left
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: menuClicked()
 			}
 
 			ActionButton {
@@ -270,6 +276,30 @@ Page {
 				anchors.right: parent.right
 				anchors.leftMargin: 6
 				height: 40
+                onClicked: {
+                    var days = 0;
+                    if(sunday.checked) days = 1;
+                    if(monday.checked) days |= 1<<1;
+                    if(tuesday.checked) days |= 1<<2;
+                    if(wednesday.checked) days |= 1<<3;
+                    if(thursday.checked) days |= 1<<4;
+                    if(friday.checked) days |= 1<<5;
+                    if(saturday.checked) days |= 1<<6;
+                    shadesGroupsModel.selectedGroupDays = days;
+                    if(openTimePM.checked){
+                        shadesGroupsModel.selectedGroupOpenAt = ((openSlider.value + 12) * 60)%(24*60)
+                    }
+                    else{
+                        shadesGroupsModel.selectedGroupOpenAt = (openSlider - 1) * 60;
+                    }
+                    if(closeTimePM.checked){
+                        shadesGroupsModel.selectedGroupCloseAt = ((closeSlider.value + 12) * 60)%(24*60)
+                    }
+                    else{
+                        shadesGroupsModel.selectedGroupCloseAt = (closeSlider - 1) * 60;
+                    }
+                    menuClicked();
+                }
 			}
 
 		}
