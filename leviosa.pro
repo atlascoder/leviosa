@@ -3,6 +3,30 @@ CONFIG += c++11
 
 android {
     QT += androidextras
+    SOURCES += \
+        esptouchtask.cpp \
+        esptouch.cpp
+    HEADERS += \
+        esptouchtask.h \
+        esptouch.h
+    DISTFILES += \
+        android/AndroidManifest.xml \
+        android/gradle/wrapper/gradle-wrapper.jar \
+        android/gradlew \
+        android/res/values/libs.xml \
+        android/build.gradle \
+        android/gradle/wrapper/gradle-wrapper.properties \
+        android/gradlew.bat \
+        android/AndroidManifest.xml \
+        android/gradle/wrapper/gradle-wrapper.jar \
+        android/gradlew \
+        android/res/values/libs.xml \
+        android/build.gradle \
+        android/gradle/wrapper/gradle-wrapper.properties \
+        android/gradlew.bat \
+        ../../../qt/esptouch/EsptouchTaskClient.java \
+
+    ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 }
 
 # The following define makes your compiler emit warnings if you use
@@ -18,8 +42,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp \
     location.cpp \
-    esptouchtask.cpp \
-    esptouch.cpp \
     networkmonitor.cpp
 
 #linux-g++{
@@ -29,9 +51,6 @@ SOURCES += main.cpp \
 #        -laws-cpp-sdk-s3
 #}
 
-android {
-    SOURCES +=
-}
 
 RESOURCES += qml.qrc
 
@@ -49,29 +68,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     location.h \
-    esptouchtask.h \
-    esptouch.h \
     networkmonitor.h
 
 
 DISTFILES += \
-    android/AndroidManifest.xml \
-    android/gradle/wrapper/gradle-wrapper.jar \
-    android/gradlew \
-    android/res/values/libs.xml \
-    android/build.gradle \
-    android/gradle/wrapper/gradle-wrapper.properties \
-    android/gradlew.bat \
-    android/AndroidManifest.xml \
-    android/gradle/wrapper/gradle-wrapper.jar \
-    android/gradlew \
-    android/res/values/libs.xml \
-    android/build.gradle \
-    android/gradle/wrapper/gradle-wrapper.properties \
-    android/gradlew.bat \
-    ../../../qt/esptouch/EsptouchTaskClient.java \
     data.qmodel
 
-ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
 STATECHARTS +=
