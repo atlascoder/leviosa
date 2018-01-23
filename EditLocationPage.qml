@@ -13,7 +13,7 @@ LeviosaPage {
     enableMenuAction: false
     title: "Edit location"
 
-    property alias locationId : locationModel.selectedLocationId
+    property alias locationUuid : locationModel.selectedLocationUuid
 
     LocationsModel {
         id: locationModel
@@ -161,11 +161,10 @@ LeviosaPage {
 				height: 40
                 onClicked: {
                     locationModel.updateLocationWithData(
-                                locationModel.selectedLocationId,
+                                locationModel.selectedLocationUuid,
                                 locationName.text,
                                 tzones.model.get(timezoneCB.currentIndex).utcOffset,
                                 bssid.text,
-                                ssid.text,
                                 showBefore.currentIndex
                     );
                     menuClicked();
@@ -196,7 +195,7 @@ LeviosaPage {
             MouseArea {
                 anchors.fill: parent
                 onPressAndHold: {
-                    locationModel.markDeleted(locationModel.selectedLocationId);
+                    locationModel.remove(locationModel.selectedLocationUuid);
                     menuClicked();
                 }
             }

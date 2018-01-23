@@ -18,6 +18,10 @@ class User
     QString mRefreshToken;
     int mRefreshTokenExpiration;
 
+    int mLocationsModified;
+    int mControllersModified;
+    int mShadeGroupsModified;
+
 public:
     User();
 
@@ -41,6 +45,15 @@ public:
 
     int refreshTokenExpiration() const;
     void setRefreshTokenExpiration(int time);
+
+    int locationsModified() const { return mLocationsModified; }
+    void setLocationsModified(int lastModified) { mLocationsModified = lastModified; }
+
+    int controllersModified() const { return mControllersModified; }
+    void setControllersModified(int lastModified) { mControllersModified = lastModified; }
+
+    int shadeGroupsLastModified() const { return mShadeGroupsModified; }
+    void setShadeGroupsModified(int lastModified) { mShadeGroupsModified = lastModified; }
 
 };
 

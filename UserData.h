@@ -9,9 +9,11 @@
 #include "core/locationcontroller.h"
 #include "core/shadegroup.h"
 
-class UserData : private QThread
+class UserData : public QThread
 {
     Q_OBJECT
+
+    Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncStateChanged)
 
     void run() override;
 
@@ -30,22 +32,24 @@ public:
     virtual ~UserData();
 
     enum SyncState { Clean, Dirty, Editing, Syncing, Failed, Cancelled };
-
-
-public slots:
-//    void sync();
-//    void cancel();
-
-signals:
-    void dataChanged();
-
-private:
-    DatabaseManager& mDb;
-    CurrentUser& mUser;
+    Q_ENUMS(SyncState)
 
     std::unique_ptr<std::vector<std::unique_ptr<UserLocation>>> mLocations;
     std::unique_ptr<std::vector<std::unique_ptr<LocationController>>> mControllers;
     std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> mShadeGroups;
+
+public slots:
+    void sync();
+    void dataChanged();
+
+signals:
+    void dataUpdated();
+
+    void syncStateChanged();
+
+private:
+    DatabaseManager& mDb;
+    CurrentUser& mUser;
 
     SyncState mSyncState;
 
@@ -57,6 +61,9 @@ private:
     Syncable shadeGroupsSyncable() const;
 
     void mergeUpdates(Syncable & locations, Syncable & controllers, Syncable & shadeGroups);
+
+    bool isSyncing() const { return mSyncState == Syncing; }
+    void setState(SyncState state);
 
 };
 

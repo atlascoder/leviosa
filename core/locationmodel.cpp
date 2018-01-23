@@ -1,33 +1,30 @@
 #include "locationmodel.h"
 #include <QTextStream>
-#include "aws/CognitoSyncAPI.h"
 #include <QThread>
+#include "UserData.h"
 
 using namespace std;
 
 LocationModel::LocationModel(QObject* parent):
     QAbstractListModel(parent),
-    SyncableModel("Locations"),
     mDb(DatabaseManager::instance()),
-    mLocations(mDb.locationDao.locations()),
+    mLocations(mDb.locationsDao.items()),
     mSelectedLocationIndex(QModelIndex())
 {
-    mLocalData = (vector<unique_ptr<Syncable>>*)mLocations.get();
-    connect(this, &LocationModel::modelUpdated, this, &LocationModel::updateModel);
+    connect(&UserData::instance(), &UserData::dataUpdated, this, &LocationModel::updateModel);
 }
 
 QModelIndex LocationModel::addLocation(const UserLocation& location)
 {
     int rowIndex = rowCount();
     beginInsertRows(QModelIndex(), rowIndex, rowIndex);
-    unique_ptr<UserLocation> newLocation(new UserLocation(location.name()));
+    unique_ptr<UserLocation> newLocation(new UserLocation(location.uuid()));
     newLocation->setName(location.name());
     newLocation->setBssid(location.bssid());
-    newLocation->setSsid(location.ssid());
     newLocation->setUtcOffset(location.utcOffset());
     newLocation->setPosition(static_cast<int>(mLocations->size()));
-    newLocation->setUpdated(true);
-    mDb.locationDao.addLocation(*newLocation);
+    newLocation->setLastModified(location.lastModified());
+    mDb.locationsDao.persistItem(*newLocation);
     mLocations->push_back(move(newLocation));
     endInsertRows();
     return index(rowIndex, 0);
@@ -48,8 +45,8 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
     const UserLocation location = *mLocations->at(index.row());
 
     switch(role){
-    case Roles::IdRole:
-        return location.id();
+    case Roles::UuidRole:
+        return location.uuid().toString();
     case Roles::NameRole:
         return location.name();
     case Roles::UtcOffsetRole:
@@ -60,8 +57,6 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
         return location.isOnWlan();
     case Roles::IsOnlineRole:
         return location.isOnline();
-    case Roles::SsidRole:
-        return location.ssid();
     case Roles::BssidRole:
         return location.bssid();
     default:
@@ -91,16 +86,13 @@ bool LocationModel::setData(const QModelIndex &index, const QVariant &value, int
         location.setOnline(value.toBool());
         emit dataChanged(index, index);
         return true;
-    case Roles::SsidRole:
-        location.setSsid(value.toString());
-        break;
     case Roles::BssidRole:
         location.setBssid(value.toString());
         break;
     default:
         return false;
     }
-    mDb.locationDao.updateLocation(location);
+    mDb.locationsDao.persistItem(location);
     emit dataChanged(index, index);
     return true;
 }
@@ -113,24 +105,23 @@ bool LocationModel::isIndexValid(const QModelIndex &index) const
 QHash<int, QByteArray> LocationModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[Roles::IdRole] = "id";
+    roles[Roles::UuidRole] = "uuid";
     roles[Roles::NameRole] = "name";
     roles[Roles::UtcOffsetRole] = "utcOffset";
     roles[Roles::PositionRole] = "position";
     roles[Roles::IsOnWlanRole] = "isOnWlan";
     roles[Roles::IsOnlineRole] = "isOnline";
-    roles[Roles::SsidRole] = "ssid";
     roles[Roles::BssidRole] = "bssid";
     return roles;
 }
 
 
-void LocationModel::addLocationWithData(const QString &name, int utcOffset, const QString &bssid, const QString &ssid)
+void LocationModel::addLocationWithData(const QString &name, int utcOffset, const QString &bssid)
 {
-    UserLocation location(name);
+    UserLocation location;
+    location.setName(name);
     location.setUtcOffset(utcOffset);
     location.setBssid(bssid);
-    location.setSsid(ssid);
     location.setPosition(static_cast<int>(mLocations->size()));
     addLocation(location);
 }
@@ -146,29 +137,28 @@ int LocationModel::roleByName(const QString &name) const
     return -1;
 }
 
-QModelIndex LocationModel::findLocation(const int id) const
+QModelIndex LocationModel::findLocation(const QString &uuid) const
 {
     int rows = rowCount();
     int row = 0;
     while(row < rows){
         QModelIndex idx = this->index(row);
-        if(idx.data(Roles::IdRole) == id)
+        if(idx.data(Roles::UuidRole) == uuid)
             return idx;
         row++;
     }
     return QModelIndex();
 }
 
-bool LocationModel::updateLocationWithData(const int id, const QString &name, int utcOffset, const QString &bssid, const QString &ssid, int position)
+bool LocationModel::updateLocationWithData(const QString &uuid, const QString &name, int utcOffset, const QString &bssid, int position)
 {
-    QModelIndex idx = findLocation(id);
+    QModelIndex idx = findLocation(uuid);
     if(!idx.isValid()) return false;
 
     UserLocation& location = *mLocations->at(idx.row());
     location.setName(name);
     location.setUtcOffset(utcOffset);
     location.setBssid(bssid);
-    location.setSsid(ssid);
     if(location.position() != position){
         vector<int> idxs;
         int pos = 0;
@@ -192,11 +182,11 @@ bool LocationModel::updateLocationWithData(const int id, const QString &name, in
         for(int i = 0; i < rows; i++){
             setData(this->index(idxs[i]), i, Roles::PositionRole);
         }
-        mLocations = mDb.locationDao.locations();
-        setSelectedLocationId(location.id());
+        mLocations = mDb.locationsDao.items();
+        setSelectedLocationUuid(location.uuid().toString());
     }
     else{
-        mDb.locationDao.updateLocation(location);
+        mDb.locationsDao.persistItem(location);
     }
     beginResetModel();
     endResetModel();
@@ -208,29 +198,28 @@ void LocationModel::fireDataChanged()
     emit dataChanged(this->index(0), this->index(rowCount()-1));
 }
 
-int LocationModel::getSelectedLocationId() const
+QString LocationModel::getSelectedLocationUuid() const
 {
     if(isIndexValid(mSelectedLocationIndex))
-        return data(mSelectedLocationIndex, Roles::IdRole).toInt();
+        return data(mSelectedLocationIndex, Roles::UuidRole).toString();
     else
-        return -1;
+        return "";
 }
 
-void LocationModel::setSelectedLocationId(int id)
+void LocationModel::setSelectedLocationUuid(const QString &uuid)
 {
     int row = 0;
     int rows = rowCount();
     mSelectedLocationIndex = QModelIndex();
     while(row<rows){
-        if(mLocations->at(row)->id() == id){
+        if(mLocations->at(row)->uuid() == uuid){
             mSelectedLocationIndex = this->index(row);
             break;
         }
         row++;
     }
-    emit selectedLocationIdChanged();
+    emit selectedLocationUuidChanged();
     emit selectedLocationNameChanged();
-    emit selectedLocationSsidChanged();
     emit selectedLocationBssidChanged();
     emit selectedLocationPositionChanged();
     emit selectedLocationUtcOffsetChanged();
@@ -256,17 +245,6 @@ void LocationModel::setSelectedLocationBssid(const QString &bssid)
 {
     if(setData(mSelectedLocationIndex, bssid, Roles::BssidRole))
         emit selectedLocationBssidChanged();
-}
-
-QString LocationModel::getSelectedLocationSsid() const
-{
-    return data(mSelectedLocationIndex, Roles::SsidRole).toString();
-}
-
-void LocationModel::setSelectedLocationSsid(const QString &ssid)
-{
-    if(setData(mSelectedLocationIndex, ssid, Roles::SsidRole))
-        emit selectedLocationSsidChanged();
 }
 
 int LocationModel::getSelectedLocationPosition() const
@@ -350,10 +328,8 @@ QStringList LocationModel::getPositionOrder() const
     }
     else{
         // order for editing selected location
-        while(row < rows){
-            if(row == rows-1){
-                order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
-            }
+        while(row < rows-1){
+            order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
             row++;
         }
         if(rows > 1)
@@ -362,60 +338,20 @@ QStringList LocationModel::getPositionOrder() const
     return order;
 }
 
-void LocationModel::mergeUpdates()
-{
-    int n = mLocalDataCache->size();
-    for(int i = 0; i < n; i++){
-        if(mLocalDataCache->at(i)->updated()){
-            UserLocation loc;
-            loc.setId(mUpdates->at(i)->id());
-            loc.setSyncContent(mLocalDataCache->at(i)->syncContent());
-            loc.setLastModified(mLocalDataCache->at(i)->lastModified());
-            loc.setSyncs(mLocalDataCache->at(i)->syncs());
-            mDb.locationDao.persistLocation(loc);
-        }
-    }
-    n = mUpdates->size();
-    for(int i = 0; i < n; i++){
-        if(mUpdates->at(i)->updated()){
-            UserLocation loc;
-            loc.setId(mUpdates->at(i)->id());
-            loc.setSyncContent(mUpdates->at(i)->syncContent());
-            loc.setLastModified(mUpdates->at(i)->lastModified());
-            loc.setSyncs(mUpdates->at(i)->syncs());
-            mDb.locationDao.persistLocation(loc);
-        }
-    }
-    for(int d : *mDeleted.get())
-        mDb.locationDao.destroyDeleted(d);
-    emit modelUpdated();
-    this->SyncableModel::mergeUpdates();
-}
-
-void LocationModel::syncModel()
-{
-    sync();
-}
-
 void LocationModel::updateModel()
 {
+    qDebug() << "LocationsModel: updated";
     beginResetModel();
-    mLocations = mDb.locationDao.locations();
-    mLocalData = (vector<unique_ptr<Syncable>>*)mLocations.get();
+    mLocations = mDb.locationsDao.items();
     endResetModel();
 }
 
-void LocationModel::sync()
+void LocationModel::remove(const QString &uuid)
 {
-    mDeleted = mDb.locationDao.deletedIds();
-    this->SyncableModel::sync();
-}
-
-void LocationModel::markDeleted(int id)
-{
-    mDb.locationDao.markDeleted(id);
+    UserLocation loc(uuid);
+    mDb.locationsDao.destroy(loc);
     beginResetModel();
-    mLocations = mDb.locationDao.locations();
+    mLocations = mDb.locationsDao.items();
     endResetModel();
 }
 
@@ -424,14 +360,4 @@ void LocationModel::setCurrentBssid(const QString &bssid)
     if(bssid == mCurrentBssid) return;
     mCurrentBssid = bssid;
     emit currentBssidChanged();
-}
-
-bool LocationModel::setSyncing(bool isSyncing)
-{
-    if(this->SyncableModel::setSyncing(isSyncing)){
-        emit isSyncingChanged();
-        return true;
-    }
-    else
-        return false;
 }

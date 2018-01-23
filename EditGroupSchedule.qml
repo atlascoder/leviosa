@@ -13,14 +13,12 @@ LeviosaPage {
     enableAddAction: false
     enableMenuAction: false
 
-    property int controllerId : -1
-    property int shadesGroupId : -1
+    property alias controllerMac : shadesGroupsModel.controllerMac
+    property alias selectedChannel : shadesGroupsModel.selectedChannel
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        controllerId: editGroupSchedule.controllerId
-        selectedGroupId: editGroupSchedule.shadesGroupId
-        onSelectedGroupIdChanged: {
+        onSelectedChannelChanged: {
 
             if(selectedGroupOpenAt >= 13*60){
                 openSlider.value = (selectedGroupOpenAt - 12*60) / 60;

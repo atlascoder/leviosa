@@ -9,15 +9,13 @@ import "DefaultTheme.js" as DefTheme
 LeviosaPage {
 	id: newShadesGroupPage
 
-    property int controllerId : -1
-
+    property alias controllerMac : shadesGroupsModel
     title: "New Shades Group"
     enableMenuAction: false
     enableAddAction: false
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        controllerId: newShadesGroupPage.controllerId
     }
 
 	Column {

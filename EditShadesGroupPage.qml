@@ -15,8 +15,8 @@ LeviosaPage {
     enableAddAction: false
     showLogo: false
 
-    property int controllerId : -1
-    property int shadesGroupId : -1
+    property alias controllerMac : shadesGroupsModel.controllerMac
+    property alias selectedChannel : shadesGroupsModel.selectedChannel
 
     property int openAt
     property int closeAt
@@ -24,9 +24,7 @@ LeviosaPage {
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        controllerId: rootItem.controllerId
-        selectedGroupId: rootItem.shadesGroupId
-        onSelectedGroupIdChanged: {
+        onSelectedChannelChanged: {
             positionCB.model = positionOrder;
             positionCB.currentIndex = selectedGroupPosition;
             positionCB.visible = rowCount() > 1;

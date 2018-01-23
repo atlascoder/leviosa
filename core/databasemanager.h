@@ -3,9 +3,6 @@
 
 #include <QString>
 #include <memory>
-#include "locationdao.h"
-#include "controllerdao.h"
-#include "shadesgroupdao.h"
 #include "UserDAO.h"
 #include "BasicDAO.h"
 
@@ -20,11 +17,8 @@ public:
     static DatabaseManager& instance();
     ~DatabaseManager();
 
-    const LocationDao locationDao;
-    const ControllerDao controllerDao;
-    const ShadesGroupDao shadesGroupsDao;
-    const UserDAO userDAO;
 
+    const UserDAO userDAO;
     const BasicDAO<UserLocation> locationsDao;
     const BasicDAO<LocationController> controllersDao;
     const BasicDAO<ShadeGroup> shadeGroupsDao;

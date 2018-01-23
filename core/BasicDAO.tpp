@@ -34,7 +34,7 @@ template<class T>
 unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::items() const
 {
     QSqlQuery query(mDatabase);
-    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" WHERE deleted IS 0 ORDER BY position ASC");
+    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" ORDER BY position ASC");
     query.exec(selectSQL);
     if(query.lastError().isValid())
         QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
@@ -51,6 +51,7 @@ void BasicDAO<T>::persistItem(T &item) const
 {
     QSqlQuery query(mDatabase);
     prepareFind(query, item);
+    query.exec();
     if(query.lastError().isValid()){
         qDebug() << "DAO find " << tableName() << " failed: " << query.lastError().text() << " // SQL: " << query.executedQuery();
         return;
@@ -65,8 +66,8 @@ void BasicDAO<T>::persistItem(T &item) const
         qDebug() << "DAO persist " << tableName() << " failed: " << query.lastError().text() << " // SQL: " << query.executedQuery();
     }
     else{
-        item.setId(query.value("id").toInt());
         qDebug() << "DAO persist " << tableName() << " completed.";
+        notifyDataChanged();
     }
 }
 
@@ -75,13 +76,7 @@ void BasicDAO<T>::clear() const
 {
     QSqlQuery query(mDatabase);
     query.exec(QString("DELETE FROM ").append(tableName()));
-}
-
-template<class T>
-void BasicDAO<T>::prepareFind(QSqlQuery &query, T &item) const
-{
-    query.prepare(QString("SELECT * FROM ").append(tableName()).append(" WHERE id IS :id"));
-    query.bindValue(":id", item.id());
+    notifyDataChanged();
 }
 
 template<class T>
@@ -94,4 +89,22 @@ int BasicDAO<T>::lastModified() const
         return query.value("latestModified").toInt();
     else
         return 0;
+}
+
+template<class T>
+unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::filtered(const QString& field, const QVariant & filter) const
+{
+    QSqlQuery query(mDatabase);
+    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" WHERE ").append(field).append("=:filter ORDER BY position ASC");
+    query.prepare(selectSQL);
+    query.bindValue(":filter", filter);
+    query.exec();
+    if(query.lastError().isValid())
+        QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
+    unique_ptr<vector<unique_ptr<T>>> list(new vector<unique_ptr<T>>());
+    while(query.next()){
+        unique_ptr<T> loc = buildItem(query);
+        list->push_back(move(loc));
+    }
+    return list;
 }

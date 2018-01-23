@@ -4,6 +4,7 @@
 #include <QString>
 #include <QByteArray>
 #include <boost/multiprecision/cpp_int.hpp>
+#include "RefreshToken.h"
 
 
 class AuthRequest
@@ -26,6 +27,7 @@ class AuthRequest
 public:
     AuthRequest();
     AuthRequest(const QString& email);
+    AuthRequest(const QString& refreshToken, int refreshTokenExpiration);
     AuthRequest(const QString& email, const QString& password);
 
     void signUp();

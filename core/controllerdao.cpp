@@ -35,7 +35,7 @@ void ControllerDao::addController(LocationController &controller) const
 {
     QSqlQuery query;
     query.prepare("INSERT INTO location_controllers (locationId, name, mac, position, syncs, lastModified) VALUES (:locationId, :name, :mac, :position, :syncs, :lastModified)");
-    query.bindValue(":locationId", controller.locationId());
+    query.bindValue(":locationId", controller.locationUuid());
     query.bindValue(":name", controller.name());
     query.bindValue(":mac", controller.mac().toUpper());
     query.bindValue(":position", controller.position());
@@ -47,7 +47,7 @@ void ControllerDao::addController(LocationController &controller) const
 
 void ControllerDao::addControllerInLocation(int locationId, LocationController& controller) const
 {
-    controller.setLocationId(locationId);
+    controller.setLocationUuid(locationId);
     addController(controller);
 }
 
@@ -63,7 +63,7 @@ void ControllerDao::updateController(const LocationController &controller) const
 {
     QSqlQuery query(mDatabase);
     query.prepare("UPDATE location_controllers SET locationId = :locationId, name = :name, mac = :mac, position = :position, syncs=:syncs, lastModified=:lastModified WHERE id=:id");
-    query.bindValue(":locationId", controller.locationId());
+    query.bindValue(":locationId", controller.locationUuid());
     query.bindValue(":name", controller.name());
     query.bindValue(":mac", controller.mac().toUpper());
     query.bindValue(":position", controller.position());

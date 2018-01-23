@@ -126,6 +126,9 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
         mRefreshToken.setRaw(auth.getRefreshToken());
         mUser.setRefreshToken(auth.getRefreshToken());
         mUser.setRefreshTokenExpiration(auth.getRefreshTokenExpiration());
+        mUser.setLocationsModified(0);
+        mUser.setControllersModified(0);
+        mUser.setShadeGroupsModified(0);
         mDb.userDAO.persistUser(mUser);
         setAuthenticated(true);
         emit signedIn();
@@ -191,7 +194,7 @@ void CurrentUser::setAuthenticated(bool isAuthenticated)
 }
 
 void CurrentUser::refreshTokens(){
-    AuthRequest req(mUser.email());
+    AuthRequest req(mUser.refreshToken(), mUser.refreshTokenExpiration());
     if(req.refreshTokens()){
         mIdToken.setRaw(req.getIdToken());
         mAccessToken.setRaw(req.getAccessToken());
@@ -201,4 +204,9 @@ void CurrentUser::refreshTokens(){
         mLastMessage = req.getLastMessage();
         setAuthenticated(false);
     }
+}
+
+void CurrentUser::persistUserDataModified()
+{
+    mDb.userDAO.persistUserDataModified(mUser);
 }

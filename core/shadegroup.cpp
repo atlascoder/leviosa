@@ -1,24 +1,24 @@
 #include "shadegroup.h"
 
-ShadeGroup::ShadeGroup(int controllerId):
-    Shade(), Schedule(), Syncable(), mControllerId(controllerId), mName("Motor shade")
+ShadeGroup::ShadeGroup(char channel):
+    Shade(), Schedule(), mChannel(channel), mControllerMac("00:00:00:00:00:00"), mName("Motor shade"), mLastModified(0)
 {
 
 }
 ShadeGroup::ShadeGroup():
-    Shade(), Schedule(), Syncable(), mControllerId(-1), mName("Motor shade")
+    Shade(), Schedule(), mChannel(1), mControllerMac("00:00:00:00:00:00"), mName("Motor shade"), mLastModified(0)
 {
 
 }
 
-int ShadeGroup::controllerId() const
+QString ShadeGroup::controllerMac() const
 {
-    return mControllerId;
+    return mControllerMac;
 }
 
-void ShadeGroup::setControllerId(int controllerId)
+void ShadeGroup::setControllerMac(const QString& mac)
 {
-    mControllerId = controllerId;
+    mControllerMac = mac;
 }
 
 QString ShadeGroup::name() const
@@ -41,3 +41,34 @@ void ShadeGroup::setChannel(char channel)
     mChannel = channel;
 }
 
+QJsonObject ShadeGroup::toJson() const
+{
+    QJsonObject json;
+    json.insert("controllerMac", mControllerMac);
+    json.insert("name", mName);
+    json.insert("position", mPosition);
+    json.insert("openAt", mOpenAt);
+    json.insert("closeAt", mCloseAt);
+    json.insert("days", mDaysMask);
+}
+
+void ShadeGroup::withJson(const QJsonObject &json)
+{
+    if(!json.contains("controllerMac")) return;
+    mControllerMac = json.value("controllerMac").toString();
+
+    if(!json.contains("name")) return;
+    mName = json.value("name").toString();
+
+    if(!json.contains("position")) return;
+    mPosition = json.value("position").toInt();
+
+    if(!json.contains("openAt")) return;
+    mOpenAt = json.value("openAt").toInt();
+
+    if(!json.contains("closeAt")) return;
+    mCloseAt = json.value("closeAt").toInt();
+
+    if(!json.contains("days")) return;
+    mDaysMask = json.value("days").toInt();
+}

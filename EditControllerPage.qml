@@ -8,17 +8,17 @@ import "DefaultTheme.js" as DefTheme
 
 LeviosaPage {
 	id: editController
-    property int locationId : -1
-    property int controllerId : -1
+
+    property alias locationUuid : controllersModel.locationUuid
+    property alias controllerMac : controllersModel.selectedControllerMac
+
     enableMenuAction: false
 
     title: "Edit controller"
 
     ControllersModel {
         id: controllersModel
-        locationId: editController.locationId
-        selectedControllerId: editController.controllerId
-        onSelectedControllerIdChanged: {
+        onSelectedControllerMacChanged: {
             showBefore.model = positionOrder;
             showBefore.visible = rowCount();
             showBefore.currentIndex = selectedControllerPosition;

@@ -156,25 +156,65 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
 
     CognitoSyncClient client(credentials, ClientConfig::instance());
 
+    bool locationsFound = false;
+    bool controllersFound = false;
+    bool shadeGroupsFound = false;
+
     // receive remote data and mark updated by lastModifiedDate
     auto resp = client.ListRecords(req);
     if(resp.IsSuccess()){
+        qDebug() << "SYNC ListRecords (" << resp.GetResult().GetCount() << ")";
         const Aws::Vector<Model::Record> & records = resp.GetResult().GetRecords();
         for(auto& record : records){
+            qDebug() << "SYNC Record [" << record.GetKey().c_str() << "] => " << record.GetValue().c_str();
             if("locations" == record.GetKey()){
                 syncRecord(locations, record, updateRequest);
+                locationsFound = true;
             }
             else if("controllers" == record.GetKey()){
                 syncRecord(controllers, record, updateRequest);
+                controllersFound = true;
             }
-            else if("shadowGroups" == record.GetKey()){
+            else if("shadeGroups" == record.GetKey()){
                 syncRecord(shadeGroups, record, updateRequest);
+                shadeGroupsFound = true;
             }
         }
     }
     else{
         qDebug() << "Error receiving Locations: " << resp.GetError().GetMessage().c_str();
     }
+
+    if(!locationsFound){
+        Model::RecordPatch patch;
+        patch.SetOp(Model::Operation::replace);
+        patch.SetKey("locations");
+        patch.SetValue(locations.syncContent().toStdString());
+        patch.SetSyncCount(0);
+        updateRequest.AddRecordPatches(patch);
+        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
+    }
+
+    if(!controllersFound){
+        Model::RecordPatch patch;
+        patch.SetOp(Model::Operation::replace);
+        patch.SetKey("controllers");
+        patch.SetValue(controllers.syncContent().toStdString());
+        patch.SetSyncCount(0);
+        updateRequest.AddRecordPatches(patch);
+        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
+    }
+
+    if(!shadeGroupsFound){
+        Model::RecordPatch patch;
+        patch.SetOp(Model::Operation::replace);
+        patch.SetKey("shadeGroups");
+        patch.SetValue(shadeGroups.syncContent().toStdString());
+        patch.SetSyncCount(0);
+        updateRequest.AddRecordPatches(patch);
+        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
+    }
+
 
     if(updateRequest.GetRecordPatches().size() == 0) return;
 
@@ -197,7 +237,7 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
                 controllers.setSyncs(record.GetSyncCount());
                 controllers.setUpdated(true);
             }
-            else if("shadowGroups" == record.GetKey() && shadeGroups.lastModified() != record.GetLastModifiedDate().Millis()/1000){
+            else if("shadeGroups" == record.GetKey() && shadeGroups.lastModified() != record.GetLastModifiedDate().Millis()/1000){
                 shadeGroups.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
                 shadeGroups.setLastModified(record.GetSyncCount());
                 shadeGroups.setUpdated(true);
@@ -214,11 +254,13 @@ void CognitoSyncAPI::syncRecord(Syncable & syncable, const Model::Record & recor
 {
     int delta = syncable.lastModified() - record.GetLastModifiedDate().Millis()/1000;
     if(delta < 0){
-        // local locationse stale
+        // local locations stale
         syncable.setSyncContent(record.GetValue().c_str());
         syncable.setSyncs(record.GetSyncCount());
         syncable.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
         syncable.setUpdated(true);
+        qDebug() << "SYNC UPDATE LOCAL [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
+                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
     }
     else if(delta > 0){
         // local data is newer
@@ -229,8 +271,12 @@ void CognitoSyncAPI::syncRecord(Syncable & syncable, const Model::Record & recor
         patch.SetSyncCount(record.GetSyncCount());
         patch.SetValue(syncable.syncContent().toStdString());
         update.AddRecordPatches(patch);
+        qDebug() << "SYNC PATCH CLOUD [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
+                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
     }
     else {
         syncable.setUpdated(false);
+        qDebug() << "SYNC MATCH [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
+                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
     }
 }

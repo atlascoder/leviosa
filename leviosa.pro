@@ -156,7 +156,8 @@ HEADERS += \
     core/SyncableModel.h \
     UserData.h \
     core/shadegroup.h \
-    core/BasicDAO.h
+    core/BasicDAO.h \
+    core/shadegroupmodel.h
 
 SOURCES += \
     EspTouchSetup.cpp \
@@ -177,7 +178,8 @@ SOURCES += \
     core/SyncableModel.cpp \
     UserData.cpp \
     core/shadegroup.cpp \
-    core/BasicDAO.cpp
+    core/BasicDAO.cpp \
+    core/shadegroupmodel.cpp
 
 # import Boost lib
 INCLUDEPATH += /Users/anton.titkov/DevLibs/boost-cpp
@@ -199,18 +201,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     networkmonitor.cpp \
-    core/controllerdao.cpp \
+#    core/controllerdao.cpp \
     core/controllerdiscovery.cpp \
     core/controllermodel.cpp \
     core/databasemanager.cpp \
     core/locationcontroller.cpp \
-    core/locationdao.cpp \
+#    core/locationdao.cpp \
     core/locationmodel.cpp \
     core/mdnsdiscothread.cpp \
     core/schedule.cpp \
     core/shade.cpp \
-    core/shadesgroupdao.cpp \
-    core/shadesgroupmodel.cpp \
+#    core/shadesgroupdao.cpp \
     core/userlocation.cpp \
     core/positioned.cpp \
     main.cpp
@@ -237,17 +238,16 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     networkmonitor.h \
-    core/controllerdao.h \
+#    core/controllerdao.h \
     core/controllerdiscovery.h \
     core/controllermodel.h \
     core/databasemanager.h \
     core/locationcontroller.h \
-    core/locationdao.h \
+#    core/locationdao.h \
     core/locationmodel.h \
     core/mdnsdiscothread.h \
     core/schedule.h \
     core/shade.h \
-    core/shadesgroupdao.h \
-    core/shadesgroupmodel.h \
+#    core/shadesgroupdao.h \
     core/userlocation.h \
     core/positioned.h

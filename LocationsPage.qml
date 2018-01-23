@@ -25,18 +25,8 @@ LeviosaPage {
         currentBssid: netMonitor.bssid
     }
 
-    Connections {
-        target: qGuiApp
-        onApplicationStateChanged: {
-            if(state === 4 && netMonitor.isOnline){
-                locationModel.syncModel();
-            }
-        }
-    }
-
     function init(){
-        if(netMonitor.isOnline) locationModel.syncModel();
-        locationModel.updateModel();
+        userData.sync();
     }
 
     function pause(){
@@ -134,10 +124,10 @@ LeviosaPage {
                     }
 				}
 				onClicked: {
-                    openLocation(id);
+                    openLocation(uuid);
 				}
 				onPressAndHold: {
-                    editLocation(id);
+                    editLocation(uuid);
 				}
 			}
 		}
@@ -146,7 +136,7 @@ LeviosaPage {
     states: [
         State {
             name: "Syncing"
-            when: locationModel.isSyncing
+            when: userData.isSyncing
             PropertyChanges {
                 target: rootItem
                 statusText: "Syncing with cloud"
@@ -161,7 +151,7 @@ LeviosaPage {
         },
         State {
             name: "Synced"
-            when: !locationModel.isSyncing
+            when: !userData.isSyncing
             PropertyChanges {
                 target: rootItem
                 statusText: ""

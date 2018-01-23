@@ -53,6 +53,18 @@ public:
     bool isAuthenticated() const {return mIsAuthenticated; }
 
     void refreshTokens();
+
+    int locationsModified() const { return mUser.locationsModified(); }
+    void setLocationsModified(int modified) { mUser.setLocationsModified(modified); }
+
+    int controllersModified() const { return mUser.controllersModified(); }
+    void setControllersModified(int modified) { mUser.setControllersModified(modified); }
+
+    int shadeGroupsModified() const { return mUser.shadeGroupsLastModified(); }
+    void setShadeGroupsModified(int modified) { mUser.setShadeGroupsModified(modified); }
+
+    void persistUserDataModified();
+
 public slots:
     void signUp(const QString& email, const QString& password);
     void signIn(const QString& email, const QString& password);

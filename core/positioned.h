@@ -6,6 +6,7 @@
 
 class Positioned
 {
+protected:
     int mPosition;
 public:
     Positioned();

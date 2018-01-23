@@ -2,19 +2,27 @@
 #define USERLOCATION_H
 
 #include <QString>
+#include <QUuid>
+#include <QJsonObject>
 #include "positioned.h"
-#include "Syncable.h"
 
-class UserLocation : public Positioned, public Syncable
+class UserLocation : public Positioned
 {
+    QUuid mUuid;
     QString mBssid;
     QString mSsid;
     QString mName;
     int mUtcOffset;
+    int mLastModified;
     bool mIsOnWlan;
     bool mIsOnline;
 public:
-    explicit UserLocation(const QString &name = "My Home");
+    UserLocation();
+    explicit UserLocation(const QUuid & uuid);
+    explicit UserLocation(const QString & uuidStr);
+
+    QUuid uuid() const { return mUuid; }
+    void setUuid(const QUuid & uuid) { mUuid = uuid; }
 
     QString bssid() const;
     void setBssid(const QString &bssid);
@@ -28,14 +36,17 @@ public:
     int utcOffset() const;
     void setUtcOffset(int offset);
 
+    int lastModified() const { return mLastModified; }
+    void setLastModified(int lastModified) { mLastModified = lastModified; }
+
     bool isOnWlan() const;
     void setIsOnWlan(bool onWlan);
 
     bool isOnline() const;
     void setOnline(bool isOnline);
 
-    QString syncContent() const override;
-    void setSyncContent(const QString & syncContent) override;
+    QJsonObject toJson() const;
+    void withJson(const QJsonObject & json);
 
 };
 

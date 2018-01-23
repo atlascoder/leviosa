@@ -59,7 +59,12 @@ AuthRequest::AuthRequest()
     init();
 }
 
-AuthRequest::AuthRequest(const QString &email) : mEmail(email)
+AuthRequest::AuthRequest(const QString& email) : mEmail(email)
+{
+    init();
+}
+
+AuthRequest::AuthRequest(const QString& refreshToken, int exp) : mRefreshToken(refreshToken), mRefreshTokenExpiration(exp)
 {
     init();
 }
@@ -331,10 +336,11 @@ void AuthRequest::restorePassword()
 
 bool AuthRequest::refreshTokens()
 {
+    int now = QDateTime::currentSecsSinceEpoch();
     if(mRefreshTokenExpiration== 0){
         return false;
     }
-    else if(mRefreshTokenExpiration < QDateTime::currentSecsSinceEpoch() - 300){
+    else if(mRefreshTokenExpiration > now - 300){
         Aws::CognitoIdentityProvider::Model::InitiateAuthRequest initAuthReq;
         initAuthReq.SetAuthFlow(Aws::CognitoIdentityProvider::Model::AuthFlowType::REFRESH_TOKEN_AUTH);
         initAuthReq.SetClientId(AWS_CLIENT_ID);

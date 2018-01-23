@@ -2,10 +2,24 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-UserLocation::UserLocation(const QString &name):
-    Syncable(), mName(name), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+UserLocation::UserLocation():
+    mUuid(QUuid::createUuid()), mName("My Home"), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
+
 }
+
+UserLocation::UserLocation(const QUuid & uuid):
+    mUuid(uuid), mName(""), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+{
+
+}
+
+UserLocation::UserLocation(const QString & uuidStr):
+    mUuid(QUuid(uuidStr)), mName(""), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+{
+
+}
+
 
 QString UserLocation::bssid() const
 {
@@ -25,16 +39,6 @@ QString UserLocation::name() const
 void UserLocation::setName(const QString &name)
 {
     mName = name;
-}
-
-QString UserLocation::ssid() const
-{
-    return mSsid;
-}
-
-void UserLocation::setSsid(const QString &ssid)
-{
-    mSsid = ssid;
 }
 
 int UserLocation::utcOffset() const
@@ -67,35 +71,27 @@ void UserLocation::setOnline(bool isOnline)
     mIsOnline = isOnline;
 }
 
-QString UserLocation::syncContent() const
+QJsonObject UserLocation::toJson() const
 {
     QJsonObject json;
     json.insert("name", mName);
     json.insert("bssid", mBssid);
     json.insert("utcOffset", QJsonValue(mUtcOffset));
     json.insert("position", QJsonValue(position()));
-    return QString(QJsonDocument(json).toJson());
+    return json;
 }
 
-void UserLocation::setSyncContent(const QString &syncContent)
+void UserLocation::withJson(const QJsonObject & json)
 {
-    setUpdated(false);
-    QJsonParseError error;
-    QJsonDocument json = QJsonDocument::fromJson(QByteArray::fromStdString(syncContent.toStdString()), &error);
-    if(error.error != error.NoError || !json.isObject()) return;
-    QJsonObject obj = json.object();
+    if(!json.contains("name")) return;
+    mName = json.value("name").toString();
 
-    if(!obj.contains("name")) return;
-    mName = obj.value("name").toString();
+    if(!json.contains("bssid")) return;
+    mBssid = json.value("bssid").toString();
 
-    if(!obj.contains("bssid")) return;
-    mBssid = obj.value("bssid").toString();
+    if(!json.contains("utcOffset")) return;
+    mUtcOffset = json.value("utcOffset").toInt();
 
-    if(!obj.contains("utcOffset")) return;
-    mUtcOffset = obj.value("utcOffset").toInt();
-
-    if(!obj.contains("position")) return;
-    setPosition(obj.value("position").toInt());
-
-    setUpdated(true);
+    if(!json.contains("position")) return;
+    setPosition(json.value("position").toInt());
 }

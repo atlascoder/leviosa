@@ -2,6 +2,7 @@
 #define BASICDAO_H
 
 #include <QString>
+#include <QString>
 #include <QSqlQuery>
 
 class QSqlDatabase;
@@ -9,7 +10,6 @@ class QSqlDatabase;
 template <class T>
 class BasicDAO
 {
-
 public:
     BasicDAO(QSqlDatabase & database) : mDatabase(database) {}
     void init() const;
@@ -19,6 +19,7 @@ public:
     void destroy(T& item) const;
     void clear() const;
     int lastModified() const;
+    std::unique_ptr<std::vector<std::unique_ptr<T>>> filtered(const QString& field, const QVariant & filter) const;
 
 protected:
     QSqlDatabase & mDatabase;
@@ -29,6 +30,8 @@ private:
     void prepareFind(QSqlQuery & query, T& item) const;
     void prepareInsert(QSqlQuery & query, T& item) const;
     void prepareUpdate(QSqlQuery & query, T& item) const;
+
+    void notifyDataChanged() const;
 };
 
 #include "BasicDAO.tpp"

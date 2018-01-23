@@ -14,7 +14,7 @@ LeviosaPage {
     anchors.fill: parent
     enableMenuAction: false
 
-    property alias locationId : locationModel.selectedLocationId
+    property alias locationUuid : locationModel.selectedLocationUuid
     property int activeController : -1
 
     signal setupController(int locationId)
@@ -28,7 +28,7 @@ LeviosaPage {
 
     LocationsModel {
         id: locationModel
-        selectedLocationId: locationId
+        selectedLocationUuid: locationUuid
     }
 
     title: locationModel.selectedLocationName
@@ -45,7 +45,6 @@ LeviosaPage {
 
     ControllersModel {
         id: controllersModel
-        locationId: locationPage.locationId
         isOnWlan: netMonitor.onWlan && netMonitor.bssid == selectedControllerMac
     }
 
@@ -59,7 +58,7 @@ LeviosaPage {
                 active: SwipeView.isCurrentItem || SwipeView.isNextItem || SwipeView.isPreviousItem
                 sourceComponent: ControllerPage {
                     anchors.fill: parent
-                    controllerId: id
+                    controllerMac: mac
                     onOpenGroupEdit: function(cid, gid){ editGroup(cid, gid); }
                     onCmd: function(channel, cmd){ controllersModel.shadeCmd(model.id, channel, cmd); }
                 }

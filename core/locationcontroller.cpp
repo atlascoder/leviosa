@@ -1,19 +1,19 @@
 #include "locationcontroller.h"
 
-LocationController::LocationController(const int locationId):
-    Syncable(), mLocationId(locationId), mName("A Controller")
+LocationController::LocationController(const QString& mac):
+    mMac(mac), mName("A Controller"), mLastModified(0)
 {
 
 }
 
-int LocationController::locationId() const
+QString LocationController::locationUuid() const
 {
-    return mLocationId;
+    return mLocationUuid;
 }
 
-void LocationController::setLocationId(int locationId)
+void LocationController::setLocationUuid(const QString& locationUuid)
 {
-    mLocationId = locationId;
+    mLocationUuid = locationUuid;
 }
 
 QString LocationController::name() const
@@ -55,3 +55,28 @@ void LocationController::setIsWlan(bool isWlan)
 {
     mIsWLAN = isWlan;
 }
+
+QJsonObject LocationController::toJson() const
+{
+    QJsonObject json;
+    json.insert("name", mName);
+    json.insert("locationUuid", mLocationUuid);
+    json.insert("position", QJsonValue(position()));
+    return json;
+}
+
+void LocationController::withJson(const QJsonObject & json)
+{
+    if(!json.contains("mac")) return;
+    mMac = json.value("mac").toString();
+
+    if(!json.contains("locationUuid")) return;
+    mLocationUuid = json.value("locationUuid").toString();
+
+    if(!json.contains("name")) return;
+    mName = json.value("name").toString();
+
+    if(!json.contains("position")) return;
+    setPosition(json.value("position").toInt());
+}
+

@@ -14,11 +14,10 @@
 class ControllerModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(int locationId READ locationId WRITE setLocationId)
+    Q_PROPERTY(QString locationUuid READ locationUuid WRITE setLocationUuid)
     Q_PROPERTY(QString locationName READ getLocationName NOTIFY locationNameChanged)
-    Q_PROPERTY(int selectedControllerId READ getSelectedControllerId WRITE setSelectedControllerId NOTIFY selectedControllerIdChanged)
-    Q_PROPERTY(QString selectedControllerName READ getSelectedControllerName WRITE setSelectedControllerName NOTIFY selectedControllerNameChanged)
     Q_PROPERTY(QString selectedControllerMac READ getSelectedControllerMac WRITE setSelectedControllerMac NOTIFY selectedControllerMacChanged)
+    Q_PROPERTY(QString selectedControllerName READ getSelectedControllerName WRITE setSelectedControllerName NOTIFY selectedControllerNameChanged)
     Q_PROPERTY(int selectedControllerPosition READ getSelectedControllerPosition WRITE setSelectedControllerPosition NOTIFY selectedControllerPositionChanged)
     Q_PROPERTY(int selectedControllerOpenAt READ getSelectedControllerOpenAt WRITE setSelectedControllerOpenAt NOTIFY selectedControllerOpenAtChanged)
     Q_PROPERTY(int selectedControllerCloseAt READ getSelectedControllerCloseAt WRITE setSelectedControllerCloseAt NOTIFY selectedControllerCloseAtChanged)
@@ -32,9 +31,9 @@ public:
     ControllerModel(QObject* parent = 0);
     virtual ~ControllerModel();
     enum Roles {
-        IdRole = Qt::UserRole + 1,
+        MacRole = Qt::UserRole + 1,
+        LocationUuid,
         NameRole,
-        MacRole,
         PositionRole,
         OpenAtRole,
         CloseAtRole,
@@ -44,9 +43,9 @@ public:
     };
 
     QModelIndex addController(const LocationController& controller);
-    Q_INVOKABLE QModelIndex findController(int id);
+    Q_INVOKABLE QModelIndex findController(const QString& mac);
     Q_INVOKABLE void addControllerWithMacAndIP(const QString &mac, const QString &ip);
-    Q_INVOKABLE void updateControllerWithData(int id, const QString& name, int position);
+    Q_INVOKABLE void updateControllerWithData(const QString& mac, const QString& name, int position);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -56,19 +55,18 @@ public:
     Q_INVOKABLE int roleByName(const QString& name) const;
     Q_INVOKABLE QModelIndex indexOfRow(int row) const;
 
-    Q_INVOKABLE void setLocation(int locationId);
+    Q_INVOKABLE void setLocation(const QString& locationUuid);
     Q_INVOKABLE QString getFreeName();
 
-    Q_INVOKABLE void shadeCmd(int controllerId, char channel, int cmd);
+    Q_INVOKABLE void shadeCmd(const QString& mac, char channel, int cmd);
 
-    int locationId() const;
-    void setLocationId(int locationId);
+    QString locationUuid() const;
+    void setLocationUuid(const QString& locationUuid);
 
 signals:
     void locationNameChanged();
-    void selectedControllerIdChanged();
-    void selectedControllerNameChanged();
     void selectedControllerMacChanged();
+    void selectedControllerNameChanged();
     void selectedControllerPositionChanged();
     void selectedControllerOpenAtChanged();
     void selectedControllerCloseAtChanged();
@@ -82,13 +80,13 @@ private:
 
     bool isIndexValid(const QModelIndex& index) const;
 
-    void loadControllers(int locationId);
+    void loadControllers(const QString& mac);
 
     DatabaseManager& mDb;
     bool mIsOnWlan;
     WlanAPI mWlanAPI;
     WanAPI mWanAPI;
-    int mLocationId;
+    QString mLocationUuid;
 
     std::unique_ptr<std::vector<std::unique_ptr<LocationController>>> mControllers;
 
@@ -96,14 +94,11 @@ private:
 
     QString getLocationName() const;
 
-    int getSelectedControllerId() const;
-    void setSelectedControllerId(int controllerId);
+    QString getSelectedControllerMac() const;
+    void setSelectedControllerMac(const QString& mac);
 
     QString getSelectedControllerName() const;
     void setSelectedControllerName(const QString& name);
-
-    QString getSelectedControllerMac() const;
-    void setSelectedControllerMac(const QString& mac);
 
     int getSelectedControllerPosition() const;
     void setSelectedControllerPosition(int position);

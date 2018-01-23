@@ -9,7 +9,7 @@ class Jwt
     bool mValid;
     bool mAuthentic;
 public:
-    Jwt(): mRaw("{}"), mValid(false) {}
+    Jwt(): mValid(false), mRaw("{}") {}
     Jwt(const QString & string);
 
     QString raw() const;

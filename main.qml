@@ -101,11 +101,11 @@ ApplicationWindow {
         Loader {
             sourceComponent: LocationsPage {
                 onMenuClicked: drawer.open()
-                onOpenLocation: function(id){
-                    pager.push(locationPage, {"locationId": id});
+                onOpenLocation: function(uuid){
+                    pager.push(locationPage, {"locationUuid": uuid});
                 }
-                onEditLocation: function(id){
-                    pager.push(editLocationPage, {"locationId": id})
+                onEditLocation: function(uuid){
+                    pager.push(editLocationPage, {"locationUuid": uuid})
                 }
                 onAddClicked: pager.push(newLocationPage)
             }
@@ -137,7 +137,7 @@ ApplicationWindow {
     Component {
         id: editLocationPage
         Loader {
-            property int locationId: -1
+            property string locationUuid
             sourceComponent: EditLocationPage {
                 onMenuClicked: {
                     pager.pop()
@@ -146,7 +146,7 @@ ApplicationWindow {
                 }
             }
             onLoaded: {
-                item.locationId = locationId
+                item.locationUuid = locationUuid
             }
             StackView.onActivated: {
                 drawer.interactive = false;
@@ -157,39 +157,31 @@ ApplicationWindow {
     Component {
         id: locationPage
         Loader {
-            property int locationId: -1
+            property string locationUuid
             sourceComponent: LocationPage {
-                locationId: pager.selectedLocationId
+                locationUuid: pager.selectedLocationUuid
                 onMenuClicked: pager.pop()
-                onEditController: function(id){
-                    pager.selectedControllerId = id;
-                    pager.push(editControllerPage)
+                onEditController: function(mac){
+                    pager.push(editControllerPage, {"controllerMac": mac })
                 }
-                onEditGroup:function(cid, gid){
-                    pager.selectedShadesGroupId = gid;
-                    pager.selectedControllerId = cid;
-                    console.log("edit cid:gid " + cid + ":" + gid);
-                    pager.push(editShadesGroupPage);
+                onEditGroup:function(mac, channel){
+                    pager.push(editShadesGroupPage, {"controllerMac": mac, "selectedChannel": channel});
                 }
-                onEditSchedule: function(cid, gid){
-                    pager.selectedControllerId = cid;
-                    pager.selectedShadesGroupId = gid;
-                    pager.push(editGroupSchedule);
+                onEditSchedule: function(mac, channel){
+                    pager.push(editGroupSchedule, {"controllerMac": mac, "selectedChannel": channel});
                 }
-                onAddGroup: function(controllerId){
-                    pager.selectedControllerId = controllerId;
-                    pager.push(newShadesGroupPage);
+                onAddGroup: function(mac){
+                    pager.push(newShadesGroupPage, {"controllerMac": mac});
                 }
-                onSetupController: function(locationId){
-                    pager.selectedLocationId = locationId;
-                    pager.push(espTouchPage);
+                onSetupController: function(uuid){
+                    pager.push(espTouchPage, {"locationUuid": uuid});
                 }
                 onTitleLongPressed: {
                     pager.push(editLocationPage)
                 }
             }
             onLoaded: {
-                item.locationId = locationId
+                item.locationUuid = locationUuid
             }
             StackView.onActivated: {
                 drawer.interactive = true;
@@ -200,12 +192,15 @@ ApplicationWindow {
     Component {
         id: newShadesGroupPage
         Loader {
+            property string controllerMac
             sourceComponent: NewShadesGroupPage {
-                controllerId: pager.selectedControllerId
                 onMenuClicked: pager.pop()
             }
             StackView.onActivated: {
                 drawer.interactive = false;
+            }
+            onLoaded: {
+                item.controllerMac = controllerMac;
             }
         }
     }
@@ -213,13 +208,17 @@ ApplicationWindow {
     Component {
         id: editShadesGroupPage
         Loader {
+            property string controllerMac
+            property int selectedChannel
             sourceComponent: EditShadesGroupPage {
-                controllerId: pager.selectedControllerId;
-                shadesGroupId: pager.selectedShadesGroupId;
                 onMenuClicked: pager.pop();
             }
             StackView.onActivated: {
                 drawer.interactive = false;
+            }
+            onLoaded: {
+                item.controllerMac = controllerMac;
+                item.selectedChannel = selectedChannel;
             }
         }
     }
@@ -227,13 +226,17 @@ ApplicationWindow {
     Component {
         id: editGroupSchedule
         Loader {
+            property string controllerMac
+            property int selectedChannel
             sourceComponent: EditGroupSchedule {
-                controllerId: pager.selectedControllerId
-                shadesGroupId: pager.selectedShadesGroupId
                 onMenuClicked: pager.pop()
             }
             StackView.onActivated: {
                 drawer.interactive = false;
+            }
+            onLoaded: {
+                item.controllerMac = controllerMac;
+                item.selectedChannel = selectedChannel;
             }
         }
     }
@@ -241,13 +244,17 @@ ApplicationWindow {
     Component {
         id: editControllerPage
         Loader {
+            property string locationUuid
+            property string controllerMac
             sourceComponent: EditControllerPage {
-                locationId: pager.selectedLocationId
-                controllerId: pager.selectedControllerId
                 onMenuClicked: pager.pop()
             }
             StackView.onActivated: {
                 drawer.interactive = false;
+            }
+            onLoaded: {
+                item.locatioUuid = locationUuid;
+                item.controllerMac = controllerMac;
             }
         }
     }

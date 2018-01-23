@@ -4,7 +4,10 @@ User::User():
     mEmail(),
     mIdToken(), mIdTokenExpiration(0),
     mAccessToken(), mAccessTokenExpiration(0),
-    mRefreshToken(), mRefreshTokenExpiration(0)
+    mRefreshToken(), mRefreshTokenExpiration(0),
+    mLocationsModified(0),
+    mControllersModified(0),
+    mShadeGroupsModified(0)
 {
 
 }

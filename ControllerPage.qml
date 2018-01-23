@@ -7,7 +7,7 @@ Item {
     id: rootItem
     anchors.fill:parent
 
-    property int controllerId : -1
+    property alias controllerMac : shadesGroupsModel.controllerMac
 
     signal cmd(int channel, int cmd)
 
@@ -23,7 +23,6 @@ Item {
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        controllerId: rootItem.controllerId
         onModelReset: {
             allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
         }

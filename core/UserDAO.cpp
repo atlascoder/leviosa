@@ -2,7 +2,7 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QTextStream>
+#include <QDebug>
 
 UserDAO::UserDAO(QSqlDatabase & database) : mDatabase(database)
 {
@@ -21,7 +21,10 @@ void UserDAO::init() const
                     "accessToken TEXT, " \
                     "accessTokenExpiration INTEGER DEFAULT 0, " \
                     "refreshToken TEXT, " \
-                    "refreshTokenExpiration INTEGER DEFAULT 0" \
+                    "refreshTokenExpiration INTEGER DEFAULT 0, " \
+                    "locationsModified INTEGER DEFAULT 0, " \
+                    "controllersModified INTEGER DEFAULT 0, " \
+                    "shadeGroupsModified INTEGER DEFAULT 0"
                     ")"
                    );
     }
@@ -30,7 +33,9 @@ void UserDAO::init() const
 void UserDAO::createUser(User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("INSERT INTO users(email, idToken, idTokenExpiration, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration) VALUES(:email, :idToken, :idTokenExpiration, :accessToken, :accessTokenExpiration, :refreshToken, :refreshTokenExpiration)");
+    query.prepare("INSERT INTO users (email, idToken, idTokenExpiration, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration, locationsModified, controllersModified, shadeGroupsModified)" \
+                  " VALUES (:email, :idToken, :idTokenExpiration, :accessToken, :accessTokenExpiration, :refreshToken, :refreshTokenExpiration, :locationsModified, :controllersModified, :shadeGroupsModified)"
+                  );
     query.bindValue(":email", user.email());
     query.bindValue(":idToken", user.idToken());
     query.bindValue(":idTokenExpiration", user.idTokenExpiration());
@@ -38,26 +43,34 @@ void UserDAO::createUser(User &user) const
     query.bindValue(":accessTokenExpiration", user.accessTokenExpiration());
     query.bindValue(":refreshToken", user.refreshToken());
     query.bindValue(":refreshTokenExpiration", user.refreshTokenExpiration());
+    query.bindValue(":locationsModified", user.locationsModified());
+    query.bindValue(":controllersModified", user.controllersModified());
+    query.bindValue(":shadeGroupsModified", user.shadeGroupsLastModified());
     query.exec();
     if(query.lastError().isValid()){
-        QTextStream(stdout) << "User " << user.email() << " not created: " << query.lastError().text() << endl;
+        qDebug() << "User " << user.email() << " not created: " << query.lastError().text() << "\n" << \
+                    " // SQL: " << query.lastQuery();
     }
 }
 
 void UserDAO::updateUser(const User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("UPDATE users SET idToken=:idToken, idTokenExpiration=:idTokenExpiration, accessToken=:accessToken, accessTokenExpiration=:accessTokenExpiration, refreshToken=:refreshToken, refreshTokenExpiration=:refreshTokenExpiration WHERE email=:email");
+    query.prepare("UPDATE users SET idToken=:idToken, idTokenExpiration=:idTokenExpiration, accessToken=:accessToken, accessTokenExpiration=:accessTokenExpiration, refreshToken=:refreshToken, refreshTokenExpiration=:refreshTokenExpiration, locationsModified=:locationsModified, controllersModified=:controllersModified, shadeGroupsModified=:shadeGroupsModified WHERE email=:email");
     query.bindValue(":idToken", user.idToken());
     query.bindValue(":idTokenExpiration", user.idTokenExpiration());
     query.bindValue(":accessToken", user.idToken());
     query.bindValue(":accessTokenExpiration", user.accessTokenExpiration());
     query.bindValue(":refreshToken", user.idToken());
     query.bindValue(":refreshTokenExpiration", user.refreshTokenExpiration());
+    query.bindValue(":locationsModified", user.locationsModified());
+    query.bindValue(":controllersModified", user.controllersModified());
+    query.bindValue(":shadeGroupsModified", user.shadeGroupsLastModified());
     query.bindValue(":email", user.email());
     query.exec();
     if(query.lastError().isValid())
-        QTextStream(stdout) << "Updating user " << user.email() << "failed: " << query.lastError().text() << endl;
+        qDebug() << "Updating user " << user.email() << "failed: " << query.lastError().text() << "\n" << \
+                    " // SQL: " << query.lastQuery();
 }
 
 bool UserDAO::loadUser(User &user) const
@@ -65,7 +78,8 @@ bool UserDAO::loadUser(User &user) const
     QSqlQuery query(mDatabase);
     query.exec("SELECT * FROM users");
     if(query.lastError().isValid()){
-        QTextStream(stdout) << "Loading User error:" << query.lastError().text() << endl;
+        qDebug() << "Loading User error:" << query.lastError().text() << endl << "\n" << \
+                    " // SQL: " << query.lastQuery();
         return false;
     }
     else if(query.first()){
@@ -76,10 +90,13 @@ bool UserDAO::loadUser(User &user) const
         user.setAccessTokenExpiration(query.value("accessTokenExpiration").toInt());
         user.setRefreshToken(query.value("refreshToken").toString());
         user.setRefreshTokenExpiration(query.value("refreshTokenExpiration").toInt());
+        user.setLocationsModified(query.value("locationsModified").toInt());
+        user.setControllersModified(query.value("controllersModified").toInt());
+        user.setShadeGroupsModified(query.value("shadeGroupsModified").toInt());
         return true;
     }
     else{
-        QTextStream(stdout) << "No users in database." << endl;
+        qDebug() << "No users in database." << endl;
         return false;
     }
 }
@@ -103,5 +120,21 @@ void UserDAO::persistUser(User &user) const
     }
     else{
         createUser(user);
+    }
+}
+
+void UserDAO::persistUserDataModified(const User& user) const
+{
+    QSqlQuery query(mDatabase);
+    query.prepare("UPDATE users SET locationsModified=:lm, controllersModified=:cm, shadeGroupsModified=:gm WHERE email=:email");
+    query.bindValue(":lm", user.locationsModified());
+    query.bindValue(":cm", user.controllersModified());
+    query.bindValue(":gm", user.shadeGroupsLastModified());
+    query.bindValue(":email", user.email());
+    if(query.exec()){
+        qDebug() << "UserData modified persisted";
+    }
+    else{
+        qDebug() << "UserData modified persisting error: " << query.lastError().text() << " // SQL: " << query.lastQuery();
     }
 }

@@ -16,6 +16,8 @@ public:
     void clear() const;
     bool loadUser(User & user) const;
 
+    void persistUserDataModified(const User& user) const;
+
 private:
     void createUser(User & user) const;
     void updateUser(const User & user) const;

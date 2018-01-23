@@ -39,7 +39,7 @@ void ShadesGroupDao::addShadesGroup(ShadeGroup& shadesGroup) const
 {
     QSqlQuery query(mDatabase);
     query.prepare(QString("INSERT INTO controllers_shades_groups (controllerId, name, position, openAt, closeAt, days, channel, syncs, lastModified) VALUES (:controllerId, :name, :position, :openAt, :closeAt, :days, :channel, :syncs, :lastModified)"));
-    query.bindValue(":controllerId", shadesGroup.controllerId());
+    query.bindValue(":controllerId", shadesGroup.controllerMac());
     query.bindValue(":name", shadesGroup.name());
     query.bindValue(":position", shadesGroup.position());
     query.bindValue(":openAt", shadesGroup.openAt());
@@ -54,14 +54,14 @@ void ShadesGroupDao::addShadesGroup(ShadeGroup& shadesGroup) const
         QTextStream(stdout) << "GRP add error: " << query.lastError().text() << endl;
     }
     else {
-        QTextStream(stdout) << "GRP added for ctrlr `" << shadesGroup.controllerId() << "` id: " << query.lastInsertId().toInt() << endl;
+        QTextStream(stdout) << "GRP added for ctrlr `" << shadesGroup.controllerMac() << "` id: " << query.lastInsertId().toInt() << endl;
     }
     shadesGroup.setId(query.lastInsertId().toInt());
 }
 
 void ShadesGroupDao::addShadesGroupInController(int controllerId, ShadeGroup& shadesGroup) const
 {
-    shadesGroup.setControllerId(controllerId);
+    shadesGroup.setControllerMac(controllerId);
     addShadesGroup(shadesGroup);
 }
 
@@ -78,7 +78,7 @@ void ShadesGroupDao::updateShadesGroup(const ShadeGroup &shadesGroup) const
     QSqlQuery query;
     query.prepare(QString("UPDATE controllers_shades_groups SET controllerId = :controllerId, name = :name, position = :position, openAt = :openAt, closeAt = :closeAt, days = :days, channel = :channel, syncs=:syncs, lastModified=:lastModified WHERE id IS :id"));
     query.bindValue(":id", shadesGroup.id());
-    query.bindValue(":controllerId", shadesGroup.controllerId());
+    query.bindValue(":controllerId", shadesGroup.controllerMac());
     query.bindValue(":name", shadesGroup.name());
     query.bindValue(":position", shadesGroup.position());
     query.bindValue(":openAt", shadesGroup.openAt());

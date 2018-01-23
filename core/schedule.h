@@ -38,7 +38,7 @@ public:
     void setScheduledForDay(WeekDay weekDay);
     void clearScheduledForDay(WeekDay weekDay);
 
-private:
+protected:
     char mDaysMask;
     int mOpenAt;
     int mCloseAt;
