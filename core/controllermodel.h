@@ -47,6 +47,8 @@ public:
     Q_INVOKABLE void addControllersFromList(const QString& uuid, const QString& list);
     Q_INVOKABLE void addControllerWithMacAndIP(const QString& uuid, const QString &mac, const QString &ip);
     Q_INVOKABLE void updateControllerWithData(const QString& mac, const QString& name, int position);
+    Q_INVOKABLE QString macByIndex(int idx) const;
+    Q_INVOKABLE QString nameByIndex(int idx) const;
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;

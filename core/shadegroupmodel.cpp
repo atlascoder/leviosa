@@ -1,6 +1,8 @@
 #include "shadegroupmodel.h"
 #include <QSet>
 
+#include "UserData.h"
+
 using namespace std;
 
 ShadeGroupModel::ShadeGroupModel(QObject* parent):
@@ -8,50 +10,121 @@ ShadeGroupModel::ShadeGroupModel(QObject* parent):
     mDb(DatabaseManager::instance()),
     mControllerMac(),
     mSelectedIndex(QModelIndex()),
-    mShadeGroups(new vector<unique_ptr<ShadeGroup>>())
+    mShadeGroups(UserData::instance().mShadeGroups.get())
 {
+    connect(&UserData::instance(), &UserData::dataUpdated, this, &ShadeGroupModel::updateModel);
+}
 
+void ShadeGroupModel::updateModel(){
+    UserData::instance().loadShadeGroups(mControllerMac);
+
+    long diff = mShadeGroups->size() - rowCount();
+
+    qDebug() << "Update shadeGroups model from rows: " << rowCount();
+
+    if(diff < 0){
+        beginRemoveRows(QModelIndex(), mShadeGroups->size(), rowCount()-1);
+        endRemoveRows();
+    }
+    else if(diff > 0){
+        beginInsertRows(QModelIndex(), rowCount(), mShadeGroups->size()-1);
+        endInsertRows();
+    }
+
+    QModelIndex a = this->createIndex(0,0,nullptr);
+    QModelIndex b = this->createIndex(mShadeGroups->size(),0,nullptr);
+    emit dataChanged(a, b);
 }
 
 QModelIndex ShadeGroupModel::addShadeGroup(const ShadeGroup &shadesGroup)
 {
     int rowsIndex = rowCount();
-    beginInsertRows(QModelIndex(), rowsIndex, rowsIndex);
     unique_ptr<ShadeGroup> newGroup(new ShadeGroup(shadesGroup.channel()));
+    newGroup->setControllerMac(shadesGroup.controllerMac());
     newGroup->setName(shadesGroup.name());
     newGroup->setPosition(static_cast<int>(mShadeGroups->size()));
     newGroup->setOpenAt(shadesGroup.openAt());
     newGroup->setCloseAt(shadesGroup.closeAt());
     newGroup->setDays(shadesGroup.days());
-    mDb.shadeGroupsDao.persistItem(*newGroup, false);
+    UserData::instance().persistItem(*newGroup.get(), true);
     mShadeGroups->push_back(move(newGroup));
+    beginInsertRows(QModelIndex(), rowsIndex, rowsIndex);
     endInsertRows();
-    return index(rowsIndex, 0);
+    return this->index(rowsIndex);
 }
 
-void ShadeGroupModel::removeShadeGroup(char channel)
+void ShadeGroupModel::updateShadeGroupsWithData(int channel, const QString& name, int position, int openAtUS, int closeAtUS, int days)
+{
+    QModelIndex idx = find(channel);
+    if(!idx.isValid()) return;
+
+    ShadeGroup& shadeGroup = *mShadeGroups->at(idx.row());
+    shadeGroup.setName(name);
+    shadeGroup.setOpenAtUS(openAtUS);
+    shadeGroup.setCloseAtUS(closeAtUS);
+    shadeGroup.setDays(days);
+
+    if(shadeGroup.position() != position){
+        vector<int> idxs;
+        int pos = 0;
+        int rows = mShadeGroups->size();
+        int row = 0;
+        while(pos < rows){
+            if(position == pos){
+                idxs.push_back(idx.row());
+                pos++;
+            }
+            else if(row == idx.row()){
+                row++;
+                continue;
+            }
+            else {
+                idxs.push_back(row);
+                row++;
+                pos++;
+            }
+        }
+        for(int i = 0; i < rows; i++){
+            mShadeGroups->at(idxs[i])->setPosition(i);
+            mShadeGroups->at(idxs[i])->setSynced(false);
+        }
+        UserData::instance().persistItems(*mShadeGroups, true);
+    }
+    else{
+        shadeGroup.setSynced(false);
+        UserData::instance().persistItem(shadeGroup, true);
+    }
+    emit dataChanged(idx, idx);
+}
+
+QModelIndex ShadeGroupModel::find(int channel) const
 {
     int row = 0;
     int rows = rowCount();
-    QModelIndex idx = QModelIndex();
     while(row < rows){
-        idx = this->index(row);
-        if(data(idx, Roles::ChannelRole).toInt() == channel)
-            break;
-        else
-            row++;
+        if(mShadeGroups->at(row)->channel() == channel)
+            return this->index(row);
+        row++;
     }
-    ShadeGroup g(channel);
-    if(isIndexValid(idx)){
-        beginRemoveRows(idx.parent(), row, row);
-        mDb.shadeGroupsDao.destroy(g, false);
-        endRemoveRows();
-    }
-    else{
-        beginResetModel();
-        mDb.shadeGroupsDao.destroy(g, false);
-        endResetModel();
-    }
+    return QModelIndex();
+}
+
+
+void ShadeGroupModel::removeShadeGroup(char channel)
+{
+    ShadeGroup c(channel);
+    for(int i = 0; i < mShadeGroups->size(); i++)
+        if(mShadeGroups->at(i)->channel() == channel){
+            beginRemoveRows(QModelIndex(), i, i);
+            UserData::instance().removeItem(c, true);
+            UserData::instance().loadShadeGroups(mControllerMac);
+            endRemoveRows();
+            return;
+        }
+    // reset whole model if removing item was not found
+    beginResetModel();
+    UserData::instance().loadShadeGroups(mControllerMac);
+    endResetModel();
 }
 
 int ShadeGroupModel::rowCount(const QModelIndex &parent) const
@@ -133,7 +206,7 @@ bool ShadeGroupModel::setData(const QModelIndex &index, const QVariant &value, i
     default:
         return false;
     }
-    mDb.shadeGroupsDao.persistItem(group, false);
+    UserData::instance().persistItem(group, true);
     emit dataChanged(index, index);
     return true;
 }
@@ -160,15 +233,6 @@ QHash<int, QByteArray> ShadeGroupModel::roleNames() const
     return roles;
 }
 
-void ShadeGroupModel::loadGroupsShades(const QString& controllerMac)
-{
-    if(controllerMac.length() > 0){
-        mShadeGroups.reset(new vector<unique_ptr<ShadeGroup>>());
-        return;
-    }
-    mShadeGroups = mDb.shadeGroupsDao.filtered("controllerMac", controllerMac);
-}
-
 QString ShadeGroupModel::controllerMac() const
 {
     return mControllerMac;
@@ -179,7 +243,7 @@ void ShadeGroupModel::setControllerMac(const QString& controllerMac)
     if(controllerMac == mControllerMac) return;
     beginResetModel();
     mControllerMac = controllerMac;
-    loadGroupsShades(controllerMac);
+    UserData::instance().loadShadeGroups(mControllerMac);
     endResetModel();
     emit controllerMacChanged();
 }
@@ -231,36 +295,6 @@ void ShadeGroupModel::setSelectedGroupName(const QString &name)
 int ShadeGroupModel::getSelectedGroupPosition() const
 {
     return data(mSelectedIndex, Roles::PositionRole).toInt();
-}
-
-void ShadeGroupModel::setSelectedGroupPosition(int position)
-{
-    ShadeGroup& group = *mShadeGroups->at(mSelectedIndex.row());
-    if(group.position() != position){
-        vector<int> idxs;
-        int pos = 0;
-        int rows = rowCount();
-        int row = 0;
-        while(pos < rows){
-            if(position == pos){
-                idxs.push_back(mSelectedIndex.row());
-                pos++;
-            }
-            else if(row == mSelectedIndex.row()){
-                row++;
-                continue;
-            }
-            else {
-                idxs.push_back(row);
-                row++;
-                pos++;
-            }
-        }
-        for(int i = 0; i < rows; i++){
-            setData(this->index(idxs[i]), i, Roles::PositionRole);
-        }
-        loadGroupsShades(mControllerMac);
-    }
 }
 
 int ShadeGroupModel::roleByName(const QString& name) const
@@ -376,16 +410,13 @@ void ShadeGroupModel::setSelectedCloseAtUS(const float closeAtUS)
 
 void ShadeGroupModel::setScheduleForCurrentController(int days, float openAtUS, float closeAtUS)
 {
-    int row = 0;
-    int rows = rowCount();
-    QModelIndex idx;
-    while(row < rows){
-        idx = this->index(row);
-        setData(idx, days, Roles::DaysRole);
-        setData(idx, openAtUS, Roles::OpenAtUSRole);
-        setData(idx, closeAtUS, Roles::CloseAtUSRole);
-        row++;
+    for(auto g = mShadeGroups->begin(); g != mShadeGroups->end(); g++){
+        g->get()->setCloseAtUS(closeAtUS);
+        g->get()->setOpenAtUS(openAtUS);
+        g->get()->setDays(days);
     }
+    UserData::instance().persistItems(*mShadeGroups, true);
+    updateModel();
 }
 
 QStringList ShadeGroupModel::getPositionOrder() const

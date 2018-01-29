@@ -495,3 +495,19 @@ void ControllerModel::remove(const QString &mac)
     UserData::instance().loadControllers(mLocationUuid);
     endResetModel();
 }
+
+QString ControllerModel::macByIndex(int idx) const
+{
+    if(idx < mControllers->size())
+        return mControllers->at(idx)->mac();
+    else
+        return "00:00:00:00:00:00";
+}
+
+QString ControllerModel::nameByIndex(int idx) const
+{
+    if(idx < mControllers->size())
+        return mControllers->at(idx)->name();
+    else
+        return "";
+}

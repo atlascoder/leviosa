@@ -189,8 +189,9 @@ template<>
 void BasicDAO<ShadeGroup>::destroy(ShadeGroup &item, bool notify) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare(QString("DELETE FROM ").append(tableName()).append(" WHERE channel=:channel"));
+    query.prepare(QString("DELETE FROM ").append(tableName()).append(" WHERE channel=:channel AND controllerMac=:mac"));
     query.bindValue(":channel", item.channel());
+    query.bindValue(":mac", item.controllerMac());
     query.exec();
     if(notify) notifyDataChanged();
 }
@@ -199,14 +200,15 @@ template<>
 QString BasicDAO<ShadeGroup>::fieldsSQLDecl() const
 {
     return "(" \
-               "channel INTEGER PRIMARY KEY, " \
+               "channel INTEGER, " \
                "controllerMac TEXT NOT NULL, " \
                "name TEXT NOT NULL, " \
                "position INTEGER, " \
                "openAt INTEGER, " \
                "closeAt INTEGER, " \
                "days INTEGER DEFAULT 0, " \
-               "isSynced INTEGER DEFAULT 0" \
+               "isSynced INTEGER DEFAULT 0," \
+               "PRIMARY KEY(controllerMac, channel)" \
             ")";
 }
 
@@ -215,6 +217,7 @@ std::unique_ptr<ShadeGroup> BasicDAO<ShadeGroup>::buildItem(QSqlQuery &query) co
 {
     unique_ptr<ShadeGroup> group(new ShadeGroup);
     group->setChannel((char)query.value("channel").toInt());
+    group->setControllerMac(query.value("controllerMac").toString());
     group->setName(query.value("name").toString());
     group->setPosition(query.value("position").toInt());
     group->setOpenAt(query.value("openAt").toInt());
@@ -227,8 +230,9 @@ std::unique_ptr<ShadeGroup> BasicDAO<ShadeGroup>::buildItem(QSqlQuery &query) co
 template<>
 void BasicDAO<ShadeGroup>::prepareFind(QSqlQuery &query, ShadeGroup &item) const
 {
-    query.prepare(QString("SELECT * FROM ").append(tableName()).append(" WHERE channel=:channel"));
+    query.prepare(QString("SELECT * FROM ").append(tableName()).append(" WHERE channel=:channel AND controllerMac=:mac"));
     query.bindValue(":channel", item.channel());
+    query.bindValue(":mac", item.controllerMac());
 }
 
 template<>
@@ -253,7 +257,7 @@ void BasicDAO<ShadeGroup>::prepareInsert(QSqlQuery &query, ShadeGroup &item) con
 template<>
 void BasicDAO<ShadeGroup>::prepareUpdate(QSqlQuery &query, ShadeGroup &item) const
 {
-    query.prepare(QString("UPDATE ").append(tableName()).append(" SET controllerMac = :controllerMac, name = :name, position = :position, openAt = :openAt, closeAt = :closeAt, days = :days, isSynced=:isSynced WHERE channel=:channel"));
+    query.prepare(QString("UPDATE ").append(tableName()).append(" SET name = :name, position = :position, openAt = :openAt, closeAt = :closeAt, days = :days, isSynced=:isSynced WHERE channel=:channel AND controllerMac=:controllerMac"));
     query.bindValue(":channel", item.channel());
     query.bindValue(":controllerMac", item.controllerMac());
     query.bindValue(":name", item.name());

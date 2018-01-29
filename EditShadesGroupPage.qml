@@ -24,12 +24,6 @@ LeviosaPage {
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        onSelectedChannelChanged: {
-            positionCB.model = positionOrder;
-            positionCB.currentIndex = selectedGroupPosition;
-            positionCB.visible = rowCount() > 1;
-            positionCaption.visible = rowCount() > 1;
-        }
     }
 	
     TabBar {
@@ -88,13 +82,7 @@ LeviosaPage {
                 if(setForAll.checked){
                     shadesGroupsModel.setScheduleForCurrentController(days, open_at_us, close_at_us);
                 }
-                else{
-                    shadesGroupsModel.selectedGroupDays = days;
-                    shadesGroupsModel.selectedOpenAtUS = open_at_us;
-                    shadesGroupsModel.selectedCloseAtUS = close_at_us;
-                }
-                shadesGroupsModel.selectedGroupName = groupName.text;
-                shadesGroupsModel.selectedGroupPosition = positionCB.currentIndex;
+                shadesGroupsModel.updateShadeGroupsWithData(selectedChannel, groupName.text, showBefore.currentIndex, open_at_us, close_at_us, days);
                 menuClicked();
             }
         }
@@ -194,7 +182,7 @@ LeviosaPage {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             font.pixelSize: parent.width / 24
-                            text: "<b>" + locationModel.selectedTimezoneName + "</b> time"
+                            text: "<b>" + shadesGroupsModel.selectedTimezoneName + "</b> time"
                         }
                         Text{
                             id: openTimeDelim
@@ -376,19 +364,21 @@ LeviosaPage {
                 }
 
                 ComboBox {
-                    id: positionCB
+                    id: showBefore
                     width: parent.width
                     height: 40
-                    visible: false
+                    model: shadesGroupsModel.positionOrder
+                    visible: shadesGroupsModel.rowCount() > 1
+                    currentIndex: shadesGroupsModel.selectedGroupPosition
                     displayText: currentText
                     contentItem: Text {
-                        leftPadding: positionCB.indicator.width + positionCB.spacing
-                        rightPadding: positionCB.spacing
+                        leftPadding: showBefore.indicator.width + showBefore.spacing
+                        rightPadding: showBefore.spacing
                         font.pixelSize: height * 0.6
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
-                        text: positionCB.displayText
+                        text: showBefore.displayText
                     }
                     background: Rectangle {
                         anchors.fill: parent

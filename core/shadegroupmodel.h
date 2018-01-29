@@ -13,7 +13,7 @@ class ShadeGroupModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(QString controllerMac READ controllerMac WRITE setControllerMac NOTIFY controllerMacChanged)
     Q_PROPERTY(QString selectedGroupName READ getSelectedGroupName WRITE setSelectedGroupName NOTIFY selectedGroupNameChanged)
-    Q_PROPERTY(int selectedGroupPosition READ getSelectedGroupPosition WRITE setSelectedGroupPosition NOTIFY selectedGroupPositionChanged)
+    Q_PROPERTY(int selectedGroupPosition READ getSelectedGroupPosition NOTIFY selectedGroupPositionChanged)
     Q_PROPERTY(int selectedGroupOpenAt READ getSelectedGroupOpenAt WRITE setSelectedGroupOpenAt NOTIFY selectedGroupOpenAtChanged)
     Q_PROPERTY(int selectedGroupCloseAt READ getSelectedGroupCloseAt WRITE setSelectedGroupCloseAt NOTIFY selectedGroupCloseAtChanged)
     Q_PROPERTY(int selectedGroupDays READ getSelectedGroupDays WRITE setSelectedGroupDays NOTIFY selectedGroupDaysChanged)
@@ -48,6 +48,8 @@ public:
 
     QModelIndex addShadeGroup(const ShadeGroup& shadesGroup);
     Q_INVOKABLE void addShadesGroupWithData(const QString& controllerMac, const QString& name);
+    Q_INVOKABLE void updateShadeGroupsWithData(int channel, const QString& name, int position, int openAtUS, int closeAtUS, int days);
+
     Q_INVOKABLE void removeShadeGroup(char channel);
     Q_INVOKABLE int roleByName(const QString& roleName) const;
 
@@ -60,6 +62,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
     QHash<int, QByteArray> roleNames() const override;
+    QModelIndex find(int channel) const;
 
     QString controllerMac() const;
     void setControllerMac(const QString& mac);
@@ -75,6 +78,9 @@ signals:
     void selectedShadeStateChanged();
 
     void positionOrderChanged();
+
+public slots:
+    void updateModel();
 private:
 
     int getSelectedChannel() const;
@@ -84,7 +90,6 @@ private:
     void setSelectedGroupName(const QString& name);
 
     int getSelectedGroupPosition() const;
-    void setSelectedGroupPosition(int position);
 
     int getSelectedGroupOpenAt() const;
     void setSelectedGroupOpenAt(int openAt);
@@ -118,7 +123,7 @@ private:
     DatabaseManager& mDb;
     QString mControllerMac;
     QPersistentModelIndex mSelectedIndex;
-    std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> mShadeGroups;
+    std::vector<std::unique_ptr<ShadeGroup>>* mShadeGroups;
 
 
 };

@@ -1,4 +1,5 @@
 #include "SyncableRecord.h"
+#include <QStringList>
 #include "location.h"
 #include "controller.h"
 #include "shadegroup.h"
@@ -34,14 +35,17 @@ std::unique_ptr<Controller> SyncableRecord<Controller>::fromJson(const QString& 
 template<>
 QString SyncableRecord<ShadeGroup>::recordKey(const ShadeGroup& shadeGroup) const
 {
-    return QString::number(shadeGroup.channel());
+//    return QString::number(shadeGroup.channel());
+    return shadeGroup.controllerMac().append("-").append(QString::number(shadeGroup.channel()));
 }
 
 template<>
 std::unique_ptr<ShadeGroup> SyncableRecord<ShadeGroup>::fromJson(const QString& key, const QJsonObject &json) const
 {
-    std::unique_ptr<ShadeGroup> loc(new ShadeGroup(key.toInt()));
+    QStringList mac_c = key.split("-");
+    std::unique_ptr<ShadeGroup> loc(new ShadeGroup(mac_c.at(1).toInt()));
     loc->withJson(json);
+    loc->setControllerMac(mac_c.at(0));
     return loc;
 }
 
@@ -71,8 +75,10 @@ bool SyncableRecord<Controller>::findByKey(const QString &key, Controller** pFou
 template<>
 bool SyncableRecord<ShadeGroup>::findByKey(const QString &key, ShadeGroup** pFound) const
 {
-    int channel = key.toInt();
-    auto found = find_if(mItems->begin(), mItems->end(), [channel](const unique_ptr<ShadeGroup>& i)->bool{ return channel==i->channel(); });
+    QStringList mac_c = key.split("-");
+    QString mac = mac_c.at(0);
+    int channel = mac_c.at(1).toInt();
+    auto found = find_if(mItems->begin(), mItems->end(), [channel, &mac](const unique_ptr<ShadeGroup>& i)->bool{ return channel==i->channel() && mac==i->controllerMac(); });
     if(found != mItems->end()){
         *pFound = found->get();
         return true;

@@ -47,6 +47,7 @@ public:
     void loadShadeGroups(const QString& controllerMac);
     void persistItem(ShadeGroup &controller, bool toSync);
     void removeItem(ShadeGroup &controller, bool toSync);
+    void persistItems(std::vector<std::unique_ptr<ShadeGroup>>& shadeGroups, bool toSync);
 
     void stopRequests();
 

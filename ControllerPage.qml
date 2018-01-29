@@ -8,23 +8,23 @@ Item {
     anchors.fill:parent
 
     property alias controllerMac : shadesGroupsModel.controllerMac
+    property alias channel : shadesGroupsModel.selectedChannel
 
     signal cmd(int channel, int cmd)
+    signal openGroupEdit(string mac, int channel)
 
-    signal openGroupEdit(int cid, int gid)
-
-    onVisibleChanged: {
-        if(rootItem.visible)
-        {
-            shadesGroupsModel.controllerMac = rootItem.controllerMac;
-            allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
-        }
+    function init(){
+        shadesGroupsModel.updateModel();
     }
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        onModelReset: {
-            allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
+    }
+
+    onVisibleChanged: {
+        if(visible){
+            console.log("show controls");
+            init();
         }
     }
 
@@ -70,7 +70,7 @@ Item {
 
                 channel: model.channel
 
-                onEdit: openGroupEdit(controllerId, model.id)
+                onEdit: openGroupEdit(controllerMac, channel)
 
                 onCmdShade: function(gid, shade_state){
                     model.shadeState = shade_state;

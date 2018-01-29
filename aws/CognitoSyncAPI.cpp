@@ -138,7 +138,7 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
             }
             else if("shadeGroups" == record.GetKey()){
                 shadeGroups.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                shadeGroups.setLastModified(record.GetSyncCount());
+                shadeGroups.setSyncCount(record.GetSyncCount());
                 shadeGroups.setSynced(true);
                 shadeGroups.setUpdated(true);
             }

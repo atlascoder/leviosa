@@ -50,6 +50,7 @@ QJsonObject ShadeGroup::toJson() const
     json.insert("openAt", mOpenAt);
     json.insert("closeAt", mCloseAt);
     json.insert("days", mDaysMask);
+    return json;
 }
 
 void ShadeGroup::withJson(const QJsonObject &json)

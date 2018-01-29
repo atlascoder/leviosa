@@ -177,7 +177,7 @@ ApplicationWindow {
                     pager.push(espTouchPage, {"locationUuid": uuid});
                 }
                 onTitleLongPressed: {
-                    pager.push(editLocationPage)
+                    pager.push(editLocationPage, {"locationUuid": locationUuid})
                 }
             }
             onLoaded: {

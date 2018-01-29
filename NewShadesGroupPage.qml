@@ -70,7 +70,7 @@ LeviosaPage {
 				anchors.leftMargin: 6
 				height: 40
                 onClicked: {
-                    shadesGroupsModel.addShadesGroupWithData(newShadesGroupPage.controllerId, groupName.text);
+                    shadesGroupsModel.addShadesGroupWithData(shadesGroupsModel.controllerMac, groupName.text);
                     menuClicked();
                 }
 			}

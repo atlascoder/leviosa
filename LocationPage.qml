@@ -17,7 +17,6 @@ LeviosaPage {
     property alias locationUuid : controllersModel.locationUuid
     property alias discovery : controllerDiscovery
     property alias activeController : controllersModel.selectedControllerMac
-//    property int currentIdx : 0
 
     signal setupController(string uuid)
     signal editController(string mac)
@@ -25,21 +24,22 @@ LeviosaPage {
     signal editSchedule(string mac, int channel)
     signal addGroup(string mac)
 
-    onAddClicked: addGroup(controllersModel.data(controllersModel.indexOfRow(controllersPager.currentIndex), controllersModel.roleByName("mac")))
+    onAddClicked: addGroup(controllersModel.macByIndex(controllersPager.currentIndex))
 
 
     title: controllersModel.locationName
 
     function init(){
-//        currentIdx = controllersPager.currentIndex;
         controllersModel.updateModel();
-//        controllersPager.currentIndex = currentIdx;
         discovery.isRunning = true;
     }
 
     ControllersModel {
         id: controllersModel
         isOnWlan: netMonitor.onWlan && netMonitor.bssid == selectedControllerMac
+        onModelReset: {
+            console.log("Model reset, index: " + controllersPager.currentIndex);
+        }
     }
 
     SwipeView {
@@ -53,43 +53,36 @@ LeviosaPage {
                 sourceComponent: ControllerPage {
                     anchors.fill: parent
                     controllerMac: mac
-                    onOpenGroupEdit: function(cid, gid){ editGroup(cid, gid); }
+                    onOpenGroupEdit: function(mac, c){ editGroup(mac, c); }
                     onCmd: function(channel, cmd){ controllersModel.shadeCmd(model.id, channel, cmd); }
+                    onVisibleChanged: {
+                        if(visible) init();
+                    }
                 }
             }
-        }
-        onCurrentIndexChanged: {
-            locationPage.activeController = controllersPager.currentIndex;
-            bar.currentIndex = controllersPager.currentIndex;
-//            currentIdx = controllersPager.currentIndex;
         }
     }
 
     footer: TabBar {
 		id: bar
-		visible: controllersPager.count > 1
+        visible: controllersPager.count > 1
         property int itemWidth: width / (controllersPager.count >= 3 ? 3 : 2)
+        currentIndex: controllersPager.currentIndex
         Repeater {
             id: tabsRepeater
-            model: controllersModel
+            model: controllersPager.count
             TabButton {
                 width: bar.itemWidth
-                text: name
-                onPressAndHold: editController(mac)
+                text: controllersModel.nameByIndex(model.index)
+                onPressAndHold: editController(controllersModel.macByIndex(model.index))
             }
         }
-        onVisibleChanged: {
-            if(bar.visible && bar.currentIndex > 0){
-                var i = bar.currentIndex;
-                bar.setCurrentIndex(-1);
-                bar.setCurrentIndex(i);
-            }
-        }
+        Component.onCompleted: controllersPager.currentIndex = currentIndex
         onCurrentIndexChanged: {
-            if(controllersPager.currentIndex != bar.currentIndex)
-                controllersPager.currentIndex = bar.currentIndex;
+            console.log("Current index: " + controllersPager.currentIndex)
+            controllersPager.currentIndex = currentIndex;
         }
-	}
+    }
 
     BusyIndicator {
         id: busyIndi

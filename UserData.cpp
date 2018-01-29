@@ -52,9 +52,9 @@ void UserData::run()
         if(u.isAuthenticated() && u.hasCredentials()){
             Aws::Auth::AWSCredentials creds;
             u.fillCredentials(creds);
-            SyncableRecord<Location> locations(*mLocations.get(), mUser.locationsModified(), mUser.locationsSyncCount(), mUser.locationsSynced());
-            SyncableRecord<Controller> controllers(*mControllers.get(), mUser.controllersModified(), mUser.controllersSyncCount(), mUser.controllersSynced());
-            SyncableRecord<ShadeGroup> shadeGroups(*mShadeGroups.get(), mUser.shadeGroupsModified(), mUser.shadeGroupsSyncCount(), mUser.shadeGroupsSynced());
+            SyncableRecord<Location> locations(*mDb.locationsDao.items().get(), mUser.locationsModified(), mUser.locationsSyncCount(), mUser.locationsSynced());
+            SyncableRecord<Controller> controllers(*mDb.controllersDao.items().get(), mUser.controllersModified(), mUser.controllersSyncCount(), mUser.controllersSynced());
+            SyncableRecord<ShadeGroup> shadeGroups(*mDb.shadeGroupsDao.items().get(), mUser.shadeGroupsModified(), mUser.shadeGroupsSyncCount(), mUser.shadeGroupsSynced());
             if(!mCancelled){
                 mSyncer->resetWithCredentials(creds);
                 mSyncer->sync(creds, "config", locations, controllers, shadeGroups);
@@ -138,7 +138,7 @@ void UserData::mergeUpdates(SyncableRecord<Location> &locations, SyncableRecord<
     }
 
     // shadeGroups
-    if(shadeGroups.updated() && shadeGroups.synced()){
+    if(shadeGroups.updated()){
         vector<unique_ptr<ShadeGroup>>& items = shadeGroups.items();
         qDebug() << "Merging shadeGroups update // syncCount: " <<  shadeGroups.syncCount();
         for(vector<unique_ptr<ShadeGroup>>::iterator item = items.begin(); item != items.end(); item++){
@@ -305,6 +305,21 @@ void UserData::persistItem(ShadeGroup& shadeGroup, bool toSync)
     mDb.shadeGroupsDao.persistItem(shadeGroup, false);
     if(toSync){
         CurrentUser::instance().setShadeGroupsModified(QDateTime::currentSecsSinceEpoch());
+        CurrentUser::instance().setShadeGroupsSynced(false);
+        CurrentUser::instance().persistUserDataModified();
+        sync();
+    }
+}
+
+void UserData::persistItems(std::vector<std::unique_ptr<ShadeGroup>> &shadeGroups, bool toSync)
+{
+
+    for (auto ci = shadeGroups.begin(); ci != shadeGroups.end(); ci++){
+        mDb.shadeGroupsDao.persistItem(*ci->get(), false);
+    }
+    if(toSync){
+        CurrentUser::instance().setShadeGroupsModified(QDateTime::currentSecsSinceEpoch());
+        CurrentUser::instance().setShadeGroupsSynced(false);
         CurrentUser::instance().persistUserDataModified();
         sync();
     }
