@@ -2,10 +2,12 @@
 #define CREDENTIALSREQUEST_H
 
 #include <QString>
+#include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <aws/cognito-identity/model/Credentials.h>
 #include <aws/cognito-identity/CognitoIdentityErrors.h>
 #include "IdToken.h"
 #include "RefreshToken.h"
+#include "ClientConfig.h"
 
 class CredentialsRequest
 {
@@ -14,15 +16,24 @@ class CredentialsRequest
     Aws::CognitoIdentity::CognitoIdentityErrors mError;
     QString mLastMessage;
     Aws::CognitoIdentity::Model::Credentials mCredentials;
+    bool mCancelled;
+
+    Aws::CognitoIdentity::CognitoIdentityClient* mClient;
 public:
-    CredentialsRequest(const IdToken & idToken) : mIdToken(idToken), mIsSuccessful(false) {}
+    CredentialsRequest();
+    ~CredentialsRequest();
+
+    void setIdToken(const IdToken& idToken);
 
     bool isSuccessful() const { return mIsSuccessful; }
     Aws::CognitoIdentity::CognitoIdentityErrors getError() const { return mError; }
     QString getLastMessage() const { return mLastMessage; }
     Aws::CognitoIdentity::Model::Credentials getCredentials() const { return mCredentials; }
 
-    void request();
+    void requestId();
+    void requestCredentials();
+
+    void cancelRequests();
 
 };
 

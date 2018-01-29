@@ -185,6 +185,12 @@ ApplicationWindow {
             }
             StackView.onActivated: {
                 drawer.interactive = true;
+                item.locationUuid = locationUuid
+                item.init();
+            }
+            StackView.onDeactivating: {
+                drawer.interactive = false;
+                item.discovery.isRunning = false;
             }
         }
     }
@@ -253,7 +259,7 @@ ApplicationWindow {
                 drawer.interactive = false;
             }
             onLoaded: {
-                item.locatioUuid = locationUuid;
+                item.locationUuid = locationUuid;
                 item.controllerMac = controllerMac;
             }
         }
@@ -326,7 +332,7 @@ ApplicationWindow {
 				height: parent.width / 8
 				anchors.horizontalCenter: parent.horizontalCenter
 				verticalAlignment: Qt.AlignVCenter
-                text: userLogin.email
+                text: userData.email
 				font.pixelSize: 16
 				color: DefTheme.secTextColor
 				font.bold: true

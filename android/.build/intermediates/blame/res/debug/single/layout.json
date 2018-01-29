@@ -1,7 +1,7 @@
 [
     {
         "merged": "/Users/anton.titkov/DevProjects/leviosa/leviosa/android/.build/intermediates/res/merged/debug/layout/splash.xml",
-        "source": "/Users/anton.titkov/Qt/5.9.3/android_x86/src/android/java/res/layout/splash.xml"
+        "source": "/Users/anton.titkov/Qt/5.9.3/android_armv7/src/android/java/res/layout/splash.xml"
     },
     {
         "merged": "/home/ant/DevProjects/leviosa/app/leviosa/android/.build/intermediates/res/merged/debug/layout/splash.xml",

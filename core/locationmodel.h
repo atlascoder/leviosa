@@ -5,19 +5,17 @@
 #include <QObject>
 #include <QVariant>
 #include <QHash>
-#include "SyncableModel.h"
-
-#include "databasemanager.h"
+#include "location.h"
 
 class LocationModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(QString selectedLocationUuid READ getSelectedLocationUuid WRITE setSelectedLocationUuid NOTIFY selectedLocationUuidChanged)
-    Q_PROPERTY(QString selectedLocationName READ getSelectedLocationName WRITE setSelectedLocationName NOTIFY selectedLocationNameChanged)
-    Q_PROPERTY(QString selectedLocationBssid READ getSelectedLocationBssid WRITE setSelectedLocationBssid NOTIFY selectedLocationBssidChanged)
-    Q_PROPERTY(int selectedLocationPosition READ getSelectedLocationPosition WRITE setSelectedLocationPosition NOTIFY selectedLocationPositionChanged)
-    Q_PROPERTY(int selectedLocationUtcOffset READ getSelectedLocationUtcOffset WRITE setSelectedLocationUtcOffset NOTIFY selectedLocationUtcOffsetChanged)
-    Q_PROPERTY(QString selectedTimezoneName READ getSelectedTimezoneName WRITE setSelectedTimezoneName NOTIFY selectedLocationUtcOffsetChanged)
+    Q_PROPERTY(QString selectedLocationName READ getSelectedLocationName NOTIFY selectedLocationNameChanged)
+    Q_PROPERTY(QString selectedLocationBssid READ getSelectedLocationBssid NOTIFY selectedLocationBssidChanged)
+    Q_PROPERTY(int selectedLocationPosition READ getSelectedLocationPosition NOTIFY selectedLocationPositionChanged)
+    Q_PROPERTY(int selectedLocationUtcOffset READ getSelectedLocationUtcOffset NOTIFY selectedLocationUtcOffsetChanged)
+    Q_PROPERTY(QString selectedTimezoneName READ getSelectedTimezoneName NOTIFY selectedLocationUtcOffsetChanged)
     Q_PROPERTY(QString currentBssid READ currentBssid WRITE setCurrentBssid NOTIFY currentBssidChanged)
 
     Q_PROPERTY(QStringList positionOrder READ getPositionOrder NOTIFY positionOrderChanged)
@@ -35,12 +33,11 @@ public:
         BssidRole
     };
 
-    QModelIndex addLocation(const UserLocation& location);
+    QModelIndex addLocation(const Location& location);
     Q_INVOKABLE int roleByName(const QString& name) const;
     Q_INVOKABLE void addLocationWithData(const QString& name, int utcOffset, const QString& bssid);
-    Q_INVOKABLE bool updateLocationWithData(const QString& uuid, const QString& name, int utcOffset, const QString& bssid, int position);
+    Q_INVOKABLE void updateLocationWithData(const QString& uuid, const QString& name, int utcOffset, const QString& bssid, int position);
     Q_INVOKABLE QModelIndex findLocation(const QString& uuid) const;
-    Q_INVOKABLE void fireDataChanged();
     Q_INVOKABLE QModelIndex indexOfRow(int row) const;
     Q_INVOKABLE void remove(const QString& uuid);
 
@@ -88,8 +85,7 @@ public slots:
 private:
 
     bool isIndexValid(const QModelIndex& index) const;
-    DatabaseManager& mDb;
-    std::unique_ptr<std::vector<std::unique_ptr<UserLocation>>> mLocations;
+    std::vector<std::unique_ptr<Location>>* mLocations;
     QPersistentModelIndex mSelectedLocationIndex;
     QString mCurrentBssid;
 };

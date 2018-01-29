@@ -5,7 +5,7 @@
 #include <QAbstractListModel>
 
 #include "databasemanager.h"
-#include "locationcontroller.h"
+#include "controller.h"
 #include "controllermodel.h"
 
 class ShadeGroupModel : public QAbstractListModel

@@ -3,6 +3,8 @@
 
 #include <QString>
 #include <QByteArray>
+#include <aws/cognito-identity/CognitoIdentityClient.h>
+#include <aws/cognito-idp/CognitoIdentityProviderClient.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include "RefreshToken.h"
 
@@ -24,16 +26,18 @@ class AuthRequest
     boost::multiprecision::cpp_int ma;
     boost::multiprecision::cpp_int mA;
 
+    bool mCancelled;
+
+    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient* mClient;
+
 public:
     AuthRequest();
-    AuthRequest(const QString& email);
-    AuthRequest(const QString& refreshToken, int refreshTokenExpiration);
-    AuthRequest(const QString& email, const QString& password);
+    ~AuthRequest();
 
-    void signUp();
-    void signIn();
+    void signUp(const QString& email, const QString& password);
+    void signIn(const QString& email, const QString& password);
     void signOut();
-    void restorePassword();
+    void restorePassword(const QString& email);
     void changePassword(const QString& accessToken, const QString& newPassword, const QString& password);
 
     QString getIdToken() const { return mIdToken; }
@@ -43,10 +47,10 @@ public:
     QString getLastMessage() const { return mLastMessage; }
     int getRefreshTokenExpiration() const { return mRefreshTokenExpiration; }
 
-    bool refreshTokens();
-private:
+    bool refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration);
 
-    void init();
+    void cancelRequests();
+private:
 
     QByteArray authenticateUser(const QString &userId, const QString & password, const QString &saltString, const QString &srp_b, const QString &secret_block, const QString &formattedTimestamp);
     QByteArray getPasswordAuthenticationKey(const QString &userId, const QString &password, const QByteArray &A, const QByteArray &B, const QString &salt);

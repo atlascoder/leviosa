@@ -16,7 +16,7 @@ Item {
     onVisibleChanged: {
         if(rootItem.visible)
         {
-            shadesGroupsModel.controllerId = controllerId;
+            shadesGroupsModel.controllerMac = rootItem.controllerMac;
             allShadesControl.visible = shadesGroupsModel.rowCount() > 1;
         }
     }
@@ -80,4 +80,5 @@ Item {
             }
         }
     }
+
 }

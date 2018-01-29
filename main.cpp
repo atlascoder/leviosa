@@ -11,6 +11,9 @@
 #include "EspTouchSetup.h"
 #include "UserLogin.h"
 
+#include <aws/core/utils/memory/stl/AWSString.h>
+
+
 #include "UserData.h"
 
 #include <aws/core/Aws.h>
@@ -18,7 +21,6 @@
 int main(int argc, char *argv[])
 {
     Aws::SDKOptions awsOptions;
-
     Aws::InitAPI(awsOptions);
 
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -50,6 +52,8 @@ int main(int argc, char *argv[])
         return -1;
 
     int app_result = app.exec();
+
+    UserData::instance().stopRequests();
 
     Aws::ShutdownAPI(awsOptions);
     return app_result;

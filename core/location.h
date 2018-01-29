@@ -5,21 +5,20 @@
 #include <QUuid>
 #include <QJsonObject>
 #include "positioned.h"
+#include "syncable.h"
 
-class UserLocation : public Positioned
+class Location : public Positioned, public Syncable
 {
     QUuid mUuid;
     QString mBssid;
-    QString mSsid;
     QString mName;
     int mUtcOffset;
-    int mLastModified;
     bool mIsOnWlan;
     bool mIsOnline;
 public:
-    UserLocation();
-    explicit UserLocation(const QUuid & uuid);
-    explicit UserLocation(const QString & uuidStr);
+    Location();
+    explicit Location(const QUuid & uuid);
+    explicit Location(const QString & uuidStr);
 
     QUuid uuid() const { return mUuid; }
     void setUuid(const QUuid & uuid) { mUuid = uuid; }
@@ -30,14 +29,8 @@ public:
     QString name() const;
     void setName(const QString &name);
 
-    QString ssid() const;
-    void setSsid(const QString &ssid);
-
     int utcOffset() const;
     void setUtcOffset(int offset);
-
-    int lastModified() const { return mLastModified; }
-    void setLastModified(int lastModified) { mLastModified = lastModified; }
 
     bool isOnWlan() const;
     void setIsOnWlan(bool onWlan);

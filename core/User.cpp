@@ -7,7 +7,10 @@ User::User():
     mRefreshToken(), mRefreshTokenExpiration(0),
     mLocationsModified(0),
     mControllersModified(0),
-    mShadeGroupsModified(0)
+    mShadeGroupsModified(0),
+    mLocationsSyncCount(0),
+    mControllersSyncCount(0),
+    mShadeGroupsSyncCount(0)
 {
 
 }

@@ -1,6 +1,10 @@
 QT += quick svg network sql concurrent
 CONFIG += c++11
 
+DEV_LIBS_PATH = /Users/anton.titkov/DevLibs
+
+
+# Android specifics
 android {
     QT += androidextras
     DISTFILES += \
@@ -12,28 +16,54 @@ android {
         android/gradle/wrapper/gradle-wrapper.properties \
         android/src/com/atlascoder/
 
-    HEADERS += \
-        esptouch/EspTouchTaskAndroid.h
-
-    SOURCES += \
-        esptouch/EspTouchTaskAndroid.cpp
+    # EspTouch backport
+    HEADERS += esptouch/EspTouchTaskAndroid.h
+    SOURCES += esptouch/EspTouchTaskAndroid.cpp
 
     ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
+    # ZeroConf
     LIBS += -L$$PWD/../../qt-zero-conf/build-Android-arm/android-build/lib -lQtZeroConf
     INCLUDEPATH += $$PWD/../qt-zero-conf/QtZeroConf
+
+    # AWS libs
+    AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/android/aws-cpp-sdk
+    LIBS += \
+                -L$$AWS-iam -laws-cpp-sdk-iam \
+                -L$$AWS-iot -laws-cpp-sdk-iot \
+                -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
+                -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
+                -L$$AWS-access-management -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
+                -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
+                -L$$AWS-logs -laws-cpp-sdk-logs \
+                -L$$AWS-core -laws-cpp-sdk-core \
+                -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/curl/lib -lcurl \
+                -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/lib -lssl -lcrypto \
+
+    INCLUDEPATH += \
+                Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/include
+
+
+    # Crypto++
+    INCLUDEPATH += $$DEV_LIBS_PATH/cryptopp/android/include
+    LIBS += -L$$DEV_LIBS_PATH/cryptopp/android/lib -lcryptopp
 }
 
+# iOS specifics
 ios {
     app_launch_images.files = $$PWD/ios/SplashScreen.xib $$PWD/ios/leviosa-logo.png
     QMAKE_BUNDLE_DATA = app_launch_images
     QMAKE_INFO_PLIST = $$PWD/ios/Info.plist
 
+    #ZeroConf
     include(QtZeroConf/qtzeroconf.pri)
     DEFINES= QZEROCONF_STATIC
 
+    # EspTouch backport
     SC_IOS = $$PWD/../../esptouch-qt-ios
 
+    # Backports to native NetworkReachability and ESPTouch components
     OBJECTIVE_HEADERS += \
         $$PWD/ios/src/Reachability.h \
         $$PWD/ios/src/ReachabiltyListener.h \
@@ -73,91 +103,66 @@ ios {
         $$SC_IOS/ESPTouchTask.mm \
         $$SC_IOS/ESPTouchHolder.mm
 
-    HEADERS += \
-        esptouch/EspTouchTaskIOS.h
-
-    SOURCES += \
-        esptouch/EspTouchTaskIOS.cpp
+    HEADERS += esptouch/EspTouchTaskIOS.h
+    SOURCES += esptouch/EspTouchTaskIOS.cpp
 
     LIBS += -framework SystemConfiguration
 
-    AWS = /Users/anton.titkov/DevLibs/aws-sdk-cpp/ios/aws-cpp-sdk
+    # AWS
+    AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/xcode/aws-cpp-sdk
+    ASX = Release-iphoneos
+    LIBS += -L$$AWS-core/$$ASX -laws-cpp-sdk-core \
+                -L$$AWS-iam/$$ASX -laws-cpp-sdk-iam \
+                -L$$AWS-access-management/$$ASX -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity/$$ASX -laws-cpp-sdk-cognito-identity \
+                -L$$AWS-iot/$$ASX -laws-cpp-sdk-iot \
+                -L$$AWS-cognito-idp/$$ASX -laws-cpp-sdk-cognito-idp \
+                -L$$AWS-cognito-sync/$$ASX -laws-cpp-sdk-cognito-sync \
+                -L$$AWS-identity-management/$$ASX -laws-cpp-sdk-identity-management \
+                -L$$DEV_LIBS_PATH/libcurl/lib -lcurl
 
-    LIBS += -L$$AWS-core -laws-cpp-sdk-core \
-                -L$$AWS-iam -laws-cpp-sdk-iam \
-                -L$$AWS-access-management -laws-cpp-sdk-access-management \
-                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
-                -L$$AWS-iot -laws-cpp-sdk-iot \
-                -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
-                -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
-                -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
-                -L/Users/anton.titkov/DevLibs/libcurl/lib -lcurl
-
-    AWS_H = /Users/anton.titkov/DevLibs/aws-sdk-cpp/src/aws-sdk-cpp/aws-cpp-sdk
-
-    INCLUDEPATH += $$AWS_H-core/include \
-                    $$AWS_H-iam/include \
-                    $$AWS_H-access-management/include \
-                    $$AWS_H-cognito-identity/include \
-                    $$AWS_H-cognito-idp/include \
-                    $$AWS_H-iot/include \
-                    $$AWS_H-cognito-sync/include \
-                    $$AWS_H-identity-management/include
-
+    # Crypto++
+    INCLUDEPATH += $$DEV_LIBS_PATH/cryptopp/ios/include
+    LIBS += -L$$DEV_LIBS_PATH/cryptopp/ios -lcryptopp
 }
 
+# macOS specifics
 macos {
 
     # import QtZeroConf https://github.com/jbagg/QtZeroConf
     include(QtZeroConf/qtzeroconf.pri)
     DEFINES= QZEROCONF_STATIC
 
-    AWS = /Users/anton.titkov/DevLibs/aws-sdk-cpp/host/aws-cpp-sdk
+    AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/host/aws-cpp-sdk
 
-    LIBS += -L$$AWS-core -laws-cpp-sdk-core \
+    LIBS += \
                 -L$$AWS-iam -laws-cpp-sdk-iam \
-                -L$$AWS-access-management -laws-cpp-sdk-access-management \
-                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
                 -L$$AWS-iot -laws-cpp-sdk-iot \
                 -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
                 -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
+                -L$$AWS-access-management -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
                 -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
+                -L$$AWS-core -laws-cpp-sdk-core \
                 -lcurl
 
-    AWS_H = /Users/anton.titkov/DevLibs/aws-sdk-cpp/src/aws-sdk-cpp/aws-cpp-sdk
-
-    INCLUDEPATH += $$AWS_H-core/include \
-                    $$AWS_H-iam/include \
-                    $$AWS_H-access-management/include \
-                    $$AWS_H-cognito-identity/include \
-                    $$AWS_H-cognito-idp/include \
-                    $$AWS_H-iot/include \
-                    $$AWS_H-cognito-sync/include \
-                    $$AWS_H-identity-management/include
+    #import Crypto++ lib
+    INCLUDEPATH += $$DEV_LIBS_PATH/cryptopp/build-host/include
+    LIBS += -L$$DEV_LIBS_PATH/cryptopp/build-host/lib -lcryptopp
 }
 
-HEADERS += \
-    EspTouchSetup.h \
-    core/WlanAPI.h \
-    core/WanAPI.h \
-    core/User.h \
-    core/UserDAO.h \
-    aws/CognitoSyncAPI.h \
-    aws/IdToken.h \
-    aws/Jwt.h \
-    aws/AccessToken.h \
-    aws/RefreshToken.h \
-    aws/ClientConfig.h \
-    core/Syncable.h \
-    CurrentUser.h \
-    aws/CredentialsRequest.h \
-    aws/AuthRequest.h \
-    UserLogin.h \
-    core/SyncableModel.h \
-    UserData.h \
-    core/shadegroup.h \
-    core/BasicDAO.h \
-    core/shadegroupmodel.h
+# AWS headers same for all platforms
+AWS_H = $$DEV_LIBS_PATH/aws-sdk-cpp/src/aws-sdk-cpp/aws-cpp-sdk
+INCLUDEPATH += $$AWS_H-core/include \
+                $$AWS_H-logs/include \
+                $$AWS_H-iam/include \
+                $$AWS_H-access-management/include \
+                $$AWS_H-cognito-identity/include \
+                $$AWS_H-cognito-idp/include \
+                $$AWS_H-iot/include \
+                $$AWS_H-cognito-sync/include \
+                $$AWS_H-identity-management/include
+
 
 SOURCES += \
     EspTouchSetup.cpp \
@@ -175,18 +180,62 @@ SOURCES += \
     aws/CredentialsRequest.cpp \
     aws/AuthRequest.cpp \
     UserLogin.cpp \
-    core/SyncableModel.cpp \
     UserData.cpp \
     core/shadegroup.cpp \
     core/BasicDAO.cpp \
-    core/shadegroupmodel.cpp
+    core/shadegroupmodel.cpp \
+    networkmonitor.cpp \
+    core/controllerdiscovery.cpp \
+    core/controllermodel.cpp \
+    core/databasemanager.cpp \
+    core/locationmodel.cpp \
+    core/mdnsdiscothread.cpp \
+    core/schedule.cpp \
+    core/shade.cpp \
+    core/positioned.cpp \
+    main.cpp \
+    core/location.cpp \
+    core/controller.cpp \
+    core/SyncableRecord.tpp \
+    core/syncablerecord.cpp
 
-# import Boost lib
-INCLUDEPATH += /Users/anton.titkov/DevLibs/boost-cpp
+# own codebase
+HEADERS += \
+    EspTouchSetup.h \
+    core/WlanAPI.h \
+    core/WanAPI.h \
+    core/User.h \
+    core/UserDAO.h \
+    aws/CognitoSyncAPI.h \
+    aws/IdToken.h \
+    aws/Jwt.h \
+    aws/AccessToken.h \
+    aws/RefreshToken.h \
+    aws/ClientConfig.h \
+    CurrentUser.h \
+    aws/CredentialsRequest.h \
+    aws/AuthRequest.h \
+    UserLogin.h \
+    UserData.h \
+    core/shadegroup.h \
+    core/BasicDAO.h \
+    core/shadegroupmodel.h \
+    networkmonitor.h \
+    core/controllerdiscovery.h \
+    core/controllermodel.h \
+    core/databasemanager.h \
+    core/locationmodel.h \
+    core/mdnsdiscothread.h \
+    core/schedule.h \
+    core/shade.h \
+    core/positioned.h \
+    core/location.h \
+    core/controller.h \
+    core/SyncableRecord.h \
+    core/syncable.h
 
-#import Crypto++ lib
-INCLUDEPATH += /Users/anton.titkov/DevLibs/cryptopp/build-host/include
-LIBS += -L/Users/anton.titkov/DevLibs/cryptopp/build-host/lib -lcryptopp
+# Boost lib for multiprecision ints
+INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -199,31 +248,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += \
-    networkmonitor.cpp \
-#    core/controllerdao.cpp \
-    core/controllerdiscovery.cpp \
-    core/controllermodel.cpp \
-    core/databasemanager.cpp \
-    core/locationcontroller.cpp \
-#    core/locationdao.cpp \
-    core/locationmodel.cpp \
-    core/mdnsdiscothread.cpp \
-    core/schedule.cpp \
-    core/shade.cpp \
-#    core/shadesgroupdao.cpp \
-    core/userlocation.cpp \
-    core/positioned.cpp \
-    main.cpp
-
 RESOURCES += qml.qrc
-
-#LIBS += -L/Users/anton.titkov/DevProjects/leviosa/leviosa-core -lleviosa-core
-
-#INCLUDEPATH += /Users/anton.titkov/DevProjects/leviosa/leviosa-core
-
-#DEPENDPATH += /Users/anton.titkov/DevProjects/leviosa/leviosa-core
-
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 #QML_IMPORT_PATH = styles
@@ -235,19 +260,3 @@ QML_DESIGNER_IMPORT_PATH =
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-HEADERS += \
-    networkmonitor.h \
-#    core/controllerdao.h \
-    core/controllerdiscovery.h \
-    core/controllermodel.h \
-    core/databasemanager.h \
-    core/locationcontroller.h \
-#    core/locationdao.h \
-    core/locationmodel.h \
-    core/mdnsdiscothread.h \
-    core/schedule.h \
-    core/shade.h \
-#    core/shadesgroupdao.h \
-    core/userlocation.h \
-    core/positioned.h

@@ -6,19 +6,29 @@
 #include "shade.h"
 #include "schedule.h"
 #include "positioned.h"
-#include "Syncable.h"
+#include "syncable.h"
+#include "SyncableRecord.h"
 
-class LocationController: public Shade, public Schedule, public Positioned
+class Controller: public Shade, public Positioned, public Syncable
 {
     QString mMac;
     QString mLocationUuid;
     QString mName;
     bool mIsWLAN;
     QString mIpAddress;
-    int mLastModified;
 public:
-    LocationController() : mLastModified(0) {}
-    explicit LocationController(const QString& mac);
+    Controller() {}
+    Controller(const Controller& c) :
+        Positioned(c),
+        Syncable(c),
+        mMac(c.mMac),
+        mLocationUuid(c.mLocationUuid),
+        mName(c.mName),
+        mIsWLAN(c.mIsWLAN),
+        mIpAddress(c.mIpAddress)
+    {}
+
+    explicit Controller(const QString& mac);
 
     QString mac() const;
     void setMac(const QString& mac);
@@ -34,9 +44,6 @@ public:
 
     QString ipAddress() const;
     void setIpAddress(const QString& ipAddress);
-
-    int lastModified() const { return mLastModified; }
-    void setLastModified(int lastModified) { mLastModified = lastModified; }
 
     QJsonObject toJson() const;
     void withJson(const QJsonObject& json);

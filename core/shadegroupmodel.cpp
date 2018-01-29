@@ -23,7 +23,7 @@ QModelIndex ShadeGroupModel::addShadeGroup(const ShadeGroup &shadesGroup)
     newGroup->setOpenAt(shadesGroup.openAt());
     newGroup->setCloseAt(shadesGroup.closeAt());
     newGroup->setDays(shadesGroup.days());
-    mDb.shadeGroupsDao.persistItem(*newGroup);
+    mDb.shadeGroupsDao.persistItem(*newGroup, false);
     mShadeGroups->push_back(move(newGroup));
     endInsertRows();
     return index(rowsIndex, 0);
@@ -44,12 +44,12 @@ void ShadeGroupModel::removeShadeGroup(char channel)
     ShadeGroup g(channel);
     if(isIndexValid(idx)){
         beginRemoveRows(idx.parent(), row, row);
-        mDb.shadeGroupsDao.destroy(g);
+        mDb.shadeGroupsDao.destroy(g, false);
         endRemoveRows();
     }
     else{
         beginResetModel();
-        mDb.shadeGroupsDao.destroy(g);
+        mDb.shadeGroupsDao.destroy(g, false);
         endResetModel();
     }
 }
@@ -133,7 +133,7 @@ bool ShadeGroupModel::setData(const QModelIndex &index, const QVariant &value, i
     default:
         return false;
     }
-    mDb.shadeGroupsDao.persistItem(group);
+    mDb.shadeGroupsDao.persistItem(group, false);
     emit dataChanged(index, index);
     return true;
 }

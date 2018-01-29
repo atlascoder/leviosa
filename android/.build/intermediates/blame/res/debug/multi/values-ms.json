@@ -73,7 +73,7 @@
                     "endOffset": 155
                 },
                 "from": {
-                    "file": "/Users/anton.titkov/Qt/5.9.3/android_x86/src/android/java/res/values-ms/strings.xml",
+                    "file": "/Users/anton.titkov/Qt/5.9.3/android_armv7/src/android/java/res/values-ms/strings.xml",
                     "position": {
                         "startLine": 4,
                         "startColumn": 4,
@@ -92,7 +92,7 @@
                     "endOffset": 281
                 },
                 "from": {
-                    "file": "/Users/anton.titkov/Qt/5.9.3/android_x86/src/android/java/res/values-ms/strings.xml",
+                    "file": "/Users/anton.titkov/Qt/5.9.3/android_armv7/src/android/java/res/values-ms/strings.xml",
                     "position": {
                         "startLine": 3,
                         "startColumn": 4,
@@ -111,7 +111,7 @@
                     "endOffset": 394
                 },
                 "from": {
-                    "file": "/Users/anton.titkov/Qt/5.9.3/android_x86/src/android/java/res/values-ms/strings.xml",
+                    "file": "/Users/anton.titkov/Qt/5.9.3/android_armv7/src/android/java/res/values-ms/strings.xml",
                     "position": {
                         "startLine": 2,
                         "startColumn": 4,

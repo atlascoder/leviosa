@@ -7,6 +7,7 @@
 #include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <QMutex>
 #include <QFuture>
+#include <QThread>
 
 #include "aws/IdToken.h"
 #include "aws/AccessToken.h"
@@ -14,6 +15,8 @@
 #include "core/databasemanager.h"
 #include "core/User.h"
 #include "aws/CredentialsRequest.h"
+#include "aws/AuthRequest.h"
+#include <memory>
 
 class CurrentUser : public QObject
 {
@@ -30,16 +33,19 @@ class CurrentUser : public QObject
     Aws::CognitoIdentity::Model::Credentials mCredentials;
     QMutex mCredentialsMutex;
 
-    QFuture<void> mCredentialsResult;
     QFuture<void> mAuthResult;
 
     QString mLastMessage;
     bool mIsAuthenticated;
     bool mHasCredentials;
+
+    bool mStopRequests;
+
+    std::unique_ptr<AuthRequest> mAuthRequest;
+    std::unique_ptr<CredentialsRequest> mCredentialsRequest;
 public:
     static CurrentUser& instance();
 
-    void askCredentials();
     void fillCredentials(Aws::Auth::AWSCredentials & awsCredentials);
 
     // blocking credentials request
@@ -63,7 +69,27 @@ public:
     int shadeGroupsModified() const { return mUser.shadeGroupsLastModified(); }
     void setShadeGroupsModified(int modified) { mUser.setShadeGroupsModified(modified); }
 
+    int locationsSyncCount() const { return mUser.locationsSyncCount(); }
+    void setLocationsSyncCount(int syncCount) { mUser.setLocationsSyncCount(syncCount); }
+
+    int controllersSyncCount() const { return mUser.controllersSyncCount(); }
+    void setControllersSyncCount(int syncCount) { mUser.setControllersSyncCount(syncCount); }
+
+    int shadeGroupsSyncCount() const { return mUser.shadeGroupsSyncCount(); }
+    void setShadeGroupsSyncCount(int syncCount) { mUser.setShadeGroupsSyncCount(syncCount); }
+
+    int locationsSynced() const { return mUser.locationsSynced(); }
+    void setLocationsSynced(bool synced) { mUser.setLocationsSynced(synced); }
+
+    int controllersSynced() const { return mUser.controllersSynced(); }
+    void setControllersSynced(bool synced) { mUser.setControllersSynced(synced); }
+
+    int shadeGroupsSynced() const { return mUser.shadeGroupsSynced(); }
+    void setShadeGroupsSynced(bool synced) { mUser.setShadeGroupsSynced(synced); }
+
     void persistUserDataModified();
+
+    void stopRequests();
 
 public slots:
     void signUp(const QString& email, const QString& password);
@@ -88,6 +114,7 @@ signals:
 
 private:
     CurrentUser(QObject *parent = 0);
+    virtual ~CurrentUser();
 
     void registerUser(const QString& email, const QString& password);
     void authenticateUser(const QString& email, const QString& password);

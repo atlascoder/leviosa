@@ -1,172 +1,67 @@
 #include "CognitoSyncAPI.h"
-#include <aws/cognito-sync/CognitoSyncClient.h>
+#include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/cognito-sync/model/ListRecordsRequest.h>
 #include <aws/cognito-sync/model/ListRecordsResult.h>
 #include <aws/cognito-sync/CognitoSyncRequest.h>
 #include <aws/core/utils/Outcome.h>
 #include <aws/cognito-sync/model/UpdateRecordsResult.h>
 #include <aws/cognito-sync/model/RecordPatch.h>
+#include <aws/core/utils/memory/AWSMemory.h>
 
 #include <QDebug>
 
 #include "ClientConfig.h"
-#include "core/Syncable.h"
+#include "core/SyncableRecord.h"
 #include <memory>
 
 using namespace Aws::CognitoSync;
 using namespace std;
 
-void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const QString & datasetName, vector<unique_ptr<Syncable>> * localDataset, std::vector<std::unique_ptr<Syncable>> * out, std::vector<int> * deleted){
-    Model::ListRecordsRequest req;
-    req.SetDatasetName(datasetName.toStdString());
-    req.SetIdentityId(ClientConfig::instance().identityId);
-    req.SetIdentityPoolId(ClientConfig::instance().identityPool);
-
-    CognitoSyncClient client(credentials, ClientConfig::instance());
-
-    // indexes of local records that is not require for upload
-    set<int> syncedIds;
-    map<int, int> toDelete;
-
-    // receive remote data and mark updated by lastModifiedDate
-    auto resp = client.ListRecords(req);
-    if(resp.IsSuccess()){
-        const Aws::Vector<Model::Record> & records = resp.GetResult().GetRecords();
-        for(auto& record : records){
-            int id = stoi(record.GetKey().c_str());
-            vector<int>::iterator d = find_if(deleted->begin(), deleted->end(), [id](const int & v) -> bool { return v==id; });
-            if(d != deleted->end()){
-                toDelete[id] = record.GetSyncCount();
-                continue;
-            }
-            vector<unique_ptr<Syncable>>::iterator m = find_if(localDataset->begin(), localDataset->end(), [id](const unique_ptr<Syncable> & m) -> bool { return m.get()->id()==id; });
-            if( m != localDataset->end()){
-                // record exists locally
-                Syncable *model = m->get();
-                // delta time: 0 - equal, <0 - remote is newer, >0 - local is newer
-                int delta = model->lastModified() - (record.GetLastModifiedDate().Millis() / 1000);
-                if(delta < 0){
-                    // update in localDataset, due remote record is newer
-                    model->setSyncContent(QString(record.GetValue().c_str()));
-                    model->setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                    model->setUpdated(true);
-                    // no needs to upload this record again
-                    syncedIds.insert(id);
-                }
-                else if(delta > 0){
-                    // set correct sync for upload
-                    model->setSyncs(record.GetSyncCount());
-                }
-                else {
-                    // record is the same, no need to send
-                    syncedIds.insert(id);
-                }
-            }
-            else{
-                // record not exist locally. Creating and adding to <outs>
-                // checkif record has valid value and create record then
-                if(record.GetValue().size() > 0){
-                    unique_ptr<Syncable> mnew(new Syncable());
-                    mnew->setId(id);
-                    mnew->setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                    mnew->setSyncContent(QString(record.GetValue().c_str()));
-                    mnew->setUpdated(true);
-                    out->push_back(move(mnew));
-                }
-                else{
-                    toDelete[id] = record.GetSyncCount();
-                }
-                // no need to send again
-                syncedIds.insert(id);
-            }
-        }
-    }
-    else{
-        qDebug() << "Error receiving Locations: " << resp.GetError().GetMessage().c_str();
-    }
-
-    // just return if nothing to upload
-    if(syncedIds.size() == (localDataset->size() + out->size()) && toDelete.size()==0) return;
-
-    Model::UpdateRecordsRequest updateRequest;
-
-    for(auto update = localDataset->begin(); update != localDataset->end(); ++update){
-        if(syncedIds.find(update->get()->id()) != syncedIds.end()) continue;
-        Model::RecordPatch patch;
-        patch.SetOp(Aws::CognitoSync::Model::Operation::replace);
-        patch.SetKey(update->get()->syncKey().toStdString());
-        patch.SetValue(update->get()->syncContent().toStdString());
-        patch.SetSyncCount(update->get()->syncs());
-        updateRequest.AddRecordPatches(patch);
-    }
-
-    for(auto to_del : toDelete){
-        Model::RecordPatch patch;
-        patch.SetOp(Aws::CognitoSync::Model::Operation::remove);
-        patch.SetKey(Aws::String(QString::number(to_del.first).toStdString()));
-        patch.SetSyncCount(to_del.second);
-        updateRequest.AddRecordPatches(patch);
-    }
-
-    if(updateRequest.GetRecordPatches().size() == 0) return;
-
-    updateRequest.SetIdentityId(ClientConfig::instance().identityId);
-    updateRequest.SetIdentityPoolId(ClientConfig::instance().identityPool);
-    updateRequest.SetDatasetName(datasetName.toStdString());
-    updateRequest.SetSyncSessionToken(resp.GetResult().GetSyncSessionToken());
-
-    deleted->clear();
-
-    auto updateResp = client.UpdateRecords(updateRequest);
-    if(updateResp.IsSuccess()){
-        for(auto& update : updateResp.GetResult().GetRecords()){
-            int id = stoi(update.GetKey().c_str());
-            if(toDelete.find(id) != toDelete.end()){
-                deleted->push_back(id);
-                continue;
-            }
-            vector<unique_ptr<Syncable>>::iterator m = find_if(localDataset->begin(), localDataset->end(), [id](const unique_ptr<Syncable> & x) -> bool { return x->id()==id; });
-            // set syncs in local cache
-            if(m != localDataset->end()){
-                m->get()->setLastModified(update.GetLastModifiedDate().Millis() / 1000);
-                m->get()->setSyncs(update.GetSyncCount());
-                m->get()->setUpdated(true);
-            }
-            m = find_if(out->begin(), out->end(), [id](const unique_ptr<Syncable> & x) -> bool { return x->id()==id; });
-            // set syncs in out cache
-            if(m != out->end()){
-                m->get()->setLastModified(update.GetLastModifiedDate().Millis() / 1000);
-                m->get()->setSyncs(update.GetSyncCount());
-                m->get()->setUpdated(true);
-            }
-        }
-    }
-    else{
-        qDebug() << "Update request failed: " << updateResp.GetError().GetMessage().c_str();
-    }
+CognitoSyncAPI::CognitoSyncAPI() : mCancelled(false)
+{
+    mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, ClientConfig::instance());
 }
 
-void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const QString & datasetName, Syncable & locations, Syncable & controllers, Syncable & shadeGroups)
+CognitoSyncAPI::~CognitoSyncAPI()
 {
+    cancelRequests();
+    Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
+}
+
+void CognitoSyncAPI::resetWithCredentials(const Aws::Auth::AWSCredentials &credentials)
+{
+    Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
+    mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, credentials, ClientConfig::instance());
+}
+
+void CognitoSyncAPI::cancelRequests()
+{
+    mCancelled = true;
+    mClient->DisableRequestProcessing();
+}
+
+void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const QString & datasetName, SyncableRecord<Location> & locations, SyncableRecord<Controller> & controllers, SyncableRecord<ShadeGroup> & shadeGroups)
+{
+    if(mCancelled) return;
+    resetWithCredentials(credentials);
     Model::ListRecordsRequest req;
-    req.SetDatasetName(datasetName.toStdString());
+    req.SetDatasetName(Aws::Utils::StringUtils::to_string(datasetName.toStdString()));
     req.SetIdentityId(ClientConfig::instance().identityId);
     req.SetIdentityPoolId(ClientConfig::instance().identityPool);
     Model::UpdateRecordsRequest updateRequest;
-
-    CognitoSyncClient client(credentials, ClientConfig::instance());
 
     bool locationsFound = false;
     bool controllersFound = false;
     bool shadeGroupsFound = false;
 
     // receive remote data and mark updated by lastModifiedDate
-    auto resp = client.ListRecords(req);
+    if(mCancelled) return;
+    auto resp = mClient->ListRecords(req);
     if(resp.IsSuccess()){
         qDebug() << "SYNC ListRecords (" << resp.GetResult().GetCount() << ")";
         const Aws::Vector<Model::Record> & records = resp.GetResult().GetRecords();
         for(auto& record : records){
-            qDebug() << "SYNC Record [" << record.GetKey().c_str() << "] => " << record.GetValue().c_str();
+            qDebug() << "SYNC Record [" << record.GetKey().c_str() << "][" << record.GetSyncCount() << "] => " << record.GetValue().c_str();
             if("locations" == record.GetKey()){
                 syncRecord(locations, record, updateRequest);
                 locationsFound = true;
@@ -183,13 +78,14 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
     }
     else{
         qDebug() << "Error receiving Locations: " << resp.GetError().GetMessage().c_str();
+        return;
     }
 
     if(!locationsFound){
         Model::RecordPatch patch;
         patch.SetOp(Model::Operation::replace);
         patch.SetKey("locations");
-        patch.SetValue(locations.syncContent().toStdString());
+        patch.SetValue(Aws::Utils::StringUtils::to_string(locations.syncContent().toStdString()));
         patch.SetSyncCount(0);
         updateRequest.AddRecordPatches(patch);
         qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
@@ -199,7 +95,7 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
         Model::RecordPatch patch;
         patch.SetOp(Model::Operation::replace);
         patch.SetKey("controllers");
-        patch.SetValue(controllers.syncContent().toStdString());
+        patch.SetValue(Aws::Utils::StringUtils::to_string(controllers.syncContent().toStdString()));
         patch.SetSyncCount(0);
         updateRequest.AddRecordPatches(patch);
         qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
@@ -209,7 +105,7 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
         Model::RecordPatch patch;
         patch.SetOp(Model::Operation::replace);
         patch.SetKey("shadeGroups");
-        patch.SetValue(shadeGroups.syncContent().toStdString());
+        patch.SetValue(Aws::Utils::StringUtils::to_string(shadeGroups.syncContent().toStdString()));
         patch.SetSyncCount(0);
         updateRequest.AddRecordPatches(patch);
         qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
@@ -220,26 +116,30 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
 
     updateRequest.SetIdentityId(ClientConfig::instance().identityId);
     updateRequest.SetIdentityPoolId(ClientConfig::instance().identityPool);
-    updateRequest.SetDatasetName(datasetName.toStdString());
+    updateRequest.SetDatasetName(Aws::Utils::StringUtils::to_string(datasetName.toStdString()));
     updateRequest.SetSyncSessionToken(resp.GetResult().GetSyncSessionToken());
 
-    auto updateResp = client.UpdateRecords(updateRequest);
+    if(mCancelled) return;
+    auto updateResp = mClient->UpdateRecords(updateRequest);
     if(updateResp.IsSuccess()){
-        const Aws::Vector<Model::Record> & records = resp.GetResult().GetRecords();
+        const Aws::Vector<Model::Record> & records = updateResp.GetResult().GetRecords();
         for(auto& record : records){
-            if("locations" == record.GetKey() && locations.lastModified() != record.GetLastModifiedDate().Millis()/1000){
+            if("locations" == record.GetKey()){
                 locations.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                locations.setSyncs(record.GetSyncCount());
+                locations.setSyncCount(record.GetSyncCount());
+                locations.setSynced(true);
                 locations.setUpdated(true);
             }
-            else if("controllers" == record.GetKey() && controllers.lastModified() != record.GetLastModifiedDate().Millis()/1000){
+            else if("controllers" == record.GetKey()){
                 controllers.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                controllers.setSyncs(record.GetSyncCount());
+                controllers.setSyncCount(record.GetSyncCount());
+                controllers.setSynced(true);
                 controllers.setUpdated(true);
             }
-            else if("shadeGroups" == record.GetKey() && shadeGroups.lastModified() != record.GetLastModifiedDate().Millis()/1000){
+            else if("shadeGroups" == record.GetKey()){
                 shadeGroups.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
                 shadeGroups.setLastModified(record.GetSyncCount());
+                shadeGroups.setSynced(true);
                 shadeGroups.setUpdated(true);
             }
         }
@@ -250,33 +150,39 @@ void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const Q
 
 }
 
-void CognitoSyncAPI::syncRecord(Syncable & syncable, const Model::Record & record, Model::UpdateRecordsRequest & update) const
+template<class T>
+void CognitoSyncAPI::syncRecord(SyncableRecord<T> & syncable, const Model::Record & record, Model::UpdateRecordsRequest & update) const
 {
-    int delta = syncable.lastModified() - record.GetLastModifiedDate().Millis()/1000;
-    if(delta < 0){
-        // local locations stale
-        syncable.setSyncContent(record.GetValue().c_str());
-        syncable.setSyncs(record.GetSyncCount());
+    if(syncable.syncCount() == record.GetSyncCount() && !syncable.synced()){
+        // local cache is fresher, do syncWithStale strategy
+        Model::RecordPatch patch;
+        patch.SetKey(record.GetKey());
+        patch.SetValue(Aws::Utils::StringUtils::to_string(syncable.syncWithStale(record.GetValue().c_str()).toStdString()));
+        patch.SetOp(Aws::CognitoSync::Model::Operation::replace);
+        patch.SetSyncCount(record.GetSyncCount());
+        update.AddRecordPatches(patch);
         syncable.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-        syncable.setUpdated(true);
-        qDebug() << "SYNC UPDATE LOCAL [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
-                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
+        qDebug() << "SYNC WITH STALE [" << record.GetKey().c_str() << "] " << \
+                    " SyncCount L~R: " << syncable.syncCount() << "~" << record.GetSyncCount();
     }
-    else if(delta > 0){
-        // local data is newer
-        syncable.setSyncs(record.GetSyncCount());
+    else if(syncable.syncCount() != record.GetSyncCount()){
+        // remote cache is fresher, do syncWithFresher strategy
+        QString updString = syncable.syncWithFresher(record.GetValue().c_str());
         Model::RecordPatch patch;
         patch.SetKey(record.GetKey());
         patch.SetOp(Aws::CognitoSync::Model::Operation::replace);
         patch.SetSyncCount(record.GetSyncCount());
-        patch.SetValue(syncable.syncContent().toStdString());
+        patch.SetValue(Aws::Utils::StringUtils::to_string(updString.toStdString()));
         update.AddRecordPatches(patch);
-        qDebug() << "SYNC PATCH CLOUD [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
-                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
+        syncable.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
+        qDebug() << "SYNC WITH FRESHER [" << record.GetKey().c_str() << "] " << \
+                    " SyncCount L~R: " << syncable.syncCount() << "~" << record.GetSyncCount();
+        syncable.setSyncCount(record.GetSyncCount());
     }
     else {
         syncable.setUpdated(false);
-        qDebug() << "SYNC MATCH [" << record.GetValue().c_str() << "] => " << record.GetValue().c_str() << \
-                    " with lastModified: " << record.GetLastModifiedDate().Millis() / 1000;
+        syncable.setSynced(true);
+        qDebug() << "SYNC MATCH [" << record.GetKey().c_str() << "] => " << record.GetValue().c_str() << \
+                    " with syncCount: " << record.GetSyncCount();
     }
 }

@@ -7,27 +7,25 @@ using namespace std;
 
 LocationModel::LocationModel(QObject* parent):
     QAbstractListModel(parent),
-    mDb(DatabaseManager::instance()),
-    mLocations(mDb.locationsDao.items()),
+    mLocations(UserData::instance().mLocations.get()),
     mSelectedLocationIndex(QModelIndex())
 {
     connect(&UserData::instance(), &UserData::dataUpdated, this, &LocationModel::updateModel);
 }
 
-QModelIndex LocationModel::addLocation(const UserLocation& location)
+QModelIndex LocationModel::addLocation(const Location& location)
 {
     int rowIndex = rowCount();
     beginInsertRows(QModelIndex(), rowIndex, rowIndex);
-    unique_ptr<UserLocation> newLocation(new UserLocation(location.uuid()));
+    unique_ptr<Location> newLocation(new Location(location.uuid()));
     newLocation->setName(location.name());
     newLocation->setBssid(location.bssid());
     newLocation->setUtcOffset(location.utcOffset());
     newLocation->setPosition(static_cast<int>(mLocations->size()));
-    newLocation->setLastModified(location.lastModified());
-    mDb.locationsDao.persistItem(*newLocation);
+    UserData::instance().persistItem(*newLocation.get(), true);
     mLocations->push_back(move(newLocation));
     endInsertRows();
-    return index(rowIndex, 0);
+    return this->index(rowIndex);
 }
 
 int LocationModel::rowCount(const QModelIndex &parent) const
@@ -42,7 +40,7 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
-    const UserLocation location = *mLocations->at(index.row());
+    const Location location = *mLocations->at(index.row());
 
     switch(role){
     case Roles::UuidRole:
@@ -67,7 +65,7 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
 bool LocationModel::setData(const QModelIndex &index, const QVariant &value, int role){
     if(!isIndexValid(index))
         return false;
-    UserLocation& location = *mLocations->at(index.row());
+    Location& location = *mLocations->at(index.row());
     switch (role) {
     case Roles::NameRole:
         location.setName(value.toString());
@@ -92,7 +90,8 @@ bool LocationModel::setData(const QModelIndex &index, const QVariant &value, int
     default:
         return false;
     }
-    mDb.locationsDao.persistItem(location);
+    location.setSynced(false);
+    UserData::instance().persistItem(location, true);
     emit dataChanged(index, index);
     return true;
 }
@@ -118,7 +117,7 @@ QHash<int, QByteArray> LocationModel::roleNames() const
 
 void LocationModel::addLocationWithData(const QString &name, int utcOffset, const QString &bssid)
 {
-    UserLocation location;
+    Location location;
     location.setName(name);
     location.setUtcOffset(utcOffset);
     location.setBssid(bssid);
@@ -150,12 +149,12 @@ QModelIndex LocationModel::findLocation(const QString &uuid) const
     return QModelIndex();
 }
 
-bool LocationModel::updateLocationWithData(const QString &uuid, const QString &name, int utcOffset, const QString &bssid, int position)
+void LocationModel::updateLocationWithData(const QString &uuid, const QString &name, int utcOffset, const QString &bssid, int position)
 {
     QModelIndex idx = findLocation(uuid);
-    if(!idx.isValid()) return false;
+    if(!idx.isValid()) return;
 
-    UserLocation& location = *mLocations->at(idx.row());
+    Location& location = *mLocations->at(idx.row());
     location.setName(name);
     location.setUtcOffset(utcOffset);
     location.setBssid(bssid);
@@ -180,22 +179,15 @@ bool LocationModel::updateLocationWithData(const QString &uuid, const QString &n
             }
         }
         for(int i = 0; i < rows; i++){
-            setData(this->index(idxs[i]), i, Roles::PositionRole);
+            mLocations->at(idxs[i])->setPosition(i);
+            mLocations->at(idxs[i])->setSynced(false);
         }
-        mLocations = mDb.locationsDao.items();
-        setSelectedLocationUuid(location.uuid().toString());
+        UserData::instance().persistItems(*mLocations, true);
     }
     else{
-        mDb.locationsDao.persistItem(location);
+        location.setSynced(false);
+        UserData::instance().persistItem(location, true);
     }
-    beginResetModel();
-    endResetModel();
-    return true;
-}
-
-void LocationModel::fireDataChanged()
-{
-    emit dataChanged(this->index(0), this->index(rowCount()-1));
 }
 
 QString LocationModel::getSelectedLocationUuid() const
@@ -342,17 +334,14 @@ void LocationModel::updateModel()
 {
     qDebug() << "LocationsModel: updated";
     beginResetModel();
-    mLocations = mDb.locationsDao.items();
+    UserData::instance().loadLocations();
     endResetModel();
 }
 
 void LocationModel::remove(const QString &uuid)
 {
-    UserLocation loc(uuid);
-    mDb.locationsDao.destroy(loc);
-    beginResetModel();
-    mLocations = mDb.locationsDao.items();
-    endResetModel();
+    Location loc(uuid);
+    UserData::instance().removeItem(loc, true);
 }
 
 void LocationModel::setCurrentBssid(const QString &bssid)

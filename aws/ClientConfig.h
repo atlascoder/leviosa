@@ -1,6 +1,7 @@
 #ifndef CLIENTCONFIG_H
 #define CLIENTCONFIG_H
 
+#include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/cognito-identity/CognitoIdentityClient.h>
 
 #define AWS_ACCOUNT_ID "559850651912"
@@ -26,13 +27,14 @@ private:
     {
         region = AWS_REGION;
         scheme = Aws::Http::Scheme::HTTPS;
-        connectTimeoutMs = 20000;
-        requestTimeoutMs = 30000;
+        connectTimeoutMs = 40000;
+        requestTimeoutMs = 60000;
         clientId = AWS_CLIENT_ID;
         userPoolName = AWS_POOL_NAME;
-        userPoolId = region + std::string("_") + userPoolName;
+        userPoolId = region + "_" + userPoolName;
         identityPool = AWS_IDENTITY_POOL;
         accoundId = AWS_ACCOUNT_ID;
+        verifySSL = false;
     }
 };
 

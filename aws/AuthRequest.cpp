@@ -7,12 +7,11 @@
 #include <QCryptographicHash>
 #include <QMessageAuthenticationCode>
 #include <QDebug>
+#include <QLocale>
 
-#include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <aws/cognito-identity/CognitoIdentityRequest.h>
 #include <aws/cognito-identity/model/CognitoIdentityProvider.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/cognito-idp/CognitoIdentityProviderClient.h>
 #include <aws/cognito-idp/model/DescribeUserPoolClientRequest.h>
 #include <aws/cognito-idp/model/SignUpRequest.h>
 #include <aws/cognito-idp/model/SignUpResult.h>
@@ -24,6 +23,7 @@
 #include <aws/cognito-idp/model/RespondToAuthChallengeResult.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/memory/stl/AWSMap.h>
+#include <aws/core/utils/memory/AWSMemory.h>
 
 #include <aws/cognito-idp/model/ChangePasswordRequest.h>
 #include <aws/cognito-idp/model/ChangePasswordResult.h>
@@ -54,27 +54,8 @@ template <class T> T my_powm(const T& a, const T& p, const T& c) {
 }
 
 
-AuthRequest::AuthRequest()
+AuthRequest::AuthRequest() : mCancelled(false)
 {
-    init();
-}
-
-AuthRequest::AuthRequest(const QString& email) : mEmail(email)
-{
-    init();
-}
-
-AuthRequest::AuthRequest(const QString& refreshToken, int exp) : mRefreshToken(refreshToken), mRefreshTokenExpiration(exp)
-{
-    init();
-}
-
-AuthRequest::AuthRequest(const QString &email, const QString &password) : mEmail(email), mPassword(password)
-{
-    init();
-}
-
-void AuthRequest::init(){
     mN = static_cast<cpp_int>("0x" \
             "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
             "29024E088A67CC74020BBEA63B139B22514A08798E3404DD" \
@@ -108,20 +89,33 @@ void AuthRequest::init(){
         mA = powm(mg, ma, mN);
     } while(mA % mN == 0);
     mSuccessful = false;
+    mClient = Aws::New<Aws::CognitoIdentityProvider::CognitoIdentityProviderClient>(nullptr, ClientConfig::instance());
+}
+
+AuthRequest::~AuthRequest()
+{
+    mCancelled = true;
+    Aws::Delete<Aws::CognitoIdentityProvider::CognitoIdentityProviderClient>(mClient);
+}
+
+void AuthRequest::cancelRequests()
+{
+    mCancelled = true;
+    mClient->DisableRequestProcessing();
 }
 
 QByteArray AuthRequest::authenticateUser(const QString &userId, const QString & password, const QString &saltString, const QString &srp_b, const QString &secret_block, const QString &formattedTimestamp)
 {
     QByteArray authSecretBlock = QByteArray::fromBase64(secret_block.toLatin1());
-    cpp_int _B = static_cast<cpp_int>(QString("0x").append(srp_b).toLatin1());
-    if(_B % mN == 0){
+    cpp_int cB = static_cast<cpp_int>(QString("0x").append(srp_b).toLatin1());
+    if(cB % mN == 0){
         QTextStream(stdout) << "E authUser: B cannot be zero" << endl;
         return QByteArray();
     }
     QByteArray A;
     export_bits(mA, std::back_inserter(A), 8);
     QByteArray B;
-    export_bits(_B, std::back_inserter(B), 8);
+    export_bits(cB, std::back_inserter(B), 8);
     QByteArray key = getPasswordAuthenticationKey(userId, password, A, B, saltString);
 
     QMessageAuthenticationCode mac(QCryptographicHash::Sha256);
@@ -205,13 +199,13 @@ QByteArray AuthRequest::getPasswordAuthenticationKey(const QString &userId, cons
     return derivedKey;
 }
 
-void AuthRequest::signIn()
+void AuthRequest::signIn(const QString& email, const QString& password)
 {
-    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient mClient(ClientConfig::instance());
-
+    mEmail = email;
+    mPassword = password;
     // https://stackoverflow.com/questions/42389823/aws-sign-in-invalidparameterexception-missing-required-parameter-srp-a
     Aws::Map<Aws::String, Aws::String> authParameters;
-    authParameters.insert(std::pair<Aws::String, Aws::String>("USERNAME", mEmail.toStdString()));
+    authParameters.insert(std::pair<Aws::String, Aws::String>("USERNAME", Aws::Utils::StringUtils::to_string(mEmail.toStdString())));
     QByteArray srp_a;
     export_bits(mA, std::back_inserter(srp_a), 8);
     if((srp_a.at(0) & 0x80) != 0) srp_a.push_front('\0');
@@ -222,12 +216,15 @@ void AuthRequest::signIn()
     initiateAuthRequest.SetClientId(AWS_CLIENT_ID);
     initiateAuthRequest.SetAuthParameters(authParameters);
 
-    Aws::CognitoIdentityProvider::Model::InitiateAuthOutcome initiateAuthOutcome = mClient.InitiateAuth(initiateAuthRequest);
+    if(mCancelled) return;
+    Aws::CognitoIdentityProvider::Model::InitiateAuthOutcome initiateAuthOutcome = mClient->InitiateAuth(initiateAuthRequest);
 
+    QLocale loc(QLocale::English);
     QDateTime dt;
     dt.setTimeZone(QTimeZone::utc());
 
-    QString strTime = dt.currentDateTimeUtc().toString("ddd MMM d HH:mm:ss UTC yyyy");
+    QString strTime = loc.toString(dt.currentDateTime(), "ddd MMM d HH:mm:ss UTC yyyy");
+    qDebug() << "AWS LOGIN TIMESTAMP: " << strTime;
     QByteArray timeStr = QByteArray(strTime.toLatin1());
 
     if(!initiateAuthOutcome.IsSuccess()){
@@ -251,7 +248,8 @@ void AuthRequest::signIn()
     mResp.AddChallengeResponses("USERNAME", initiateAuthOutcome.GetResult().GetChallengeParameters().at("USERNAME"));
     mResp.AddChallengeResponses("TIMESTAMP", timeStr);
 
-    Aws::CognitoIdentityProvider::Model::RespondToAuthChallengeOutcome authResp = mClient.RespondToAuthChallenge(mResp);
+    if(mCancelled) return;
+    Aws::CognitoIdentityProvider::Model::RespondToAuthChallengeOutcome authResp = mClient->RespondToAuthChallenge(mResp);
 
     if (authResp.IsSuccess()) {
         mIdToken =  QString(authResp.GetResult().GetAuthenticationResult().GetIdToken().c_str());
@@ -264,17 +262,16 @@ void AuthRequest::signIn()
     }
 }
 
-void AuthRequest::signUp()
+void AuthRequest::signUp(const QString& email, const QString& password)
 {
-
-    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient
-            mClient = Aws::CognitoIdentityProvider::CognitoIdentityProviderClient(ClientConfig::instance());
-
+    mEmail = email;
+    mPassword = password;
     Aws::CognitoIdentityProvider::Model::DescribeUserPoolClientRequest describeUserPoolReq;
     describeUserPoolReq.WithUserPoolId(ClientConfig::instance().userPoolId).WithClientId(ClientConfig::instance().clientId);
 
     Aws::CognitoIdentityProvider::Model::DescribeUserPoolClientOutcome describeUPOut;
-    describeUPOut = mClient.DescribeUserPoolClient(describeUserPoolReq);
+    if(mCancelled) return;
+    describeUPOut = mClient->DescribeUserPoolClient(describeUserPoolReq);
 
     Aws::CognitoIdentityProvider::Model::SignUpRequest mReq;
     mReq.SetClientId(AWS_CLIENT_ID);
@@ -286,7 +283,8 @@ void AuthRequest::signUp()
 
     mReq.AddUserAttributes(att_email);
 
-    Aws::CognitoIdentityProvider::Model::SignUpOutcome mResult = mClient.SignUp(mReq);
+    if(mCancelled) return;
+    Aws::CognitoIdentityProvider::Model::SignUpOutcome mResult = mClient->SignUp(mReq);
     if(mResult.GetResult().GetUserConfirmed()){
         mSuccessful = true;
     }
@@ -302,14 +300,13 @@ void AuthRequest::signOut()
 
 void AuthRequest::changePassword(const QString& accessToken, const QString& newPassword, const QString& password)
 {
-    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient mClient(ClientConfig::instance());
-
     Aws::CognitoIdentityProvider::Model::ChangePasswordRequest req;
-    req.SetAccessToken(Aws::String(accessToken.toStdString()));
-    req.SetProposedPassword(Aws::String(newPassword.toStdString()));
-    req.SetPreviousPassword(Aws::String(password.toStdString()));
+    req.SetAccessToken(Aws::Utils::StringUtils::to_string(accessToken.toStdString()));
+    req.SetProposedPassword(Aws::Utils::StringUtils::to_string(newPassword.toStdString()));
+    req.SetPreviousPassword(Aws::Utils::StringUtils::to_string(password.toStdString()));
 
-    auto resp = mClient.ChangePassword(req);
+    if(mCancelled) return;
+    auto resp = mClient->ChangePassword(req);
 
     if(resp.IsSuccess()){
         mSuccessful = true;
@@ -319,37 +316,41 @@ void AuthRequest::changePassword(const QString& accessToken, const QString& newP
     }
 }
 
-void AuthRequest::restorePassword()
+void AuthRequest::restorePassword(const QString& email)
 {
-    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient client(ClientConfig::instance());
-
+    mEmail = email;
     Aws::CognitoIdentityProvider::Model::ForgotPasswordRequest req;
     req.SetClientId(ClientConfig::instance().clientId);
-    req.SetUsername(Aws::String(mEmail.toStdString()));
+    req.SetUsername(Aws::Utils::StringUtils::to_string(mEmail.toStdString()));
 
-    auto resp = client.ForgotPassword(req);
+    if(mCancelled) return;
+    auto resp = mClient->ForgotPassword(req);
     if(resp.IsSuccess())
         mSuccessful = true;
     else
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
 }
 
-bool AuthRequest::refreshTokens()
+bool AuthRequest::refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration)
 {
+    mEmail = email;
+    mRefreshToken = refreshToken;
+    mRefreshTokenExpiration = refreshTokenExpiration;
     int now = QDateTime::currentSecsSinceEpoch();
     if(mRefreshTokenExpiration== 0){
         return false;
     }
     else if(mRefreshTokenExpiration > now - 300){
+        mEmail = email;
+        mRefreshToken = refreshToken;
         Aws::CognitoIdentityProvider::Model::InitiateAuthRequest initAuthReq;
         initAuthReq.SetAuthFlow(Aws::CognitoIdentityProvider::Model::AuthFlowType::REFRESH_TOKEN_AUTH);
         initAuthReq.SetClientId(AWS_CLIENT_ID);
-        initAuthReq.AddAuthParameters("USERNAME", Aws::String(mEmail.toStdString()));
-        initAuthReq.AddAuthParameters("REFRESH_TOKEN", Aws::String(mRefreshToken.toStdString()));
+        initAuthReq.AddAuthParameters("USERNAME", Aws::Utils::StringUtils::to_string(mEmail.toStdString()));
+        initAuthReq.AddAuthParameters("REFRESH_TOKEN", Aws::Utils::StringUtils::to_string(mRefreshToken.toStdString()));
 
-        Aws::CognitoIdentityProvider::CognitoIdentityProviderClient client(ClientConfig::instance());
-
-        auto initAuthResp = client.InitiateAuth(initAuthReq);
+        if(mCancelled) return false;
+        auto initAuthResp = mClient->InitiateAuth(initAuthReq);
         if(initAuthResp.IsSuccess()){
             mIdToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetIdToken().c_str());
             mAccessToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetAccessToken().c_str());

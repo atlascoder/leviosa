@@ -54,12 +54,12 @@ void SyncableModel::syncRequest()
     }
     mUpdates->clear();
 
-    CognitoSyncAPI syncer;
     CurrentUser & u = CurrentUser::instance();
     u.requestCredentials();
     if(u.isAuthenticated() && u.hasCredentials()){
         Aws::Auth::AWSCredentials creds;
         u.fillCredentials(creds);
+        CognitoSyncAPI syncer();
         syncer.sync(creds, mDatasetName, mLocalDataCache.get(), mUpdates.get(), mDeleted.get());
         mergeUpdates();
     }

@@ -10,6 +10,7 @@ protected:
     int mPosition;
 public:
     Positioned();
+    Positioned(const Positioned& positioned) = default;
 
     int position() const;
     void setPosition(int position);

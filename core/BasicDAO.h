@@ -4,6 +4,7 @@
 #include <QString>
 #include <QString>
 #include <QSqlQuery>
+#include <memory>
 
 class QSqlDatabase;
 
@@ -14,13 +15,15 @@ public:
     BasicDAO(QSqlDatabase & database) : mDatabase(database) {}
     void init() const;
     std::unique_ptr<std::vector<std::unique_ptr<T>>> items() const;
-    void persistItem(T& item) const;
-    void markDeleted(T& item) const;
-    void destroy(T& item) const;
-    void clear() const;
+    void loadItems(std::vector<std::unique_ptr<T>>& receiver) const;
+    void persistItem(T& item, bool notify) const;
+    void destroy(T& item, bool notify) const;
+    void clear(bool notify) const;
     int lastModified() const;
     std::unique_ptr<std::vector<std::unique_ptr<T>>> filtered(const QString& field, const QVariant & filter) const;
+    void loadFiltered(std::vector<std::unique_ptr<T>>& receiver, const QString& field, const QVariant & filter) const;
 
+    bool isSynced() const;
 protected:
     QSqlDatabase & mDatabase;
 private:

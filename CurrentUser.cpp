@@ -3,11 +3,17 @@
 #include <QDateTime>
 #include <QMutexLocker>
 #include "aws/CredentialsRequest.h"
-#include "aws/AuthRequest.h"
 #include <QtConcurrentRun>
+#include <QDebug>
 
 
-CurrentUser::CurrentUser(QObject *parent) : QObject(parent), mDb(DatabaseManager::instance()), mIsAuthenticated(false)
+CurrentUser::CurrentUser(QObject *parent) :
+    QObject(parent),
+    mDb(DatabaseManager::instance()),
+    mIsAuthenticated(false),
+    mStopRequests(false),
+    mAuthRequest(new AuthRequest),
+    mCredentialsRequest(new CredentialsRequest)
 {
     if(mDb.userDAO.loadUser(mUser)){
         mIdToken.setRaw(mUser.idToken());
@@ -15,24 +21,29 @@ CurrentUser::CurrentUser(QObject *parent) : QObject(parent), mDb(DatabaseManager
         mRefreshToken.setRaw(mUser.refreshToken());
         setAuthenticated(mUser.refreshTokenExpiration() > QDateTime::currentSecsSinceEpoch() + 300);
     }
+    else
+        setAuthenticated(false);
+
+}
+
+CurrentUser::~CurrentUser()
+{
+    stopRequests();
+}
+
+void CurrentUser::stopRequests()
+{
+    qDebug() << "CurrentUser: stop requests";
+
+    mStopRequests = true;
+    mAuthRequest->cancelRequests();
+    mCredentialsRequest->cancelRequests();
 }
 
 CurrentUser& CurrentUser::instance()
 {
     static CurrentUser sInstance;
     return sInstance;
-}
-void CurrentUser::askCredentials()
-{
-    QMutexLocker locker(&mCredentialsMutex);
-    if(mCredentials.GetExpiration().Millis()/1000 < QDateTime::currentSecsSinceEpoch() - 60
-            && (mCredentialsResult.isCanceled() || mCredentialsResult.isFinished()))
-    {
-        mCredentialsResult = QtConcurrent::run(this, &CurrentUser::requestCredentials);
-    }
-    else{
-        emit credentialsReady();
-    }
 }
 
 void CurrentUser::requestCredentials()
@@ -43,16 +54,24 @@ void CurrentUser::requestCredentials()
     }
 
     // request credentials with idToken
-    CredentialsRequest credsReq(mIdToken.raw());
-    credsReq.request();
-    if(credsReq.isSuccessful()){
-        mCredentials = credsReq.getCredentials();
-        mHasCredentials = true;
-        emit credentialsReady();
+    mCredentialsRequest->setIdToken(mIdToken.raw());
+    if(mStopRequests) return;
+    mCredentialsRequest->requestId();
+    if(mCredentialsRequest->isSuccessful() && !mStopRequests){
+        mCredentialsRequest->requestCredentials();
+        if(mCredentialsRequest->isSuccessful()){
+            mCredentials = mCredentialsRequest->getCredentials();
+            mHasCredentials = true;
+            emit credentialsReady();
+        }
+        else{
+            mHasCredentials = false;
+            emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
+        }
     }
     else{
         mHasCredentials = false;
-        emit credentialsRequestFailed(credsReq.getLastMessage());
+        emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
     }
 }
 
@@ -102,30 +121,30 @@ void CurrentUser::changePassword(const QString &newPassword, const QString &oldP
 }
 void CurrentUser::registerUser(const QString &email, const QString &password)
 {
-    AuthRequest auth(email, password);
-    auth.signUp();
-    if(auth.isSuccessful()){
+    if(mStopRequests) return;
+    mAuthRequest->signUp(email, password);
+    if(mAuthRequest->isSuccessful()){
         emit signedUp();
     }
     else{
-        mLastMessage = auth.getLastMessage();
+        mLastMessage = mAuthRequest->getLastMessage();
         emit authError(mLastMessage);
     }
 }
 
 void CurrentUser::authenticateUser(const QString &email, const QString &password)
 {
-    AuthRequest auth(email, password);
-    auth.signIn();
-    if(auth.isSuccessful()){
+    if(mStopRequests) return;
+    mAuthRequest->signIn(email, password);
+    if(mAuthRequest->isSuccessful()){
         mUser.setEmail(email);
-        mIdToken.setRaw(auth.getIdToken());
-        mUser.setIdToken(auth.getIdToken());
-        mAccessToken.setRaw(auth.getAccessToken());
-        mUser.setAccessToken(auth.getAccessToken());
-        mRefreshToken.setRaw(auth.getRefreshToken());
-        mUser.setRefreshToken(auth.getRefreshToken());
-        mUser.setRefreshTokenExpiration(auth.getRefreshTokenExpiration());
+        mIdToken.setRaw(mAuthRequest->getIdToken());
+        mUser.setIdToken(mAuthRequest->getIdToken());
+        mAccessToken.setRaw(mAuthRequest->getAccessToken());
+        mUser.setAccessToken(mAuthRequest->getAccessToken());
+        mRefreshToken.setRaw(mAuthRequest->getRefreshToken());
+        mUser.setRefreshToken(mAuthRequest->getRefreshToken());
+        mUser.setRefreshTokenExpiration(mAuthRequest->getRefreshTokenExpiration());
         mUser.setLocationsModified(0);
         mUser.setControllersModified(0);
         mUser.setShadeGroupsModified(0);
@@ -134,7 +153,7 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
         emit signedIn();
     }
     else{
-        mLastMessage = auth.getLastMessage();
+        mLastMessage = mAuthRequest->getLastMessage();
         setAuthenticated(false);
         emit authError(mLastMessage);
     }
@@ -142,39 +161,40 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
 
 void CurrentUser::logoutUser()
 {
-    AuthRequest auth;
-    auth.signOut();
-    if(auth.isSuccessful()){
+    if(mStopRequests) return;
+    mAuthRequest->signOut();
+    if(mAuthRequest->isSuccessful()){
         mDb.clear();
         emit signedOut();
     }
     else {
+        mLastMessage = mAuthRequest->getLastMessage();
         emit authError(mLastMessage);
     }
 }
 
 void CurrentUser::requestPasswordRestore()
 {
-    AuthRequest auth(mUser.email());
-    auth.restorePassword();
-    if(auth.isSuccessful()){
+    if(mStopRequests) return;
+    mAuthRequest->restorePassword(mUser.email());
+    if(mAuthRequest->isSuccessful()){
         emit restoreRequestSent();
     }
     else {
-        mLastMessage = auth.getLastMessage();
+        mLastMessage = mAuthRequest->getLastMessage();
         emit authError(mLastMessage);
     }
 }
 
 void CurrentUser::requestPasswordChange(const QString& newPassword, const QString& password)
 {
-    AuthRequest auth;
-    auth.changePassword(mAccessToken.raw(), newPassword, password);
-    if(auth.isSuccessful()){
+    if(mStopRequests) return;
+    mAuthRequest->changePassword(mAccessToken.raw(), newPassword, password);
+    if(mAuthRequest->isSuccessful()){
         emit restoreRequestSent();
     }
     else{
-        mLastMessage = auth.getLastMessage();
+        mLastMessage = mAuthRequest->getLastMessage();
         emit authError(mLastMessage);
     }
 }
@@ -191,17 +211,18 @@ void CurrentUser::setAuthenticated(bool isAuthenticated)
     if(isAuthenticated == mIsAuthenticated) return;
     mIsAuthenticated = isAuthenticated;
     emit isAuthenticatedChanged();
+    emit emailChanged();
 }
 
 void CurrentUser::refreshTokens(){
-    AuthRequest req(mUser.refreshToken(), mUser.refreshTokenExpiration());
-    if(req.refreshTokens()){
-        mIdToken.setRaw(req.getIdToken());
-        mAccessToken.setRaw(req.getAccessToken());
+    if(mStopRequests) return;
+    if(mAuthRequest->refreshTokens(mUser.email(), mUser.refreshToken(), mUser.refreshTokenExpiration())){
+        mIdToken.setRaw(mAuthRequest->getIdToken());
+        mAccessToken.setRaw(mAuthRequest->getAccessToken());
         setAuthenticated(true);
     }
     else{
-        mLastMessage = req.getLastMessage();
+        mLastMessage = mAuthRequest->getLastMessage();
         setAuthenticated(false);
     }
 }

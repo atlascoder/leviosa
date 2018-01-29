@@ -5,16 +5,16 @@
 #include <QAbstractListModel>
 #include <QVariant>
 #include <QHash>
+#include <QMutex>
 
-#include "databasemanager.h"
-#include "locationmodel.h"
+#include "controller.h"
 #include "WlanAPI.h"
 #include "WanAPI.h"
 
 class ControllerModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(QString locationUuid READ locationUuid WRITE setLocationUuid)
+    Q_PROPERTY(QString locationUuid READ locationUuid WRITE setLocationUuid NOTIFY locationUuidChanged)
     Q_PROPERTY(QString locationName READ getLocationName NOTIFY locationNameChanged)
     Q_PROPERTY(QString selectedControllerMac READ getSelectedControllerMac WRITE setSelectedControllerMac NOTIFY selectedControllerMacChanged)
     Q_PROPERTY(QString selectedControllerName READ getSelectedControllerName WRITE setSelectedControllerName NOTIFY selectedControllerNameChanged)
@@ -42,9 +42,10 @@ public:
         IsOnWlanRole
     };
 
-    QModelIndex addController(const LocationController& controller);
+    QModelIndex addController(const Controller& controller);
     Q_INVOKABLE QModelIndex findController(const QString& mac);
-    Q_INVOKABLE void addControllerWithMacAndIP(const QString &mac, const QString &ip);
+    Q_INVOKABLE void addControllersFromList(const QString& uuid, const QString& list);
+    Q_INVOKABLE void addControllerWithMacAndIP(const QString& uuid, const QString &mac, const QString &ip);
     Q_INVOKABLE void updateControllerWithData(const QString& mac, const QString& name, int position);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -55,8 +56,10 @@ public:
     Q_INVOKABLE int roleByName(const QString& name) const;
     Q_INVOKABLE QModelIndex indexOfRow(int row) const;
 
-    Q_INVOKABLE void setLocation(const QString& locationUuid);
+    Q_INVOKABLE void remove(const QString& mac);
+
     Q_INVOKABLE QString getFreeName();
+    QString getFreeName(std::vector<std::unique_ptr<Controller>>& newItems);
 
     Q_INVOKABLE void shadeCmd(const QString& mac, char channel, int cmd);
 
@@ -64,6 +67,7 @@ public:
     void setLocationUuid(const QString& locationUuid);
 
 signals:
+    void locationUuidChanged();
     void locationNameChanged();
     void selectedControllerMacChanged();
     void selectedControllerNameChanged();
@@ -76,21 +80,25 @@ signals:
 
     void onWlanChanged();
 
+public slots:
+    void updateModel();
+
 private:
 
     bool isIndexValid(const QModelIndex& index) const;
 
     void loadControllers(const QString& mac);
 
-    DatabaseManager& mDb;
     bool mIsOnWlan;
     WlanAPI mWlanAPI;
     WanAPI mWanAPI;
     QString mLocationUuid;
 
-    std::unique_ptr<std::vector<std::unique_ptr<LocationController>>> mControllers;
+    std::vector<std::unique_ptr<Controller>>* mControllers;
 
-    QPersistentModelIndex mSelectedControllerIndex;
+    QPersistentModelIndex mSelectedIndex;
+
+    QMutex mUpdatingMtx;
 
     QString getLocationName() const;
 

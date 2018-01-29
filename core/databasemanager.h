@@ -19,8 +19,8 @@ public:
 
 
     const UserDAO userDAO;
-    const BasicDAO<UserLocation> locationsDao;
-    const BasicDAO<LocationController> controllersDao;
+    const BasicDAO<Location> locationsDao;
+    const BasicDAO<Controller> controllersDao;
     const BasicDAO<ShadeGroup> shadeGroupsDao;
 
     void clear() const;

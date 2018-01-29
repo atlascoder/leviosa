@@ -1,12 +1,12 @@
 #include "shadegroup.h"
 
 ShadeGroup::ShadeGroup(char channel):
-    Shade(), Schedule(), mChannel(channel), mControllerMac("00:00:00:00:00:00"), mName("Motor shade"), mLastModified(0)
+    Shade(), Schedule(), mChannel(channel), mControllerMac("00:00:00:00:00:00"), mName("Motor shade")
 {
 
 }
 ShadeGroup::ShadeGroup():
-    Shade(), Schedule(), mChannel(1), mControllerMac("00:00:00:00:00:00"), mName("Motor shade"), mLastModified(0)
+    Shade(), Schedule(), mChannel(1), mControllerMac("00:00:00:00:00:00"), mName("Motor shade")
 {
 
 }

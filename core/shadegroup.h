@@ -6,17 +6,22 @@
 #include "shade.h"
 #include "schedule.h"
 #include "positioned.h"
-#include "Syncable.h"
+#include "syncable.h"
 
-class ShadeGroup : public Shade, public Schedule, public Positioned
+class ShadeGroup : public Shade, public Schedule, public Positioned, public Syncable
 {
     char mChannel;
     QString mControllerMac;
     QString mName;
-    int mLastModified;
 public:
     ShadeGroup(char channel);
     ShadeGroup();
+    ShadeGroup(const ShadeGroup& shadeGroup) :
+        Schedule(shadeGroup), Positioned(shadeGroup), Syncable(shadeGroup),
+        mChannel(shadeGroup.mChannel),
+        mControllerMac(shadeGroup.mControllerMac),
+        mName(shadeGroup.mName)
+    {}
 
     char channel() const;
     void setChannel(char channel);
@@ -26,9 +31,6 @@ public:
 
     QString name() const;
     void setName(const QString& name);
-
-    int lastModified() const { return mLastModified; }
-    void setLastModified(int lastModified) { mLastModified = lastModified; }
 
     QJsonObject toJson() const;
     void withJson(const QJsonObject& json);

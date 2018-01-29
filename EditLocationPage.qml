@@ -89,21 +89,6 @@ LeviosaPage {
 		}
 
         Text {
-            text: "WiFi network name:"
-        }
-
-        Text {
-            id: ssid
-            width: parent.width
-            height: 40
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-            font.pixelSize: height*0.6
-            color: DefTheme.mainDisabledTextColor
-//            text: locationModel.selectedSsid
-        }
-
-        Text {
             text: "Show:"
             visible: locationModel.rowCount() > 1
         }

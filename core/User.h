@@ -22,6 +22,14 @@ class User
     int mControllersModified;
     int mShadeGroupsModified;
 
+    int mLocationsSyncCount;
+    int mControllersSyncCount;
+    int mShadeGroupsSyncCount;
+
+    bool mLocationsSynced;
+    bool mControllersSynced;
+    bool mShadeGroupsSynced;
+
 public:
     User();
 
@@ -55,6 +63,23 @@ public:
     int shadeGroupsLastModified() const { return mShadeGroupsModified; }
     void setShadeGroupsModified(int lastModified) { mShadeGroupsModified = lastModified; }
 
+    int locationsSyncCount() const { return mLocationsSyncCount; }
+    void setLocationsSyncCount(int syncCount) { mLocationsSyncCount = syncCount; }
+
+    int controllersSyncCount() const { return mControllersSyncCount; }
+    void setControllersSyncCount(int syncCount) { mControllersSyncCount = syncCount; }
+
+    int shadeGroupsSyncCount() const { return mShadeGroupsSyncCount; }
+    void setShadeGroupsSyncCount(int syncCount) { mShadeGroupsSyncCount = syncCount; }
+
+    bool locationsSynced() const { return mLocationsSynced; }
+    void setLocationsSynced(bool isSynced) { mLocationsSynced = isSynced; }
+
+    bool controllersSynced() const { return mControllersSynced; }
+    void setControllersSynced(bool isSynced) { mControllersSynced = isSynced; }
+
+    bool shadeGroupsSynced() const { return mShadeGroupsSynced; }
+    void setShadeGroupsSynced(bool isSynced) { mShadeGroupsSynced = isSynced; }
 };
 
 #endif // USER_H

@@ -1,77 +1,77 @@
-#include "userlocation.h"
+#include "location.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 
-UserLocation::UserLocation():
+Location::Location():
     mUuid(QUuid::createUuid()), mName("My Home"), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
 
 }
 
-UserLocation::UserLocation(const QUuid & uuid):
+Location::Location(const QUuid & uuid):
     mUuid(uuid), mName(""), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
 
 }
 
-UserLocation::UserLocation(const QString & uuidStr):
+Location::Location(const QString & uuidStr):
     mUuid(QUuid(uuidStr)), mName(""), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
 
 }
 
 
-QString UserLocation::bssid() const
+QString Location::bssid() const
 {
     return mBssid;
 }
 
-void UserLocation::setBssid(const QString &bssid)
+void Location::setBssid(const QString &bssid)
 {
     mBssid = bssid;
 }
 
-QString UserLocation::name() const
+QString Location::name() const
 {
     return mName;
 }
 
-void UserLocation::setName(const QString &name)
+void Location::setName(const QString &name)
 {
     mName = name;
 }
 
-int UserLocation::utcOffset() const
+int Location::utcOffset() const
 {
     return mUtcOffset;
 }
 
-void UserLocation::setUtcOffset(int offset)
+void Location::setUtcOffset(int offset)
 {
     mUtcOffset = offset;
 }
 
-bool UserLocation::isOnWlan() const
+bool Location::isOnWlan() const
 {
     return mIsOnWlan;
 }
 
-void UserLocation::setIsOnWlan(bool isOnWlan)
+void Location::setIsOnWlan(bool isOnWlan)
 {
     mIsOnWlan = isOnWlan;
 }
 
-bool UserLocation::isOnline() const
+bool Location::isOnline() const
 {
     return mIsOnline;
 }
 
-void UserLocation::setOnline(bool isOnline)
+void Location::setOnline(bool isOnline)
 {
     mIsOnline = isOnline;
 }
 
-QJsonObject UserLocation::toJson() const
+QJsonObject Location::toJson() const
 {
     QJsonObject json;
     json.insert("name", mName);
@@ -81,7 +81,7 @@ QJsonObject UserLocation::toJson() const
     return json;
 }
 
-void UserLocation::withJson(const QJsonObject & json)
+void Location::withJson(const QJsonObject & json)
 {
     if(!json.contains("name")) return;
     mName = json.value("name").toString();

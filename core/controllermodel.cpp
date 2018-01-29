@@ -1,18 +1,21 @@
 #include "controllermodel.h"
 #include <QUuid>
+#include <QVector>
+#include <QMutexLocker>
+#include "UserData.h"
 
 using namespace std;
 
 ControllerModel::ControllerModel(QObject* parent):
     QAbstractListModel(parent),
-    mDb(DatabaseManager::instance()),
     mIsOnWlan(false),
     mWlanAPI(this),
     mWanAPI(this),
     mLocationUuid(),
-    mControllers(new vector<unique_ptr<LocationController>>()),
-    mSelectedControllerIndex(QModelIndex())
+    mControllers(UserData::instance().mControllers.get()),
+    mSelectedIndex(QModelIndex())
 {
+    connect(&UserData::instance(), &UserData::dataUpdated, this, &ControllerModel::updateModel);
 }
 
 ControllerModel::~ControllerModel()
@@ -20,18 +23,39 @@ ControllerModel::~ControllerModel()
 
 }
 
-QModelIndex ControllerModel::addController(const LocationController& controller)
+void ControllerModel::updateModel()
+{
+    loadControllers(mLocationUuid);
+
+    long diff = mControllers->size() - rowCount();
+
+    qDebug() << "Update controlles model from rows: " << rowCount();
+
+    if(diff < 0){
+        beginRemoveRows(QModelIndex(), mControllers->size(), rowCount()-1);
+        endRemoveRows();
+    }
+    else if(diff > 0){
+        beginInsertRows(QModelIndex(), rowCount(), mControllers->size()-1);
+        endInsertRows();
+    }
+
+    QModelIndex a = this->createIndex(0,0,nullptr);
+    QModelIndex b = this->createIndex(mControllers->size(),0,nullptr);
+    emit dataChanged(a, b);
+
+}
+
+QModelIndex ControllerModel::addController(const Controller& controller)
 {
     int rowIndex = rowCount();
     beginInsertRows(QModelIndex(), rowIndex, rowIndex);
-    unique_ptr<LocationController> newController(new LocationController(controller.mac()));
+    unique_ptr<Controller> newController(new Controller(controller.mac()));
+    newController->setLocationUuid(controller.locationUuid());
     newController->setName(controller.name());
     newController->setPosition(static_cast<int>(mControllers->size()));
-    newController->setOpenAt(controller.openAt());
-    newController->setCloseAt(controller.closeAt());
-    newController->setDays(controller.days());
     newController->setIpAddress(controller.ipAddress());
-    mDb.controllersDao.persistItem(*newController);
+    UserData::instance().persistItem(*newController.get(), true);
     mControllers->push_back(move(newController));
     endInsertRows();
     return index(rowIndex);
@@ -42,8 +66,9 @@ void ControllerModel::updateControllerWithData(const QString& mac, const QString
     QModelIndex idx = findController(mac);
     if(!idx.isValid()) return;
 
-    LocationController& controller = *mControllers-> at(idx.row());
+    Controller& controller = *mControllers->at(idx.row());
     controller.setName(name);
+
     if(controller.position() != position){
         vector<int> idxs;
         int pos = 0;
@@ -65,14 +90,16 @@ void ControllerModel::updateControllerWithData(const QString& mac, const QString
             }
         }
         for(int i = 0; i < rows; i++){
-            setData(this->index(idxs[i]), i, Roles::PositionRole);
+            mControllers->at(idxs[i])->setPosition(i);
+            mControllers->at(idxs[i])->setSynced(false);
         }
-        mControllers = mDb.controllersDao.filtered("locationUuid", mLocationUuid);
-        setSelectedControllerMac(controller.mac());
+        UserData::instance().persistItems(*mControllers, true);
     }
     else{
-        mDb.controllersDao.persistItem(controller);
+        controller.setSynced(false);
+        UserData::instance().persistItem(controller, true);
     }
+    emit dataChanged(idx, idx);
 }
 
 QModelIndex ControllerModel::findController(const QString& mac)
@@ -109,7 +136,7 @@ QVariant ControllerModel::data(const QModelIndex &index, int role) const
     if(!isIndexValid(index))
         return QVariant();
 
-    const LocationController& controller = *mControllers->at(index.row());
+    const Controller& controller = *mControllers->at(index.row());
 
     switch(role){
     case Roles::MacRole:
@@ -120,12 +147,6 @@ QVariant ControllerModel::data(const QModelIndex &index, int role) const
         return controller.name();
     case Roles::PositionRole:
         return controller.position();
-    case Roles::OpenAtRole:
-        return controller.openAt();
-    case Roles::CloseAtRole:
-        return controller.closeAt();
-    case Roles::DaysRole:
-        return controller.days();
     case Roles::IPRole:
         return controller.ipAddress();
     case Roles::IsOnWlanRole:
@@ -140,8 +161,11 @@ bool ControllerModel::setData(const QModelIndex &index, const QVariant &value, i
     if(!isIndexValid(index))
         return false;
 
-    LocationController& controller = *mControllers->at(index.row());
+    Controller& controller = *mControllers->at(index.row());
     switch (role) {
+    case Roles::LocationUuid:
+        controller.setLocationUuid(value.toString());
+        break;
     case Roles::NameRole:
         controller.setName(value.toString());
         break;
@@ -150,15 +174,6 @@ bool ControllerModel::setData(const QModelIndex &index, const QVariant &value, i
         break;
     case Roles::PositionRole:
         controller.setPosition(value.toInt());
-        break;
-    case Roles::OpenAtRole:
-        controller.setOpenAt(value.toInt());
-        break;
-    case Roles::CloseAtRole:
-        controller.setCloseAt(value.toInt());
-        break;
-    case Roles::DaysRole:
-        controller.setDays(value.toInt());
         break;
     case Roles::IPRole:
         controller.setIpAddress(value.toString());
@@ -170,7 +185,7 @@ bool ControllerModel::setData(const QModelIndex &index, const QVariant &value, i
     default:
         return false;
     }
-    mDb.controllersDao.persistItem(controller);
+    UserData::instance().persistItem(controller, true);
     emit dataChanged(index, index);
     return true;
 }
@@ -195,22 +210,9 @@ QHash<int, QByteArray> ControllerModel::roleNames() const
     return roles;
 }
 
-void ControllerModel::setLocation(const QString& locationUuid)
-{
-    beginResetModel();
-    mLocationUuid = locationUuid;
-    loadControllers(mLocationUuid);
-    endResetModel();
-    emit locationNameChanged();
-}
-
 void ControllerModel::loadControllers(const QString& locationUuid)
 {
-    if(locationUuid.size() > 0){
-        mControllers.reset(new vector<unique_ptr<LocationController>>());
-        return;
-    }
-    mControllers = mDb.controllersDao.filtered("locationUuid", locationUuid);
+    UserData::instance().loadControllers(locationUuid);
 }
 
 QString ControllerModel::locationUuid() const
@@ -220,7 +222,13 @@ QString ControllerModel::locationUuid() const
 
 void ControllerModel::setLocationUuid(const QString& locationUuid)
 {
-    setLocation(locationUuid);
+    if(locationUuid == mLocationUuid) return;
+    mLocationUuid = locationUuid;
+    beginResetModel();
+    loadControllers(mLocationUuid);
+    endResetModel();
+    emit locationUuidChanged();
+    emit locationNameChanged();
 }
 
 QString ControllerModel::getFreeName()
@@ -230,29 +238,68 @@ QString ControllerModel::getFreeName()
     do {
         i++;
         str = QString("Controller ") + QString::number(i);
-    } while(mDb.controllersDao.filtered("name",str)->size() > 0);
+    } while(std::find_if(mControllers->begin(), mControllers->end(), [str](unique_ptr<Controller>& lcp)->bool{ return str == lcp->name(); }) != mControllers->end());
 
     return str;
 }
 
-void ControllerModel::addControllerWithMacAndIP(const QString &mac, const QString &ip)
+QString ControllerModel::getFreeName(vector<unique_ptr<Controller>>& newItems)
 {
-    if(mDb.controllersDao.filtered("mac", mac)->size() == 0){
-        LocationController c(mac);
+    int i = 0;
+    QString str;
+    do {
+        i++;
+        str = QString("Controller ") + QString::number(i);
+    } while(
+            find_if(mControllers->begin(), mControllers->end(), [str](unique_ptr<Controller>& lcp)->bool{ return str == lcp->name(); }) != mControllers->end() ||
+            find_if(newItems.begin(), newItems.end(), [str](unique_ptr<Controller>& lcp)->bool{ return str == lcp->name(); }) != newItems.end()
+            );
+
+    return str;
+}
+
+void ControllerModel::addControllersFromList(const QString &uuid, const QString &list)
+{
+    QStringList ctrs = list.split(",");
+    vector<unique_ptr<Controller>> v;
+    for(int i = 0; i < ctrs.size(); i++){
+        QStringList mac_ip = ctrs.at(i).split(" ");
+        if(UserData::instance().isControllerKnown(mac_ip.at(0))){
+            auto ctrlr = find_if(mControllers->begin(), mControllers->end(), [&mac_ip](unique_ptr<Controller>& lcp)->bool{ return mac_ip.at(0)==lcp->mac(); });
+            if(ctrlr != mControllers->end())
+                ctrlr->get()->setIpAddress(mac_ip.at(1));
+        }
+        else{
+            unique_ptr<Controller> c(new Controller(mac_ip.at(0)));
+            c->setName(getFreeName(v));
+            c->setLocationUuid(uuid);
+            c->setIpAddress(mac_ip.at(1));
+            c->setPosition(mControllers->size() + i);
+            c->setSynced(false);
+            v.push_back(move(c));
+        }
+    }
+    if(v.size() > 0) {
+        UserData::instance().persistItems(v, true);
+        updateModel();
+    }
+}
+
+
+void ControllerModel::addControllerWithMacAndIP(const QString& uuid, const QString &mac, const QString &ip)
+{
+    auto ctrlr = find_if(mControllers->begin(), mControllers->end(), [mac](unique_ptr<Controller>& lcp)->bool{ return mac==lcp->mac(); });
+    if(ctrlr == mControllers->end()){
+        Controller c(mac);
         c.setName(getFreeName());
-        c.setLocationUuid(mLocationUuid);
+        c.setLocationUuid(uuid);
         c.setIpAddress(ip);
         c.setPosition(mControllers->size());
         addController(c);
     }
     else{
-        int rows = (int)mControllers->size();
-        for(int row = 0; row < rows; row++){
-            if(mControllers->at(row)->mac() == mac){
-                mControllers->at(row)->setIpAddress(ip);
-                break;
-            }
-        }
+        ctrlr->get()->setIpAddress(ip);
+        UserData::instance().persistItem(*ctrlr->get(), true);
     }
 }
 
@@ -263,27 +310,27 @@ QModelIndex ControllerModel::indexOfRow(int row) const
 
 QString ControllerModel::getLocationName() const
 {
-    unique_ptr<vector<unique_ptr<UserLocation>>> l(mDb.locationsDao.items());
-    vector<unique_ptr<UserLocation>>::iterator i;
-    for(i = l->begin(); i != l->end(); ++i)
-        if(i->get()->uuid() == mLocationUuid)
-            return i->get()->name() == NULL ? "" : i->get()->name();
-    return "";
+    auto loc = find_if(UserData::instance().mLocations->begin(), UserData::instance().mLocations->end(), [this](unique_ptr<Location>& loc) -> bool { return loc.get()->uuid() == this->mLocationUuid; });
+    if(loc != UserData::instance().mLocations->end())
+        return loc->get()->name();
+    else
+        return "";
 }
 
 QString ControllerModel::getSelectedControllerMac() const
 {
-    return isIndexValid(mSelectedControllerIndex) ? data(mSelectedControllerIndex, Roles::MacRole).toString() : "00:00:00:00:00:00";
+    return isIndexValid(mSelectedIndex) ? data(mSelectedIndex, Roles::MacRole).toString() : "00:00:00:00:00:00";
 }
 
 void ControllerModel::setSelectedControllerMac(const QString& controllerMac)
 {
     int row = 0;
     int rows = rowCount();
-    mSelectedControllerIndex = QPersistentModelIndex();
+    mSelectedIndex = QPersistentModelIndex();
     while(row<rows){
         if(mControllers->at(row)->mac() == controllerMac){
-            mSelectedControllerIndex = this->index(row);
+            if(row == mSelectedIndex.row()) return;
+            mSelectedIndex = this->index(row);
             break;
         }
         row++;
@@ -295,65 +342,65 @@ void ControllerModel::setSelectedControllerMac(const QString& controllerMac)
 
 QString ControllerModel::getSelectedControllerName() const
 {
-    return data(mSelectedControllerIndex, Roles::NameRole).toString();
+    return data(mSelectedIndex, Roles::NameRole).toString();
 }
 
 void ControllerModel::setSelectedControllerName(const QString &name)
 {
-    if(isIndexValid(mSelectedControllerIndex)){
-        setData(mSelectedControllerIndex, name, Roles::NameRole);
+    if(isIndexValid(mSelectedIndex)){
+        setData(mSelectedIndex, name, Roles::NameRole);
         emit selectedControllerNameChanged();
     }
 }
 
 int ControllerModel::getSelectedControllerPosition() const
 {
-    return data(mSelectedControllerIndex, Roles::PositionRole).toInt();
+    return data(mSelectedIndex, Roles::PositionRole).toInt();
 }
 
 void ControllerModel::setSelectedControllerPosition(int position)
 {
-    if(isIndexValid(mSelectedControllerIndex)){
-        setData(mSelectedControllerIndex, position, Roles::PositionRole);
+    if(isIndexValid(mSelectedIndex)){
+        setData(mSelectedIndex, position, Roles::PositionRole);
         emit selectedControllerPositionChanged();
     }
 }
 
 int ControllerModel::getSelectedControllerOpenAt() const
 {
-    return data(mSelectedControllerIndex, Roles::OpenAtRole).toInt();
+    return data(mSelectedIndex, Roles::OpenAtRole).toInt();
 }
 
 void ControllerModel::setSelectedControllerOpenAt(int openAt)
 {
-    if(isIndexValid(mSelectedControllerIndex)){
-        setData(mSelectedControllerIndex, openAt, Roles::OpenAtRole);
+    if(isIndexValid(mSelectedIndex)){
+        setData(mSelectedIndex, openAt, Roles::OpenAtRole);
         emit selectedControllerOpenAtChanged();
     }
 }
 
 int ControllerModel::getSelectedControllerCloseAt() const
 {
-    return data(mSelectedControllerIndex, Roles::CloseAtRole).toInt();
+    return data(mSelectedIndex, Roles::CloseAtRole).toInt();
 }
 
 void ControllerModel::setSelectedControllerCloseAt(int closeAt)
 {
-    if(isIndexValid(mSelectedControllerIndex)){
-        setData(mSelectedControllerIndex, closeAt, Roles::CloseAtRole);
+    if(isIndexValid(mSelectedIndex)){
+        setData(mSelectedIndex, closeAt, Roles::CloseAtRole);
         emit selectedControllerCloseAtChanged();
     }
 }
 
 int ControllerModel::getSelectedControllerDays() const
 {
-    return data(mSelectedControllerIndex, Roles::DaysRole).toInt();
+    return data(mSelectedIndex, Roles::DaysRole).toInt();
 }
 
 void ControllerModel::setSelectedControllerDays(int days)
 {
-    if(isIndexValid(mSelectedControllerIndex)){
-        setData(mSelectedControllerIndex, days, Roles::DaysRole);
+    if(isIndexValid(mSelectedIndex)){
+        setData(mSelectedIndex, days, Roles::DaysRole);
         emit selectedControllerDaysChanged();
     }
 }
@@ -364,13 +411,13 @@ QStringList ControllerModel::getPositionOrder() const
     order << "first";
     int row = 1;
     int rows = rowCount();
-    if(isIndexValid(mSelectedControllerIndex)){
+    if(isIndexValid(mSelectedIndex)){
         // order for creating location
         while(row < rows){
             if(row == rows-1){
                 order << "last";
             }
-            else if(row < mSelectedControllerIndex.row()){
+            else if(row < mSelectedIndex.row()){
                 order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
             }
             else{
@@ -381,10 +428,8 @@ QStringList ControllerModel::getPositionOrder() const
     }
     else{
         // order for editing selected location
-        while(row < rows){
-            if(row == rows-1){
-                order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
-            }
+        while(row < rows-1){
+            order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
             row++;
         }
         if(rows > 1)
@@ -406,16 +451,16 @@ void ControllerModel::setOnWlan(bool isOnWlan)
 
 QString ControllerModel::getSelectedControllerIp() const
 {
-    if(isIndexValid(mSelectedControllerIndex))
-        return data(mSelectedControllerIndex, Roles::IPRole).toString();
+    if(isIndexValid(mSelectedIndex))
+        return data(mSelectedIndex, Roles::IPRole).toString();
     else
         return "0.0.0.0";
 }
 
 void ControllerModel::setSelectedControllerIp(const QString &ip)
 {
-    if(isIndexValid(mSelectedControllerIndex))
-        setData(mSelectedControllerIndex, ip, Roles::IPRole);
+    if(isIndexValid(mSelectedIndex))
+        setData(mSelectedIndex, ip, Roles::IPRole);
 }
 
 void ControllerModel::shadeCmd(const QString& mac, char channel, int cmd)
@@ -432,4 +477,21 @@ void ControllerModel::shadeCmd(const QString& mac, char channel, int cmd)
             break;
         }
     }
+}
+
+void ControllerModel::remove(const QString &mac)
+{
+    Controller c(mac);
+    for(int i = 0; i < mControllers->size(); i++)
+        if(mControllers->at(i)->mac() == mac){
+            beginRemoveRows(QModelIndex(), i, i);
+            UserData::instance().removeItem(c, true);
+            UserData::instance().loadControllers(mLocationUuid);
+            endRemoveRows();
+            return;
+        }
+    // reset whole model if removing item was not found
+    beginResetModel();
+    UserData::instance().loadControllers(mLocationUuid);
+    endResetModel();
 }

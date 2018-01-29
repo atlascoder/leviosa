@@ -1,6 +1,6 @@
 #include "BasicDAO.h"
-#include "userlocation.h"
-#include "locationcontroller.h"
+#include "location.h"
+#include "controller.h"
 #include "shadegroup.h"
 
 #include <QSqlError>
@@ -8,7 +8,7 @@
 
 
 // User location concretization
-#include "core/userlocation.h"
+#include "core/location.h"
 
 using namespace std;
 
@@ -47,7 +47,21 @@ unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::items() const
 }
 
 template<class T>
-void BasicDAO<T>::persistItem(T &item) const
+void BasicDAO<T>::loadItems(std::vector<std::unique_ptr<T>>& receiver) const
+{
+    QSqlQuery query(mDatabase);
+    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" ORDER BY position ASC");
+    query.exec(selectSQL);
+    if(query.lastError().isValid())
+        QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
+    while(query.next()){
+        unique_ptr<T> loc = buildItem(query);
+        receiver.push_back(move(loc));
+    }
+}
+
+template<class T>
+void BasicDAO<T>::persistItem(T &item, bool notify) const
 {
     QSqlQuery query(mDatabase);
     prepareFind(query, item);
@@ -67,16 +81,16 @@ void BasicDAO<T>::persistItem(T &item) const
     }
     else{
         qDebug() << "DAO persist " << tableName() << " completed.";
-        notifyDataChanged();
+        if(notify) notifyDataChanged();
     }
 }
 
 template<class T>
-void BasicDAO<T>::clear() const
+void BasicDAO<T>::clear(bool notify) const
 {
     QSqlQuery query(mDatabase);
     query.exec(QString("DELETE FROM ").append(tableName()));
-    notifyDataChanged();
+    if(notify) notifyDataChanged();
 }
 
 template<class T>
@@ -107,4 +121,34 @@ unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::filtered(const QString& field, co
         list->push_back(move(loc));
     }
     return list;
+}
+
+template<class T>
+void BasicDAO<T>::loadFiltered(std::vector<std::unique_ptr<T> > &receiver, const QString &field, const QVariant &filter) const
+{
+    QSqlQuery query(mDatabase);
+    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" WHERE ").append(field).append("=:filter ORDER BY position ASC");
+    query.prepare(selectSQL);
+    query.bindValue(":filter", filter);
+    query.exec();
+    if(query.lastError().isValid())
+        QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
+    while(query.next()){
+        unique_ptr<T> loc = buildItem(query);
+        receiver.push_back(move(loc));
+    }
+}
+
+template<class T>
+bool BasicDAO<T>::isSynced() const
+{
+    QSqlQuery query(mDatabase);
+    QString sql = QString("SELECT COUNT(*) AS notSynced FROM ").append(tableName()).append(" WHERE isSynced=0");
+    if(query.exec(sql) && query.first()){
+        return !query.value("notSynced").toBool();
+    }
+    else{
+        qDebug() << "isSynced failed: " << query.lastError().text() << " // SQL: " << query.lastQuery();
+        return false;
+    }
 }

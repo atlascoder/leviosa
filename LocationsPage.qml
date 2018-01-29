@@ -26,6 +26,7 @@ LeviosaPage {
     }
 
     function init(){
+        locationModel.updateModel();
         userData.sync();
     }
 

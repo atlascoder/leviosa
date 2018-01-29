@@ -5,28 +5,24 @@
 #include <QThread>
 #include "core/databasemanager.h"
 #include "CurrentUser.h"
-#include "core/userlocation.h"
-#include "core/locationcontroller.h"
+#include "core/location.h"
+#include "core/controller.h"
 #include "core/shadegroup.h"
+#include "core/SyncableRecord.h"
+#include "aws/CognitoSyncAPI.h"
 
 class UserData : public QThread
 {
     Q_OBJECT
 
+    Q_PROPERTY(QString email READ email NOTIFY emailChanged)
     Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncStateChanged)
 
     void run() override;
 
-    UserData() :
-        mDb(DatabaseManager::instance()),
-        mUser(CurrentUser::instance()),
-        mLocations(mDb.locationsDao.items()),
-        mControllers(mDb.controllersDao.items()),
-        mShadeGroups(mDb.shadeGroupsDao.items()),
-        mSyncState(Clean)
-    {
-//        inspectData();
-    }
+    UserData();
+    DatabaseManager& mDb;
+    CurrentUser& mUser;
 public:
     static UserData& instance();
     virtual ~UserData();
@@ -34,9 +30,27 @@ public:
     enum SyncState { Clean, Dirty, Editing, Syncing, Failed, Cancelled };
     Q_ENUMS(SyncState)
 
-    std::unique_ptr<std::vector<std::unique_ptr<UserLocation>>> mLocations;
-    std::unique_ptr<std::vector<std::unique_ptr<LocationController>>> mControllers;
+    std::unique_ptr<std::vector<std::unique_ptr<Location>>> mLocations;
+    std::unique_ptr<std::vector<std::unique_ptr<Controller>>> mControllers;
     std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> mShadeGroups;
+
+    void loadLocations();
+    void persistItem(Location& location, bool toSync);
+    void removeItem(Location& location, bool toSync);
+    void persistItems(std::vector<std::unique_ptr<Location>>& locations, bool toSync);
+
+    void loadControllers(const QString& locationUuid);
+    void persistItem(Controller &controller, bool toSync);
+    void removeItem(Controller &controller, bool toSync);
+    void persistItems(std::vector<std::unique_ptr<Controller>>& controllers, bool toSync);
+
+    void loadShadeGroups(const QString& controllerMac);
+    void persistItem(ShadeGroup &controller, bool toSync);
+    void removeItem(ShadeGroup &controller, bool toSync);
+
+    void stopRequests();
+
+    bool isControllerKnown(const QString& mac) const;
 
 public slots:
     void sync();
@@ -46,24 +60,25 @@ signals:
     void dataUpdated();
 
     void syncStateChanged();
+    void emailChanged();
 
 private:
-    DatabaseManager& mDb;
-    CurrentUser& mUser;
-
     SyncState mSyncState;
+    bool mCancelled;
+    std::unique_ptr<CognitoSyncAPI> mSyncer;
 
-    // check for local data changes and mark set state as Clean or Dirty
-//    void inspectData();
+    // flag means that data were changed while sync processed, and resync is required
 
-    Syncable locationsSyncable() const;
-    Syncable controllersSyncable() const;
-    Syncable shadeGroupsSyncable() const;
+    SyncableRecord<Location> locationsSyncable() const;
+    SyncableRecord<Controller> controllersSyncable() const;
+    SyncableRecord<ShadeGroup> shadeGroupsSyncable() const;
 
-    void mergeUpdates(Syncable & locations, Syncable & controllers, Syncable & shadeGroups);
+    void mergeUpdates(SyncableRecord<Location> & locations, SyncableRecord<Controller> & controllers, SyncableRecord<ShadeGroup> & shadeGroups);
 
     bool isSyncing() const { return mSyncState == Syncing; }
     void setState(SyncState state);
+
+    QString email() const { return mUser.email(); }
 
 };
 

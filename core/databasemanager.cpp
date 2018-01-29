@@ -6,9 +6,6 @@
 
 DatabaseManager::DatabaseManager(const QString& path):
     mDatabase(new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"))),
-//    locationDao(*mDatabase),
-//    controllerDao(*mDatabase),
-//    shadesGroupsDao(*mDatabase),
     userDAO(*mDatabase),
     locationsDao(*mDatabase),
     controllersDao(*mDatabase),
@@ -22,9 +19,6 @@ DatabaseManager::DatabaseManager(const QString& path):
     mDatabase->setDatabaseName(path);
 #endif
     mDatabase->open();
-//    locationDao.init();
-//    controllerDao.init();
-//    shadesGroupsDao.init();
     userDAO.init();
     locationsDao.init();
     controllersDao.init();
@@ -45,8 +39,8 @@ DatabaseManager& DatabaseManager::instance()
 
 void DatabaseManager::clear() const
 {
-    shadeGroupsDao.clear();
-    controllersDao.clear();
-    locationsDao.clear();
+    shadeGroupsDao.clear(false);
+    controllersDao.clear(false);
+    locationsDao.clear(false);
     userDAO.clear();
 }

@@ -15,8 +15,8 @@
           <task>generateDebugSources</task>
         </afterSyncTasks>
         <option name="ALLOW_USER_CONFIGURATION" value="false" />
-        <option name="RES_FOLDER_RELATIVE_PATH" value="/../../../../Qt/5.9.3/android_x86/src/android/java/res" />
-        <option name="RES_FOLDERS_RELATIVE_PATH" value="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res;file://$MODULE_DIR$/res" />
+        <option name="RES_FOLDER_RELATIVE_PATH" value="/../../../../Qt/5.9.3/android_armv7/src/android/java/res" />
+        <option name="RES_FOLDERS_RELATIVE_PATH" value="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res;file://$MODULE_DIR$/res" />
       </configuration>
     </facet>
   </component>
@@ -91,11 +91,11 @@
       <excludeFolder url="file://$MODULE_DIR$/.build/outputs" />
       <excludeFolder url="file://$MODULE_DIR$/.build/tmp" />
     </content>
-    <content url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res">
-      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/res" type="java-resource" />
+    <content url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res">
+      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/res" type="java-resource" />
     </content>
-    <content url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/src">
-      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_x86/src/android/java/src" isTestSource="false" />
+    <content url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/src">
+      <sourceFolder url="file://$USER_HOME$/Qt/5.9.3/android_armv7/src/android/java/src" isTestSource="false" />
     </content>
     <orderEntry type="jdk" jdkName="Android API 27 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

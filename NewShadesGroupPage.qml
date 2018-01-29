@@ -9,7 +9,8 @@ import "DefaultTheme.js" as DefTheme
 LeviosaPage {
 	id: newShadesGroupPage
 
-    property alias controllerMac : shadesGroupsModel
+    property alias controllerMac : shadesGroupsModel.controllerMac
+
     title: "New Shades Group"
     enableMenuAction: false
     enableAddAction: false

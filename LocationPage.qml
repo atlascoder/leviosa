@@ -14,34 +14,28 @@ LeviosaPage {
     anchors.fill: parent
     enableMenuAction: false
 
-    property alias locationUuid : locationModel.selectedLocationUuid
-    property int activeController : -1
+    property alias locationUuid : controllersModel.locationUuid
+    property alias discovery : controllerDiscovery
+    property alias activeController : controllersModel.selectedControllerMac
+//    property int currentIdx : 0
 
-    signal setupController(int locationId)
-    signal editController(int id)
-    signal editGroup(int cid, int gid)
-    signal editSchedule(int cid, int gid)
-    signal addGroup(int controllerId)
+    signal setupController(string uuid)
+    signal editController(string mac)
+    signal editGroup(string mac, int channel)
+    signal editSchedule(string mac, int channel)
+    signal addGroup(string mac)
 
-    onAddClicked: addGroup(controllersModel.data(controllersModel.indexOfRow(controllersPager.currentIndex), controllersModel.roleByName("id")))
+    onAddClicked: addGroup(controllersModel.data(controllersModel.indexOfRow(controllersPager.currentIndex), controllersModel.roleByName("mac")))
 
 
-    LocationsModel {
-        id: locationModel
-        selectedLocationUuid: locationUuid
+    title: controllersModel.locationName
+
+    function init(){
+//        currentIdx = controllersPager.currentIndex;
+        controllersModel.updateModel();
+//        controllersPager.currentIndex = currentIdx;
+        discovery.isRunning = true;
     }
-
-    title: locationModel.selectedLocationName
-
-//    StackView.onVisibleChanged: {
-//        if(StackView.visible){
-//            locationPage.title = controllersModel.locationName;
-//            controllersModel.setLocation(locationPage.locationId);
-//            controllersPager.currentIndex = locationPage.activeController;
-//            controllerDiscovery.isRunning = false;
-//            controllerDiscovery.isRunning = true;
-//        }
-//    }
 
     ControllersModel {
         id: controllersModel
@@ -67,6 +61,7 @@ LeviosaPage {
         onCurrentIndexChanged: {
             locationPage.activeController = controllersPager.currentIndex;
             bar.currentIndex = controllersPager.currentIndex;
+//            currentIdx = controllersPager.currentIndex;
         }
     }
 
@@ -80,7 +75,7 @@ LeviosaPage {
             TabButton {
                 width: bar.itemWidth
                 text: name
-                onPressAndHold: editController(id)
+                onPressAndHold: editController(mac)
             }
         }
         onVisibleChanged: {
@@ -169,60 +164,52 @@ LeviosaPage {
 
     ControllerDiscovery {
         id: controllerDiscovery
+        property bool discoFinished : false
         onStarted: {
             console.log("disco started");
-        }
-        onFound: function(mac, ip){
-            controllersModel.addControllerWithMacAndIP(mac, ip);
-            locationPage.state = controllersModel.rowCount() > 0 ? "discovery next" : "discovery first";
+            discoFinished = false;
         }
         onFinished: {
-            locationPage.state = controllersModel.rowCount() > 0 ? "ready" : "empty";
+            discoFinished = true;
         }
-    }
-
-    Timer {
-        id: discoFirstTimeout
-        interval: 5000
-        onTriggered: locationPage.state = "empty"
+        onFoundList: function(list){
+            console.log("FOUND: " + controllerDiscovery.foundList);
+            controllersModel.addControllersFromList(controllersModel.locationUuid, list);
+        }
     }
 
     states : [
-        State {
+        State{
             name: "init"
-            PropertyChanges { target: controllerDiscovery; isRunning: true }
+            when: !controllerDiscovery.discoFinished && !controllerDiscovery.isRunning
+            PropertyChanges { target: busyIndi; visible: false }
+            PropertyChanges { target: setupInquiry; visible: false }
         },
         State {
             name: "discovery first"
+            when: controllerDiscovery.isRunning && controllersModel.rowCount() === 0
             PropertyChanges { target: busyIndi; visible: true }
-            PropertyChanges { target: controllerDiscovery; isRunning: true}
         },
         State {
             name: "discovery next"
+            when: controllerDiscovery.isRunning && controllersModel.rowCount() > 0
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
             PropertyChanges { target: locationPage; enableAddAction: true; showLogo: true }
-            StateChangeScript {
-                script: {
-                    if(!controllerDiscovery.isRunning)
-                        controllerDiscovery.isRunning = true;
-                }
-            }
         },
         State {
             name: "empty"
+            when: !controllerDiscovery.isRunning && controllersModel.rowCount() === 0
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: true }
         },
         State {
             name: "ready"
+            when: !controllerDiscovery.isRunning && controllersModel.rowCount() > 0
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
             PropertyChanges { target: locationPage; enableAddAction: true }
         }
-
     ]
-
-    state : controllersModel.rowCount() > 0 ? "discovery next" : "discovery first"
 
 }

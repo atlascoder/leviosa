@@ -4,7 +4,6 @@
 #include <QString>
 #include <QThread>
 #include <QObject>
-#include <string>
 
 class EspTouchTaskAndroid: public QThread
 {

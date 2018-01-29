@@ -1,7 +1,6 @@
 #include "CredentialsRequest.h"
 #include <QStringList>
 
-#include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <aws/cognito-identity/CognitoIdentityRequest.h>
 #include <aws/core/utils/Outcome.h>
 
@@ -10,41 +9,72 @@
 
 #include <aws/cognito-identity/model/GetIdRequest.h>
 #include <aws/cognito-identity/model/GetIdResult.h>
+#include <aws/core/utils/memory/AWSMemory.h>
 
 #include "ClientConfig.h"
 
 #include <QDebug>
 
-void CredentialsRequest::request()
+CredentialsRequest::CredentialsRequest() : mIdToken(), mIsSuccessful(false), mCancelled(false)
 {
-    Aws::CognitoIdentity::CognitoIdentityClient cl(ClientConfig::instance());
+    mClient = Aws::New<Aws::CognitoIdentity::CognitoIdentityClient>(nullptr, ClientConfig::instance());
+}
+
+CredentialsRequest::~CredentialsRequest()
+{
+    cancelRequests();
+    Aws::Delete<Aws::CognitoIdentity::CognitoIdentityClient>(mClient);
+}
+
+void CredentialsRequest::setIdToken(const IdToken &idToken)
+{
+    mIdToken = idToken;
+}
+
+void CredentialsRequest::cancelRequests()
+{
+    mCancelled = true;
+    mClient->DisableRequestProcessing();
+}
+
+void CredentialsRequest::requestId()
+{
     Aws::CognitoIdentity::Model::GetIdRequest idReq;
     idReq.SetAccountId(ClientConfig::instance().accoundId);
     idReq.SetIdentityPoolId(ClientConfig::instance().identityPool);
     QString login = mIdToken.issuer().split("//").at(1);
-    idReq.AddLogins(login.toStdString(), mIdToken.raw().toStdString());
+    idReq.AddLogins(Aws::Utils::StringUtils::to_string(login.toStdString()), Aws::Utils::StringUtils::to_string(mIdToken.raw().toStdString()));
 
-    auto idResp = cl.GetId(idReq);
+    if(mCancelled) return;
+    auto idResp = mClient->GetId(idReq);
 
     if(idResp.IsSuccess()){
         qDebug() << "Identity ID: " << idResp.GetResult().GetIdentityId().c_str() << endl;
         ClientConfig::instance().identityId = idResp.GetResult().GetIdentityId();
-        Aws::CognitoIdentity::Model::GetCredentialsForIdentityRequest req;
-        req.SetIdentityId(idResp.GetResult().GetIdentityId());
-        req.AddLogins(login.toStdString(), mIdToken.raw().toStdString());
-        auto creds = cl.GetCredentialsForIdentity(req);
-        if(creds.IsSuccess()){
-            qDebug() << "Access Key: " << creds.GetResult().GetCredentials().GetAccessKeyId().c_str() << " => " << creds.GetResult().GetCredentials().GetSecretKey().c_str() << endl;
-            mCredentials = creds.GetResult().GetCredentials();
-            mIsSuccessful = true;
-        }
-        else{
-            mLastMessage = QString(creds.GetError().GetMessage().c_str());
-            mError = creds.GetError().GetErrorType();
-        }
+        mIsSuccessful = true;
     }
-    else{
+    else {
         mLastMessage = QString(idResp.GetError().GetMessage().c_str());
         mError = idResp.GetError().GetErrorType();
+        mIsSuccessful = false;
+    }
+}
+
+void CredentialsRequest::requestCredentials()
+{
+    Aws::CognitoIdentity::Model::GetCredentialsForIdentityRequest req;
+    req.SetIdentityId(ClientConfig::instance().identityId);
+    QString login = mIdToken.issuer().split("//").at(1);
+    req.AddLogins(Aws::Utils::StringUtils::to_string(login.toStdString()), Aws::Utils::StringUtils::to_string(mIdToken.raw().toStdString()));
+    if(mCancelled) return;
+    auto creds = mClient->GetCredentialsForIdentity(req);
+    if(creds.IsSuccess()){
+        qDebug() << "Access Key: " << creds.GetResult().GetCredentials().GetAccessKeyId().c_str() << " => " << creds.GetResult().GetCredentials().GetSecretKey().c_str() << endl;
+        mCredentials = creds.GetResult().GetCredentials();
+        mIsSuccessful = true;
+    }
+    else{
+        mLastMessage = QString(creds.GetError().GetMessage().c_str());
+        mError = creds.GetError().GetErrorType();
     }
 }

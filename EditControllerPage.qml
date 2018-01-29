@@ -118,12 +118,41 @@ LeviosaPage {
 				anchors.leftMargin: 6
 				height: 40
                 onClicked: {
-                    controllersModel.updateControllerWithData(editController.controllerId, controllerName.text, showBefore.currentIndex);
+                    controllersModel.updateControllerWithData(editController.controllerMac, controllerName.text, showBefore.currentIndex);
                     menuClicked();
                 }
 			}
-
 		}
+
+        Rectangle {
+            width: parent.width / 2
+            height: DefTheme.toolbarHeight
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: DefTheme.mainNegativeAccent
+            Text {
+                anchors.centerIn: parent
+                text: "Delete?"
+                font.pixelSize: parent.height *0.4
+                color: "#ffffff"
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 4
+                font.pixelSize: parent.height * 0.2
+                font.italic: true
+                text: "Press and hold to delete"
+                color: "#ffffff"
+            }
+            MouseArea {
+                anchors.fill: parent
+                onPressAndHold: {
+                    controllersModel.remove(editController.controllerMac);
+                    menuClicked();
+                }
+            }
+        }
+
 	}
 
 }
