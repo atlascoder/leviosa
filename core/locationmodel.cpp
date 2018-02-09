@@ -56,7 +56,10 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
     case Roles::IsOnlineRole:
         return location.isOnline();
     case Roles::BssidRole:
-        return location.bssid();
+        if(location.bssid().isEmpty()) return QString("<Not set>");
+        else return location.bssid();
+    case Roles::TimezoneRole:
+        return timezoneName(location.utcOffset());
     default:
         return QVariant();
     }
@@ -111,6 +114,7 @@ QHash<int, QByteArray> LocationModel::roleNames() const
     roles[Roles::IsOnWlanRole] = "isOnWlan";
     roles[Roles::IsOnlineRole] = "isOnline";
     roles[Roles::BssidRole] = "bssid";
+    roles[Roles::TimezoneRole] = "timezone";
     return roles;
 }
 
@@ -266,10 +270,9 @@ QModelIndex LocationModel::indexOfRow(int row) const
     return this->index(row);
 }
 
-QString LocationModel::getSelectedTimezoneName() const
+QString LocationModel::timezoneName(int utcOffset) const
 {
-    int idx = data(mSelectedLocationIndex, Roles::UtcOffsetRole).toInt() / 3600;
-    switch (idx) {
+    switch (utcOffset / 3600) {
     case -5:
         return "EST";
     case -6:
@@ -283,13 +286,18 @@ QString LocationModel::getSelectedTimezoneName() const
     case -10:
         return "HAST";
     default:
-        if(idx == 0)
+        if(utcOffset == 0)
             return "UTC";
-        else if(idx > 0)
-            return "UTC+" + QString::number(idx);
+        else if(utcOffset > 0)
+            return "UTC+" + QString::number(utcOffset/3600);
         else
-            return "UTC" + QString::number(idx);
+            return "UTC" + QString::number(utcOffset/3600);
     }
+}
+
+QString LocationModel::getSelectedTimezoneName() const
+{
+    return timezoneName(data(mSelectedLocationIndex, Roles::UtcOffsetRole).toInt());
 }
 
 void LocationModel::setSelectedTimezoneName(const QString &timezoneName)
@@ -349,4 +357,20 @@ void LocationModel::setCurrentBssid(const QString &bssid)
     if(bssid == mCurrentBssid) return;
     mCurrentBssid = bssid;
     emit currentBssidChanged();
+}
+
+QString LocationModel::uuidByIndex(int index) const
+{
+    if(index >=0 && index < static_cast<int>(mLocations->size()))
+        return mLocations->at(index)->uuid().toString();
+    else
+        return "";
+}
+
+QString LocationModel::bssidByIndex(int index) const
+{
+    if(index >=0 && index < static_cast<int>(mLocations->size()))
+        return mLocations->at(index)->bssid();
+    else
+        return QString();
 }

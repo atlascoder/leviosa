@@ -15,15 +15,31 @@ LeviosaPage {
     enableAddAction: false
     showLogo: false
 
-    property alias controllerMac : shadesGroupsModel.controllerMac
-    property alias selectedChannel : shadesGroupsModel.selectedChannel
+    property string controllerMac
+    property int selectedChannel
+    property alias controllerIp : shadesGroupsModel.ipAddress
 
     property int openAt
     property int closeAt
     property alias openTimeDelimFontpixelSize: openTimeDelim.font.pixelSize
 
+    property bool processing : false
+
+    function init() {
+        shadesGroupsModel.controllerMac = rootItem.controllerMac;
+        shadesGroupsModel.selectedChannel = rootItem.selectedChannel;
+        showBefore.visible = shadesGroupsModel.count > 1;
+        showBefore.model = shadesGroupsModel.positionOrder;
+        showBefore.currentIndex = shadesGroupsModel.selectedGroupPosition;
+    }
+
     ShadesGroupsModel {
         id: shadesGroupsModel
+        onScheduleSet: menuClicked()
+        onScheduleSetFailed: {
+            processing = false
+            alertScheduleNotSet.visible = true
+        }
     }
 	
     TabBar {
@@ -40,6 +56,13 @@ LeviosaPage {
             text: "Control"
             width: editorTabs.width / 2
         }
+    }
+
+    AlertMessage {
+        id: alertScheduleNotSet
+        message: "Schedule was not set. Probably due to controller connection failure."
+        visible: false
+        z: 2
     }
 
     footer: Rectangle {
@@ -59,6 +82,7 @@ LeviosaPage {
             x: 16
             height: 40
             onClicked: menuClicked()
+            enabled: !busyIndi.visible
         }
 
         ActionButton {
@@ -67,8 +91,8 @@ LeviosaPage {
             x: parent.width / 2 + 16
             width: parent.width / 2 - 32
             height: 40
+            enabled: !busyIndi.visible
             onClicked: {
-                rootItem.visible = false;
                 var days = 0;
                 if(sunday.checked) days = 1;
                 if(monday.checked) days |= 1<<1;
@@ -79,14 +103,26 @@ LeviosaPage {
                 if(saturday.checked) days |= 1<<6;
                 var open_at_us = openTimePM.checked ? openSlider.value : -openSlider.value;
                 var close_at_us = closeTimePM.checked ? closeSlider.value : -closeSlider.value;
-                if(setForAll.checked){
-                    shadesGroupsModel.setScheduleForCurrentController(days, open_at_us, close_at_us);
-                }
-                shadesGroupsModel.updateShadeGroupsWithData(selectedChannel, groupName.text, showBefore.currentIndex, open_at_us, close_at_us, days);
-                menuClicked();
+                processing = true;
+                shadesGroupsModel.updateShadeGroupsWithData(selectedChannel, groupName.text, showBefore.currentIndex, open_at_us, close_at_us, days, setForAll.checked);
             }
         }
 
+    }
+
+    Rectangle {
+        id: busyIndi
+        anchors.fill: parent
+        color: "#ebffffff"
+        visible: processing
+        z: 1
+        BusyIndicator {
+            anchors.centerIn: parent
+            running: parent.visible
+        }
+        MouseArea {
+            anchors.fill: parent
+        }
     }
 
 
@@ -117,9 +153,7 @@ LeviosaPage {
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 6
-                    Text {
-                        text: "Week days:"
-                    }
+
                     Row {
                         width: parent.width
                         WeekDayCheckBox {
@@ -171,6 +205,7 @@ LeviosaPage {
                         font.underline: true
                         font.bold: true
                         text: "Open at"
+                        font.pointSize: width / 22
                         horizontalAlignment: Text.AlignHCenter
                     }
 
@@ -178,12 +213,6 @@ LeviosaPage {
                         id: openTimeItem
                         width: parent.width
 
-                        Text {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.pixelSize: parent.width / 24
-                            text: "<b>" + shadesGroupsModel.selectedTimezoneName + "</b> time"
-                        }
                         Text{
                             id: openTimeDelim
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -206,7 +235,7 @@ LeviosaPage {
                             Text{
                                 text: "AM"
                                 height: parent.height
-                                font.pixelSize: parent.width / 10
+                                font.pixelSize: parent.width / 8
                                 leftPadding: 12
                                 rightPadding: 3
                                 verticalAlignment: Qt.AlignVCenter
@@ -216,14 +245,32 @@ LeviosaPage {
                             Switch {
                                 id: openTimePM
                                 width: openTimeItem.width / 8
-                                height: width / 4
+                                height: width / 2
                                 anchors.verticalCenter: parent.verticalCenter
                                 checked: shadesGroupsModel.selectedOpenAtUS  > 0
+
+                                background: Rectangle {
+                                    implicitWidth: openTimePM.width
+                                    implicitHeight: openTimePM.height/2
+                                    y: height / 2
+                                    radius: height / 2
+                                    color: openTimePM.checked ? "#000000" : "#ffffff"
+                                    border.color: openTimePM.checked ? "#808080" : "#cccccc"
+                                }
+
+                                indicator: Rectangle {
+                                    x: openTimePM.checked ? openTimePM.width - width : 0
+                                    height: openTimePM.height
+                                    width: openTimePM.height
+                                    radius: height / 2
+                                    color: openTimePM.down ? "#cccccc" : "#ffffff"
+                                    border.color: openTimePM.checked ? "#000000" : "#999999"
+                                }
                             }
                             Text{
                                 text: "PM"
                                 height: parent.height
-                                font.pixelSize: parent.width / 10
+                                font.pixelSize: parent.width / 8
                                 leftPadding: 3
                                 rightPadding: 12
                                 verticalAlignment: Qt.AlignVCenter
@@ -249,6 +296,7 @@ LeviosaPage {
                         font.underline: true
                         font.bold: true
                         text: "Close at"
+                        font.pixelSize: width / 22
                         horizontalAlignment: Text.AlignHCenter
                     }
 
@@ -277,7 +325,7 @@ LeviosaPage {
                             Text{
                                 text: "AM"
                                 height: parent.height
-                                font.pixelSize: parent.width / 10
+                                font.pixelSize: parent.width / 8
                                 leftPadding: 12
                                 rightPadding: 3
                                 verticalAlignment: Qt.AlignVCenter
@@ -287,14 +335,32 @@ LeviosaPage {
                             Switch {
                                 id: closeTimePM
                                 width: closeTimeItem.width / 8
-                                height: width / 4
+                                height: width / 2
                                 anchors.verticalCenter: parent.verticalCenter
                                 checked: shadesGroupsModel.selectedCloseAtUS  > 0
+
+                                background: Rectangle {
+                                    implicitWidth: closeTimePM.width
+                                    implicitHeight: closeTimePM.height/2
+                                    y: height / 2
+                                    radius: height / 2
+                                    color: closeTimePM.checked ? "#000000" : "#ffffff"
+                                    border.color: closeTimePM.checked ? "#808080" : "#cccccc"
+                                }
+
+                                indicator: Rectangle {
+                                    x: closeTimePM.checked ? closeTimePM.width - width : 0
+                                    height: closeTimePM.height
+                                    width: closeTimePM.height
+                                    radius: height / 2
+                                    color: closeTimePM.down ? "#cccccc" : "#ffffff"
+                                    border.color: closeTimePM.checked ? "#000000" : "#999999"
+                                }
                             }
                             Text{
                                 text: "PM"
                                 height: parent.height
-                                font.pixelSize: parent.width / 10
+                                font.pixelSize: parent.width / 8
                                 leftPadding: 3
                                 rightPadding: 12
                                 verticalAlignment: Qt.AlignVCenter
@@ -358,9 +424,8 @@ LeviosaPage {
                 }
 
                 Text {
-                    id: positionCaption
-                    text: "Position:"
-                    visible: false
+                    text: "Show:"
+                    visible: showBefore.visible
                 }
 
                 ComboBox {
@@ -368,7 +433,7 @@ LeviosaPage {
                     width: parent.width
                     height: 40
                     model: shadesGroupsModel.positionOrder
-                    visible: shadesGroupsModel.rowCount() > 1
+                    visible: shadesGroupsModel.count > 1
                     currentIndex: shadesGroupsModel.selectedGroupPosition
                     displayText: currentText
                     contentItem: Text {
@@ -414,7 +479,7 @@ LeviosaPage {
                     MouseArea {
                         anchors.fill: parent
                         onPressAndHold: {
-                            shadesGroupsModel.removeShadesGroup(rootItem.shadesGroupId);
+                            shadesGroupsModel.removeShadeGroup(controllerMac, selectedChannel);
                             menuClicked();
                         }
                     }

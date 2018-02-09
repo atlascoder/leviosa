@@ -62,7 +62,6 @@
         <file>EditLocationPage.qml</file>
         <file>EditShadesGroupPage.qml</file>
         <file>EditControllerPage.qml</file>
-        <file>EditGroupSchedule.qml</file>
         <file>img/001-write.svg</file>
         <file>img/003-black-back-closed-envelope-shape.svg</file>
         <file>ActionButton.qml</file>
@@ -77,7 +76,6 @@
         <file>TopBar.qml</file>
         <file>LeviosaPage.qml</file>
         <file>Timezones.qml</file>
-        <file>AllShadesControl_copy.qml</file>
         <file>img/ic_open.png</file>
         <file>img/ic_close.png</file>
         <file>img/ic_down.png</file>
@@ -85,5 +83,8 @@
         <file>img/ic_pause.png</file>
         <file>RestorePage.qml</file>
         <file>ChangePwdPage.qml</file>
+        <file>img/robo.png</file>
+        <file>AlertMessage.qml</file>
+        <file>BlockScreen.qml</file>
     </qresource>
 </RCC>

@@ -49,7 +49,8 @@ LeviosaPage {
         id: stackLayout
         width: parent.width * 0.75
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 40
 
         Column {
             width: parent.width
@@ -104,6 +105,7 @@ LeviosaPage {
                     anchors.rightMargin: 10
                     font.pixelSize: parent.height / 3
                     text: netMonitor.ssid + " / " + netMonitor.bssid
+                    elide: Text.ElideRight
                     font.bold: true
                     anchors.topMargin: 12
                     horizontalAlignment: Text.AlignHCenter
@@ -332,6 +334,32 @@ LeviosaPage {
         }
     }
 
+    Rectangle {
+        id: finishButton
+        anchors.top: actionButton.bottom
+        anchors.left: stackLayout.left
+        anchors.right: stackLayout.right
+        anchors.topMargin: 16
+        visible: false
+
+        color: DefTheme.mainColorLight
+        border.color: DefTheme.mainColorLight
+
+        height: espTouchPage.height * 0.08
+        radius: height * 0.4
+
+        Text {
+            color: DefTheme.mainTextColor
+            anchors.centerIn: parent
+            font.pixelSize: parent.height / 2
+            text: "FINISH"
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: menuClicked()
+        }
+    }
+
     Timer {
         id: espTouchTimeout
         repeat: false
@@ -358,6 +386,10 @@ LeviosaPage {
             PropertyChanges {
                 target: actionButton
                 title: "Start"
+            }
+            PropertyChanges {
+                target: finishButton
+                visible: false
             }
             PropertyChanges {
                 target: esptouch
@@ -387,6 +419,10 @@ LeviosaPage {
             PropertyChanges {
                 target: actionButton
                 title: "Stop"
+            }
+            PropertyChanges {
+                target: finishButton
+                visible: false
             }
             PropertyChanges {
                 target: espTouchTimeout
@@ -420,6 +456,10 @@ LeviosaPage {
                 title: "Connect more"
             }
             PropertyChanges {
+                target: finishButton
+                visible: true
+            }
+            PropertyChanges {
                 target: esptouch
                 running: false
             }
@@ -439,6 +479,10 @@ LeviosaPage {
             PropertyChanges {
                 target: actionButton
                 title: "Retry"
+            }
+            PropertyChanges {
+                target: finishButton
+                visible: false
             }
             PropertyChanges {
                 target: esptouch

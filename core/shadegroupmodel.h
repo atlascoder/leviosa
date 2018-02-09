@@ -7,6 +7,7 @@
 #include "databasemanager.h"
 #include "controller.h"
 #include "controllermodel.h"
+#include "ControllerAPI.h"
 
 class ShadeGroupModel : public QAbstractListModel
 {
@@ -28,7 +29,10 @@ class ShadeGroupModel : public QAbstractListModel
 
     Q_PROPERTY(Shade::ShadeState selectedShadeState READ getSelectedShadeState WRITE setSelectedShadeState NOTIFY selectedShadeStateChanged)
 
+    Q_PROPERTY(QString ipAddress READ ipAddress WRITE setIpAddress NOTIFY ipAddressChanged)
+
     Q_PROPERTY(QStringList positionOrder READ getPositionOrder NOTIFY positionOrderChanged)
+    Q_PROPERTY(int count READ rowCount NOTIFY controllerMacChanged)
 
 public:
     ShadeGroupModel(QObject* parent = 0);
@@ -48,15 +52,13 @@ public:
 
     QModelIndex addShadeGroup(const ShadeGroup& shadesGroup);
     Q_INVOKABLE void addShadesGroupWithData(const QString& controllerMac, const QString& name);
-    Q_INVOKABLE void updateShadeGroupsWithData(int channel, const QString& name, int position, int openAtUS, int closeAtUS, int days);
+    Q_INVOKABLE void updateShadeGroupsWithData(int channel, const QString& name, int position, float openAtUS, float closeAtUS, int days, bool scheduleForController);
 
-    Q_INVOKABLE void removeShadeGroup(char channel);
+    Q_INVOKABLE void removeShadeGroup(const QString& mac, char channel);
     Q_INVOKABLE int roleByName(const QString& roleName) const;
 
     Q_INVOKABLE void setStateToAll(const Shade::ShadeState state);
     Q_INVOKABLE void setStateToAll(const int state);
-
-    Q_INVOKABLE void setScheduleForCurrentController(int days, float openAtUS, float closeAtUS);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -76,12 +78,27 @@ signals:
     void selectedGroupCloseAtChanged();
     void selectedGroupDaysChanged();
     void selectedShadeStateChanged();
-
     void positionOrderChanged();
+
+    void ipAddressChanged();
+
+    void scheduleSet();
+    void scheduleSetFailed();
 
 public slots:
     void updateModel();
+
+private slots:
+    void setScheduleToController();
+    void onScheduleSet();
 private:
+
+    DatabaseManager& mDb;
+    QString mControllerMac;
+    QPersistentModelIndex mSelectedIndex;
+    std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> mShadeGroups;
+    std::unique_ptr<ControllerAPI> mControllerAPI;
+    QString mIpAddress;
 
     int getSelectedChannel() const;
     void setSelectedChannel(int channel);
@@ -112,19 +129,16 @@ private:
     Shade::ShadeState getSelectedShadeState() const;
     void setSelectedShadeState(Shade::ShadeState state);
 
+    QString ipAddress() const { return mIpAddress; }
+    void setIpAddress(const QString& ipAddress);
+
     bool isIndexValid(const QModelIndex& index) const;
 
-    void loadGroupsShades(const QString& controllerMac);
+    void loadShadeGroups();
 
     QStringList getPositionOrder() const;
 
-    char findFreeChannel(const QString& constrollerMac) const;
-
-    DatabaseManager& mDb;
-    QString mControllerMac;
-    QPersistentModelIndex mSelectedIndex;
-    std::vector<std::unique_ptr<ShadeGroup>>* mShadeGroups;
-
+    char findFreeChannel(const QString& constrollerMac) const;    
 
 };
 

@@ -2,21 +2,40 @@
 #include <QSet>
 
 #include "UserData.h"
+#include "ControllerAPI.h"
 
 using namespace std;
 
 ShadeGroupModel::ShadeGroupModel(QObject* parent):
     QAbstractListModel(parent),
     mDb(DatabaseManager::instance()),
-    mControllerMac(),
+    mControllerMac("00:00:00:00:00:00"),
     mSelectedIndex(QModelIndex()),
-    mShadeGroups(UserData::instance().mShadeGroups.get())
+    mShadeGroups(UserData::instance().shadeGroupsForController(mControllerMac)),
+    mControllerAPI(new ControllerAPI),
+    mIpAddress("0.0.0.0")
 {
     connect(&UserData::instance(), &UserData::dataUpdated, this, &ShadeGroupModel::updateModel);
+    connect(mControllerAPI.get(), &ControllerAPI::scheduleSet, this, &ShadeGroupModel::onScheduleSet);
+    connect(mControllerAPI.get(), &ControllerAPI::scheduleFailed, [this]()->void{ emit scheduleSetFailed(); });
+}
+
+void ShadeGroupModel::loadShadeGroups()
+{
+    unique_ptr<vector<unique_ptr<ShadeGroup>>> loaded = UserData::instance().shadeGroupsForController(mControllerMac);
+    for(vector<unique_ptr<ShadeGroup>>::iterator i = loaded->begin(); i != loaded->end(); i++){
+        vector<unique_ptr<ShadeGroup>>::iterator g = find_if(mShadeGroups->begin(), mShadeGroups->end(), [i](const unique_ptr<ShadeGroup>& g)->bool{ return i->get()->controllerMac()==g->controllerMac(); });
+        if(g != mShadeGroups->end()){
+            i->get()->setMatchPrevious(*g->get() == *i->get());
+        }
+        else
+            i->get()->setMatchPrevious(false);
+    }
+    mShadeGroups.swap(loaded);
 }
 
 void ShadeGroupModel::updateModel(){
-    UserData::instance().loadShadeGroups(mControllerMac);
+    loadShadeGroups();
 
     long diff = mShadeGroups->size() - rowCount();
 
@@ -30,10 +49,13 @@ void ShadeGroupModel::updateModel(){
         beginInsertRows(QModelIndex(), rowCount(), mShadeGroups->size()-1);
         endInsertRows();
     }
-
-    QModelIndex a = this->createIndex(0,0,nullptr);
-    QModelIndex b = this->createIndex(mShadeGroups->size(),0,nullptr);
-    emit dataChanged(a, b);
+    for(size_t i = 0; i < mShadeGroups->size(); i++){
+        if(!mShadeGroups->at(i)->matchPrevious()){
+            QModelIndex a = this->createIndex(i,0,nullptr);
+            QModelIndex b = this->createIndex(i,0,nullptr);
+            emit dataChanged(a, b);
+        }
+    }
 }
 
 QModelIndex ShadeGroupModel::addShadeGroup(const ShadeGroup &shadesGroup)
@@ -49,20 +71,31 @@ QModelIndex ShadeGroupModel::addShadeGroup(const ShadeGroup &shadesGroup)
     UserData::instance().persistItem(*newGroup.get(), true);
     mShadeGroups->push_back(move(newGroup));
     beginInsertRows(QModelIndex(), rowsIndex, rowsIndex);
+    loadShadeGroups();
     endInsertRows();
     return this->index(rowsIndex);
 }
 
-void ShadeGroupModel::updateShadeGroupsWithData(int channel, const QString& name, int position, int openAtUS, int closeAtUS, int days)
+void ShadeGroupModel::updateShadeGroupsWithData(int channel, const QString& name, int position, float openAtUS, float closeAtUS, int days, bool scheduleForController)
 {
     QModelIndex idx = find(channel);
     if(!idx.isValid()) return;
 
     ShadeGroup& shadeGroup = *mShadeGroups->at(idx.row());
     shadeGroup.setName(name);
-    shadeGroup.setOpenAtUS(openAtUS);
-    shadeGroup.setCloseAtUS(closeAtUS);
-    shadeGroup.setDays(days);
+
+    if(scheduleForController){
+        for(auto i = mShadeGroups->begin(); i != mShadeGroups->end(); i++){
+            i->get()->setOpenAtUS(openAtUS);
+            i->get()->setCloseAtUS(closeAtUS);
+            i->get()->setDays(days);
+        }
+    }
+    else{
+        shadeGroup.setOpenAtUS(openAtUS);
+        shadeGroup.setCloseAtUS(closeAtUS);
+        shadeGroup.setDays(days);
+    }
 
     if(shadeGroup.position() != position){
         vector<int> idxs;
@@ -88,13 +121,17 @@ void ShadeGroupModel::updateShadeGroupsWithData(int channel, const QString& name
             mShadeGroups->at(idxs[i])->setPosition(i);
             mShadeGroups->at(idxs[i])->setSynced(false);
         }
-        UserData::instance().persistItems(*mShadeGroups, true);
     }
     else{
         shadeGroup.setSynced(false);
-        UserData::instance().persistItem(shadeGroup, true);
     }
-    emit dataChanged(idx, idx);
+    if(mControllerAPI->controllerState() == ControllerAPI::ControllerState::Wlan){
+        setScheduleToController();
+    }
+    else{
+        UserData::instance().persistItems(*mShadeGroups.get(), true);
+        emit scheduleSet();
+    }
 }
 
 QModelIndex ShadeGroupModel::find(int channel) const
@@ -110,20 +147,14 @@ QModelIndex ShadeGroupModel::find(int channel) const
 }
 
 
-void ShadeGroupModel::removeShadeGroup(char channel)
+void ShadeGroupModel::removeShadeGroup(const QString& mac, char channel)
 {
     ShadeGroup c(channel);
-    for(int i = 0; i < mShadeGroups->size(); i++)
-        if(mShadeGroups->at(i)->channel() == channel){
-            beginRemoveRows(QModelIndex(), i, i);
-            UserData::instance().removeItem(c, true);
-            UserData::instance().loadShadeGroups(mControllerMac);
-            endRemoveRows();
-            return;
-        }
-    // reset whole model if removing item was not found
+    c.setControllerMac(mac);
+    UserData::instance().removeItem(c, true);
+
     beginResetModel();
-    UserData::instance().loadShadeGroups(mControllerMac);
+    loadShadeGroups();
     endResetModel();
 }
 
@@ -207,6 +238,7 @@ bool ShadeGroupModel::setData(const QModelIndex &index, const QVariant &value, i
         return false;
     }
     UserData::instance().persistItem(group, true);
+    loadShadeGroups();
     emit dataChanged(index, index);
     return true;
 }
@@ -240,12 +272,10 @@ QString ShadeGroupModel::controllerMac() const
 
 void ShadeGroupModel::setControllerMac(const QString& controllerMac)
 {
-    if(controllerMac == mControllerMac) return;
     beginResetModel();
     mControllerMac = controllerMac;
-    UserData::instance().loadShadeGroups(mControllerMac);
+    loadShadeGroups();
     endResetModel();
-    emit controllerMacChanged();
 }
 
 void ShadeGroupModel::addShadesGroupWithData(const QString& controllerMac, const QString &name)
@@ -375,7 +405,7 @@ void ShadeGroupModel::setStateToAll(const Shade::ShadeState state)
     int row = 0;
     int rows = rowCount();
     while(row < rows){
-        setData(this->index(row), static_cast<int>(state), Roles::ShadeStateRole);
+        setData(this->index(row++), static_cast<int>(state), Roles::ShadeStateRole);
     }
 }
 
@@ -408,17 +438,6 @@ void ShadeGroupModel::setSelectedCloseAtUS(const float closeAtUS)
     setData(mSelectedIndex, closeAtUS, Roles::CloseAtUSRole);
 }
 
-void ShadeGroupModel::setScheduleForCurrentController(int days, float openAtUS, float closeAtUS)
-{
-    for(auto g = mShadeGroups->begin(); g != mShadeGroups->end(); g++){
-        g->get()->setCloseAtUS(closeAtUS);
-        g->get()->setOpenAtUS(openAtUS);
-        g->get()->setDays(days);
-    }
-    UserData::instance().persistItems(*mShadeGroups, true);
-    updateModel();
-}
-
 QStringList ShadeGroupModel::getPositionOrder() const
 {
     QStringList order;
@@ -442,10 +461,8 @@ QStringList ShadeGroupModel::getPositionOrder() const
     }
     else{
         // order for editing selected location
-        while(row < rows){
-            if(row == rows-1){
-                order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
-            }
+        while(row < rows-1){
+            order << QString("before ").append(data(this->index(row), Roles::NameRole).toString());
             row++;
         }
         if(rows > 1)
@@ -453,7 +470,6 @@ QStringList ShadeGroupModel::getPositionOrder() const
     }
     return order;
 }
-
 
 char ShadeGroupModel::findFreeChannel(const QString& controllerMac) const
 {
@@ -473,4 +489,36 @@ char ShadeGroupModel::findFreeChannel(const QString& controllerMac) const
     char ch = 1;
     while(channels.contains(ch)){ ch++; }
     return ch;
+}
+
+void ShadeGroupModel::setScheduleToController()
+{
+    // update controller if on wlan
+    if(mControllerAPI->controllerState() == ControllerAPI::ControllerState::Wlan){
+        mControllerAPI->currentConfig().clearSchedule();
+        for(vector<unique_ptr<ShadeGroup>>::iterator i = mShadeGroups->begin(); i != mShadeGroups->end(); i++)
+            mControllerAPI->currentConfig().addSchedule(i->get()->channel(), i->get()->days(), i->get()->openAt(), i->get()->closeAt());
+        mControllerAPI->pushConfig();
+    }
+    else emit scheduleSetFailed();
+}
+
+void ShadeGroupModel::onScheduleSet()
+{
+    UserData::instance().persistItems(*mShadeGroups.get(), true);
+    emit scheduleSet();
+}
+
+void ShadeGroupModel::setIpAddress(const QString &ipAddress)
+{
+    mIpAddress = ipAddress;
+
+    if(mIpAddress == "0.0.0.0")
+        mControllerAPI->setControllerState(ControllerAPI::ControllerState::Wan);
+    else{
+        mControllerAPI->setIpAddress(ipAddress);
+        mControllerAPI->fetchConfig();
+    }
+
+    emit ipAddressChanged();
 }

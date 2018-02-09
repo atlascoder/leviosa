@@ -24,6 +24,8 @@ Page {
     UserLogin{
         id: currentUser
         email: emailInput.text
+        password: "Restore123"
+        password2: "Restore123"
     }
 
 
@@ -108,6 +110,7 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                inputMethodHints: Qt.ImhNoPredictiveText || Qt.ImhEmailCharactersOnly
 			}
 
             Rectangle {
@@ -143,7 +146,7 @@ Page {
                 font.pixelSize: parent.height / 2
                 text: qsTr("RESTORE")
             }
-            onClicked: currentUser.signIn()
+            onClicked: currentUser.resetPassword();
         }
 
         Rectangle {
@@ -297,12 +300,6 @@ Page {
             PropertyChanges {
                 target: signInButton
                 enabled: false
-            }
-            StateChangeScript {
-                name: "openApp"
-                script: {
-                    rootItem.signIn();
-                }
             }
         },
         State {

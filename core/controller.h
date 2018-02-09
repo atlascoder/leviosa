@@ -8,25 +8,30 @@
 #include "positioned.h"
 #include "syncable.h"
 #include "SyncableRecord.h"
+#include "ControllerAPI.h"
+#include <memory>
 
 class Controller: public Shade, public Positioned, public Syncable
 {
     QString mMac;
     QString mLocationUuid;
     QString mName;
-    bool mIsWLAN;
-    QString mIpAddress;
+    bool mMatchPrevious;
+    std::unique_ptr<ControllerAPI> mControllerAPI;
 public:
-    Controller() {}
+    Controller() : mControllerAPI(new ControllerAPI){
+    }
     Controller(const Controller& c) :
         Positioned(c),
         Syncable(c),
         mMac(c.mMac),
         mLocationUuid(c.mLocationUuid),
         mName(c.mName),
-        mIsWLAN(c.mIsWLAN),
-        mIpAddress(c.mIpAddress)
-    {}
+        mControllerAPI(new ControllerAPI)
+    {
+        setIpAddress(c.ipAddress());
+    }
+    ~Controller(){}
 
     explicit Controller(const QString& mac);
 
@@ -39,14 +44,19 @@ public:
     QString name() const;
     void setName(const QString &name);
 
-    bool isWlan() const;
-    void setIsWlan(bool isWlan);
+    bool onWlan() const;
+    void setOnWlan(bool onWlan);
 
     QString ipAddress() const;
     void setIpAddress(const QString& ipAddress);
 
     QJsonObject toJson() const;
     void withJson(const QJsonObject& json);
+
+    bool matchPrevious() const { return mMatchPrevious; }
+    void setMatchPrevious(bool isMatch) { mMatchPrevious = isMatch; }
+
+    ControllerAPI& api() const { return *mControllerAPI.get(); }
 
 };
 

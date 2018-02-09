@@ -88,6 +88,7 @@ ApplicationWindow {
             sourceComponent: ChangePwdPage {
                 onCancel: pager.pop()
                 onRestore: pager.replace(pager.currentItem, restorePage)
+                onMenuClicked: pager.pop()
             }
             StackView.onActivated: {
                 drawer.interactive = false;
@@ -101,8 +102,8 @@ ApplicationWindow {
         Loader {
             sourceComponent: LocationsPage {
                 onMenuClicked: drawer.open()
-                onOpenLocation: function(uuid){
-                    pager.push(locationPage, {"locationUuid": uuid});
+                onOpenLocation: function(uuid, tzone, bssid){
+                    pager.push(locationPage, {"locationUuid": uuid, "tzone": tzone});
                 }
                 onEditLocation: function(uuid){
                     pager.push(editLocationPage, {"locationUuid": uuid})
@@ -158,17 +159,15 @@ ApplicationWindow {
         id: locationPage
         Loader {
             property string locationUuid
+            property string tzone
             sourceComponent: LocationPage {
                 locationUuid: pager.selectedLocationUuid
                 onMenuClicked: pager.pop()
                 onEditController: function(mac){
-                    pager.push(editControllerPage, {"controllerMac": mac })
+                    pager.push(editControllerPage, {"controllerMac": mac , "locationUuid": locationUuid})
                 }
-                onEditGroup:function(mac, channel){
-                    pager.push(editShadesGroupPage, {"controllerMac": mac, "selectedChannel": channel});
-                }
-                onEditSchedule: function(mac, channel){
-                    pager.push(editGroupSchedule, {"controllerMac": mac, "selectedChannel": channel});
+                onEditGroup:function(mac, channel, controllerIp){
+                    pager.push(editShadesGroupPage, {"controllerMac": mac, "selectedChannel": channel, "controllerIp": controllerIp});
                 }
                 onAddGroup: function(mac){
                     pager.push(newShadesGroupPage, {"controllerMac": mac});
@@ -182,10 +181,10 @@ ApplicationWindow {
             }
             onLoaded: {
                 item.locationUuid = locationUuid
+                item.timezone = tzone
             }
             StackView.onActivated: {
                 drawer.interactive = true;
-                item.locationUuid = locationUuid
                 item.init();
             }
             StackView.onDeactivating: {
@@ -216,33 +215,19 @@ ApplicationWindow {
         Loader {
             property string controllerMac
             property int selectedChannel
+            property string controllerIp
+
             sourceComponent: EditShadesGroupPage {
                 onMenuClicked: pager.pop();
             }
             StackView.onActivated: {
                 drawer.interactive = false;
+                item.init();
             }
             onLoaded: {
                 item.controllerMac = controllerMac;
                 item.selectedChannel = selectedChannel;
-            }
-        }
-    }
-
-    Component {
-        id: editGroupSchedule
-        Loader {
-            property string controllerMac
-            property int selectedChannel
-            sourceComponent: EditGroupSchedule {
-                onMenuClicked: pager.pop()
-            }
-            StackView.onActivated: {
-                drawer.interactive = false;
-            }
-            onLoaded: {
-                item.controllerMac = controllerMac;
-                item.selectedChannel = selectedChannel;
+                item.controllerIp = controllerIp;
             }
         }
     }
@@ -313,6 +298,19 @@ ApplicationWindow {
         property int selectedShadesGroupId : -1
 
 	}
+
+//    Switch {
+//        id: wanSwitch
+//        anchors.bottom: parent.bottom
+//        anchors.horizontalCenter: parent.horizontalCenter
+//        onClicked: { netMonitor.onWlan = checked; }
+//    }
+
+//    Text {
+//        text: "WLAN"
+//        anchors.bottom: wanSwitch.top
+//        anchors.horizontalCenter: wanSwitch.horizontalCenter
+//    }
 
 	Drawer {
 		id: drawer
@@ -409,17 +407,28 @@ ApplicationWindow {
     Rectangle {
         anchors.fill: parent
         id: disconnected
-        color: "#a0a0a0a0"
+        color: DefTheme.mainModalBg
         visible: !netMonitor.connected
+
         MouseArea {
             anchors.fill: parent
             enabled: parent.visible
         }
 
-        Text {
+        Image {
+            id: sadIcon
+            fillMode: Image.PreserveAspectFit
+            width: parent.width / 4
+            source: "img/robo.png"
             anchors.centerIn: parent
-            color: "#ff0000"
-            text: "Connection required!"
+        }
+
+        Text {
+            text: "No network - no work!"
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: sadIcon.bottom
+            font.bold: true
+            font.pixelSize: parent.width / 20
         }
     }
 

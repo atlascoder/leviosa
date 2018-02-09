@@ -40,6 +40,7 @@ android {
                 -L$$AWS-core -laws-cpp-sdk-core \
                 -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/curl/lib -lcurl \
                 -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/lib -lssl -lcrypto \
+#                -L/Users/anton.titkov/DevLibs/openssl/android -lssl -lcrypto
 
     INCLUDEPATH += \
                 Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/include
@@ -48,6 +49,10 @@ android {
     # Crypto++
     INCLUDEPATH += $$DEV_LIBS_PATH/cryptopp/android/include
     LIBS += -L$$DEV_LIBS_PATH/cryptopp/android/lib -lcryptopp
+
+    ANDROID_EXTRA_LIBS = \
+        $$PWD/android/libs/openssl/libcrypto.so \
+        $$PWD/android/libs/openssl/libssl.so
 }
 
 # iOS specifics
@@ -166,7 +171,6 @@ INCLUDEPATH += $$AWS_H-core/include \
 
 SOURCES += \
     EspTouchSetup.cpp \
-    core/WlanAPI.cpp \
     core/WanAPI.cpp \
     core/User.cpp \
     core/UserDAO.cpp \
@@ -197,12 +201,13 @@ SOURCES += \
     core/location.cpp \
     core/controller.cpp \
     core/SyncableRecord.tpp \
-    core/syncablerecord.cpp
+    core/syncablerecord.cpp \
+    core/ControllerConfig.cpp \
+    core/ControllerAPI.cpp
 
 # own codebase
 HEADERS += \
     EspTouchSetup.h \
-    core/WlanAPI.h \
     core/WanAPI.h \
     core/User.h \
     core/UserDAO.h \
@@ -232,7 +237,13 @@ HEADERS += \
     core/location.h \
     core/controller.h \
     core/SyncableRecord.h \
-    core/syncable.h
+    core/syncable.h \
+    core/ControllerConfig.h \
+    core/scheduleline.h \
+    NAM.h \
+    core/ControllerHTTPClient.h \
+    core/ControllerAPI.h \
+    core/timeaux.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

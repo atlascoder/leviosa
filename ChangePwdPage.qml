@@ -7,12 +7,16 @@ import com.atlascoder.UserLogin 1.0
 import "DefaultTheme.js" as DefTheme
 import "libs/aws-sdk.js" as AWS
 
-Page {
+LeviosaPage {
 	id: registerPage
     visible: true
     width: 480
     height: 800
-	title: qsTr("Authentication")
+    title: qsTr("Change password")
+
+    showLogo: false
+    enableAddAction: false
+    enableMenuAction: false
 
 	background: Rectangle {
 		anchors.fill: parent
@@ -24,9 +28,10 @@ Page {
 
     UserLogin {
         id: currentUser
-        email: emailInput.text
+        email: "change@password.my"
         password: passwordInput.text
         password2: passwordConfirmInput.text
+        password3: currentPwdInput.text
     }
 
 	Column {
@@ -234,7 +239,7 @@ Page {
                 font.pixelSize: parent.height / 2
                 text: qsTr("CHANGE")
             }
-            onClicked: currentUser.signUp()
+            onClicked: currentUser.changePassword()
         }
 
         Rectangle {
@@ -310,7 +315,7 @@ Page {
 
 				MouseArea {
 					anchors.fill: parent
-					onClicked: authenticate()
+                    onClicked: menuClicked();
 				}
             }
 

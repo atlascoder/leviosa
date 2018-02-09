@@ -14,6 +14,8 @@ var mainWarningAccent = "#a9a9a9";
 var mainInputBg = "#d1d1d1";
 var mainDisabledTextColor = "#a1a1a1";
 
+var mainModalBg = "#ebffffff";
+
 var secColor ="#607d8b";
 var secColorDark = "#34515e";
 var secColorLight = "#8eacbb";

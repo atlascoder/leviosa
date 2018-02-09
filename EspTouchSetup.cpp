@@ -31,7 +31,7 @@ QString EspTouchSetup::getPassword() const
 
 void EspTouchSetup::setPassword(const QString &password)
 {
-    mPassword = password;
+    mPassword = password.trimmed();
     emit passwordChanged();
 }
 

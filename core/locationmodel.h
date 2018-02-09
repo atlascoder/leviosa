@@ -30,7 +30,8 @@ public:
         PositionRole,
         IsOnWlanRole,
         IsOnlineRole,
-        BssidRole
+        BssidRole,
+        TimezoneRole
     };
 
     QModelIndex addLocation(const Location& location);
@@ -40,6 +41,8 @@ public:
     Q_INVOKABLE QModelIndex findLocation(const QString& uuid) const;
     Q_INVOKABLE QModelIndex indexOfRow(int row) const;
     Q_INVOKABLE void remove(const QString& uuid);
+    Q_INVOKABLE QString uuidByIndex(int index) const;
+    Q_INVOKABLE QString bssidByIndex(int index) const;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -88,6 +91,8 @@ private:
     std::vector<std::unique_ptr<Location>>* mLocations;
     QPersistentModelIndex mSelectedLocationIndex;
     QString mCurrentBssid;
+
+    QString timezoneName(int utcOffset) const;
 };
 
 #endif // LOCATIONMODEL_H

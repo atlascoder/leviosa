@@ -13,12 +13,18 @@ LeviosaPage {
 	title: "Locations"
     enableAddAction: true
 
-	signal openLocation(string bss)
+    property bool swiped : false
+
+    signal openLocation(string bss, string tzone, string bssid)
 	signal editLocation(string bss)
+
+    showStatusText: true
+    statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"
 
     Timezones {
         id: tzones
     }
+
 
     LocationsModel {
         id: locationModel
@@ -27,7 +33,22 @@ LeviosaPage {
 
     function init(){
         locationModel.updateModel();
-        userData.sync();
+        if(netMonitor.connected){
+            userData.sync();
+        }
+        swiper.start();
+    }
+
+    Timer {
+        id: swiper
+        interval: 500
+        repeat: false
+        onTriggered:{
+            if((locationModel.rowCount() === 1) && !swiped){
+                swiped = true;
+                openLocation(locationModel.uuidByIndex(0), locationModel.timezone, locationModel.bssidByIndex(0));
+            }
+        }
     }
 
     function pause(){
@@ -53,7 +74,7 @@ LeviosaPage {
 			width: gridView.cellWidth
 			height: gridView.cellHeight
 
-            property bool isOnWlan : netMonitor.isOnline && netMonitor.bssid === model.bssid
+            property bool isOnWlan : netMonitor.onWlan && netMonitor.bssid === model.bssid
 
 			Button {
 				id: itemRect
@@ -125,7 +146,7 @@ LeviosaPage {
                     }
 				}
 				onClicked: {
-                    openLocation(uuid);
+                    openLocation(uuid, locationModel.timezone, bssid);
 				}
 				onPressAndHold: {
                     editLocation(uuid);
@@ -140,8 +161,6 @@ LeviosaPage {
             when: userData.isSyncing
             PropertyChanges {
                 target: rootItem
-                statusText: "Syncing with cloud"
-                showStatusText: true
                 enableAddAction: false
             }
             StateChangeScript {
@@ -155,8 +174,6 @@ LeviosaPage {
             when: !userData.isSyncing
             PropertyChanges {
                 target: rootItem
-                statusText: ""
-                showStatusText: false
                 enableAddAction: true
             }
             StateChangeScript {

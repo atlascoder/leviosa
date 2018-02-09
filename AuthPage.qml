@@ -66,7 +66,7 @@ Page {
             wrapMode: Text.WordWrap
             horizontalAlignment: Qt.AlignHCenter
             verticalAlignment: Qt.AlignVCenter
-            font.pixelSize: 16
+            font.pixelSize: parent.width / 18
             color: authPage.state != "NotReady" && authPage.state != "Failed" ? DefTheme.mainPositiveAccent : DefTheme.mainNegativeAccent
         }
 
@@ -111,6 +111,8 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                Keys.onEnterPressed: passwordInput.forceActiveFocus()
+                inputMethodHints: Qt.ImhEmailCharactersOnly || Qt.ImhNoPredictiveText
 			}
 
             Rectangle {
@@ -151,7 +153,8 @@ Page {
                 anchors.right: parent.right
                 anchors.rightMargin: 10
 				height: passwordIcon.height
-				echoMode: TextInput.Password
+                echoMode: TextInput.Password
+                passwordMaskDelay: 200
                 font.capitalization: Font.AllUppercase
 				horizontalAlignment: Text.AlignHCenter
 				anchors.verticalCenter: parent.verticalCenter
@@ -165,6 +168,7 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                inputMethodHints: Qt.ImhNoPredictiveText
 			}
 
             Rectangle {
@@ -339,6 +343,18 @@ Page {
         State {
             name: "Authenticating"
             when: currentUser.authState === UserLogin.Authenticating
+            PropertyChanges {
+                target: signInButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: true
+            }
+        },
+        State {
+            name: "Downloading..."
+            when: currentUser.authState === UserLogin.Downloading
             PropertyChanges {
                 target: signInButton
                 enabled: false

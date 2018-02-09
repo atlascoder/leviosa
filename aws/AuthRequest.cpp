@@ -54,7 +54,7 @@ template <class T> T my_powm(const T& a, const T& p, const T& c) {
 }
 
 
-AuthRequest::AuthRequest() : mCancelled(false)
+AuthRequest::AuthRequest() : mCancelled(true)
 {
     mN = static_cast<cpp_int>("0x" \
             "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -94,12 +94,14 @@ AuthRequest::AuthRequest() : mCancelled(false)
 
 AuthRequest::~AuthRequest()
 {
-    mCancelled = true;
+    cancelRequests();
     Aws::Delete<Aws::CognitoIdentityProvider::CognitoIdentityProviderClient>(mClient);
 }
 
 void AuthRequest::cancelRequests()
 {
+    qDebug() << "Stop Auth request";
+    if(mCancelled) return;
     mCancelled = true;
     mClient->DisableRequestProcessing();
 }
@@ -201,8 +203,10 @@ QByteArray AuthRequest::getPasswordAuthenticationKey(const QString &userId, cons
 
 void AuthRequest::signIn(const QString& email, const QString& password)
 {
+    mCancelled = false;
     mEmail = email;
     mPassword = password;
+    mSuccessful = false;
     // https://stackoverflow.com/questions/42389823/aws-sign-in-invalidparameterexception-missing-required-parameter-srp-a
     Aws::Map<Aws::String, Aws::String> authParameters;
     authParameters.insert(std::pair<Aws::String, Aws::String>("USERNAME", Aws::Utils::StringUtils::to_string(mEmail.toStdString())));
@@ -260,12 +264,15 @@ void AuthRequest::signIn(const QString& email, const QString& password)
     } else {
         mLastMessage = QString(authResp.GetError().GetMessage().c_str());
     }
+    mCancelled = true;
 }
 
 void AuthRequest::signUp(const QString& email, const QString& password)
 {
+    mCancelled = false;
     mEmail = email;
     mPassword = password;
+    mSuccessful = false;
     Aws::CognitoIdentityProvider::Model::DescribeUserPoolClientRequest describeUserPoolReq;
     describeUserPoolReq.WithUserPoolId(ClientConfig::instance().userPoolId).WithClientId(ClientConfig::instance().clientId);
 
@@ -291,6 +298,7 @@ void AuthRequest::signUp(const QString& email, const QString& password)
     else{
         mLastMessage = QString(mResult.GetError().GetMessage().c_str());
     }
+    mCancelled = true;
 }
 
 void AuthRequest::signOut()
@@ -300,6 +308,7 @@ void AuthRequest::signOut()
 
 void AuthRequest::changePassword(const QString& accessToken, const QString& newPassword, const QString& password)
 {
+    mCancelled = false;
     Aws::CognitoIdentityProvider::Model::ChangePasswordRequest req;
     req.SetAccessToken(Aws::Utils::StringUtils::to_string(accessToken.toStdString()));
     req.SetProposedPassword(Aws::Utils::StringUtils::to_string(newPassword.toStdString()));
@@ -314,10 +323,12 @@ void AuthRequest::changePassword(const QString& accessToken, const QString& newP
     else{
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
     }
+    mCancelled = true;
 }
 
 void AuthRequest::restorePassword(const QString& email)
 {
+    mCancelled = false;
     mEmail = email;
     Aws::CognitoIdentityProvider::Model::ForgotPasswordRequest req;
     req.SetClientId(ClientConfig::instance().clientId);
@@ -329,13 +340,16 @@ void AuthRequest::restorePassword(const QString& email)
         mSuccessful = true;
     else
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
+    mCancelled = true;
 }
 
 bool AuthRequest::refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration)
 {
+    mCancelled = false;
     mEmail = email;
     mRefreshToken = refreshToken;
     mRefreshTokenExpiration = refreshTokenExpiration;
+    mSuccessful = false;
     int now = QDateTime::currentSecsSinceEpoch();
     if(mRefreshTokenExpiration== 0){
         return false;
@@ -354,11 +368,13 @@ bool AuthRequest::refreshTokens(const QString& email, const QString&  refreshTok
         if(initAuthResp.IsSuccess()){
             mIdToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetIdToken().c_str());
             mAccessToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetAccessToken().c_str());
+            mCancelled = true;
             return true;
         }
         else {
             mLastMessage = QString(initAuthResp.GetError().GetMessage().c_str());
         }
     }
+    mCancelled = true;
     return false;
 }

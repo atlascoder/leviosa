@@ -6,9 +6,10 @@
 #include <QVariant>
 #include <QHash>
 #include <QMutex>
+#include <QMap>
 
 #include "controller.h"
-#include "WlanAPI.h"
+#include "ControllerAPI.h"
 #include "WanAPI.h"
 
 class ControllerModel : public QAbstractListModel
@@ -16,6 +17,7 @@ class ControllerModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(QString locationUuid READ locationUuid WRITE setLocationUuid NOTIFY locationUuidChanged)
     Q_PROPERTY(QString locationName READ getLocationName NOTIFY locationNameChanged)
+
     Q_PROPERTY(QString selectedControllerMac READ getSelectedControllerMac WRITE setSelectedControllerMac NOTIFY selectedControllerMacChanged)
     Q_PROPERTY(QString selectedControllerName READ getSelectedControllerName WRITE setSelectedControllerName NOTIFY selectedControllerNameChanged)
     Q_PROPERTY(int selectedControllerPosition READ getSelectedControllerPosition WRITE setSelectedControllerPosition NOTIFY selectedControllerPositionChanged)
@@ -25,7 +27,22 @@ class ControllerModel : public QAbstractListModel
     Q_PROPERTY(QStringList positionOrder READ getPositionOrder NOTIFY positionOrderChanged)
     Q_PROPERTY(QString selectedControllerIp READ getSelectedControllerIp WRITE setSelectedControllerIp NOTIFY selectedControllerIpChanged)
 
-    Q_PROPERTY(bool isOnWlan READ getOnWlan WRITE setOnWlan NOTIFY onWlanChanged)
+    Q_PROPERTY(QString selecetedControllerStatus READ selectedControllerStatus NOTIFY selectedControllerStatusChanged)
+
+    Q_PROPERTY(int selectedControllerState READ selectedControllerState NOTIFY selectedControllerStatusChanged)
+
+    Q_PROPERTY(QString bssid READ bssid WRITE setBssid NOTIFY bssidChanged)
+    Q_PROPERTY(QString locationBssid READ locationBssid WRITE setLocationBssid NOTIFY locationBssidChanged)
+
+    Q_PROPERTY(bool isOnWlan READ getOnWlan WRITE setOnWlan NOTIFY onWlanChanged )
+    Q_PROPERTY(bool isCurrentLocation READ isCurrentLocation NOTIFY locationStatusChanged )
+    Q_PROPERTY(bool isNewLocation READ isNewLocation NOTIFY locationStatusChanged )
+
+    Q_PROPERTY(bool isDiscovering READ isDiscovering WRITE setIsDiscovering NOTIFY isDiscoveringChanged)
+
+    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
+
+    Q_PROPERTY(bool dataLoaded READ dataLoaded NOTIFY dataLoadedChanged)
 
 public:
     ControllerModel(QObject* parent = 0);
@@ -39,8 +56,10 @@ public:
         CloseAtRole,
         DaysRole,
         IPRole,
-        IsOnWlanRole
+        IsOnWlanRole,
+        ControllerStateRole
     };
+
 
     QModelIndex addController(const Controller& controller);
     Q_INVOKABLE QModelIndex findController(const QString& mac);
@@ -49,6 +68,9 @@ public:
     Q_INVOKABLE void updateControllerWithData(const QString& mac, const QString& name, int position);
     Q_INVOKABLE QString macByIndex(int idx) const;
     Q_INVOKABLE QString nameByIndex(int idx) const;
+
+    Q_INVOKABLE void setSelectedControllerIndex(int index);
+    Q_INVOKABLE void checkIP(const QString& mac, const QString& ip);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -60,13 +82,15 @@ public:
 
     Q_INVOKABLE void remove(const QString& mac);
 
+    Q_INVOKABLE void commandShade(const QString& mac, int channel, int command);
+
+    Q_INVOKABLE QString ipByMac(const QString& mac);
+
     Q_INVOKABLE QString getFreeName();
     QString getFreeName(std::vector<std::unique_ptr<Controller>>& newItems);
 
-    Q_INVOKABLE void shadeCmd(const QString& mac, char channel, int cmd);
-
     QString locationUuid() const;
-    void setLocationUuid(const QString& locationUuid);
+    void setLocationUuid(const QString& locationUuid);    
 
 signals:
     void locationUuidChanged();
@@ -79,11 +103,24 @@ signals:
     void selectedControllerDaysChanged();
     void selectedControllerIpChanged();
     void positionOrderChanged();
+    void countChanged();
+
+    void bssidChanged();
+    void locationBssidChanged();
+
+    void locationStatusChanged();
 
     void onWlanChanged();
 
+    void isDiscoveringChanged();
+
+    void selectedControllerStatusChanged();
+
+    void dataLoadedChanged();
+
 public slots:
     void updateModel();
+    void controllerStatusUpdated(const QString& mac);
 
 private:
 
@@ -92,13 +129,16 @@ private:
     void loadControllers(const QString& mac);
 
     bool mIsOnWlan;
-    WlanAPI mWlanAPI;
-    WanAPI mWanAPI;
     QString mLocationUuid;
-
+    QString mCurrentIp;
     std::vector<std::unique_ptr<Controller>>* mControllers;
-
     QPersistentModelIndex mSelectedIndex;
+    QString mCurrentBssid;
+    QString mLocationBssid;
+
+    bool mControllerTimeMismatch;
+    bool mIsDiscovering;
+    bool mIsDataLoaded;
 
     QMutex mUpdatingMtx;
 
@@ -127,8 +167,29 @@ private:
 
     QStringList getPositionOrder() const;
 
+    QString selectedControllerStatus();
+
+    int selectedControllerState() const;
+
+    QString bssid() const { return mCurrentBssid; }
+    void setBssid(const QString& bssid);
+
+    QString locationBssid() const { return mLocationBssid; }
+    void setLocationBssid(const QString& locationBssid);
+
     bool getOnWlan() const;
     void setOnWlan(bool isOnWlan);
+
+    bool isCurrentLocation() const;
+    bool isNewLocation() const;
+
+    bool isDiscovering() const { return mIsDiscovering; }
+    void setIsDiscovering(bool isDiscovering);
+
+    bool dataLoaded() const { return mIsDataLoaded; }
+    void setDataLoaded(bool isLoaded);
+
+    void checkConfiguration(Controller* controller);
 
 };
 

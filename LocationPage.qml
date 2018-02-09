@@ -14,31 +14,73 @@ LeviosaPage {
     anchors.fill: parent
     enableMenuAction: false
 
-    property alias locationUuid : controllersModel.locationUuid
+    property string locationUuid
     property alias discovery : controllerDiscovery
     property alias activeController : controllersModel.selectedControllerMac
+    property string timezone
+
+    property bool isOnWlan : netMonitor.onWlan ? true : false
+    property bool allowedWlan : controllersModel.isOnWlan && (controllersModel.isCurrentLocation || controllersModel.isNewLocation)
+
+    property bool selectedShadeGroupsNotFilled : false
 
     signal setupController(string uuid)
     signal editController(string mac)
-    signal editGroup(string mac, int channel)
-    signal editSchedule(string mac, int channel)
+    signal editGroup(string mac, int channel, string ip)
     signal addGroup(string mac)
 
+    enableAddAction: selectedShadeGroupsNotFilled && (controllersModel.selectedControllerState == 0 || controllersModel.selectedControllerState == 5)
     onAddClicked: addGroup(controllersModel.macByIndex(controllersPager.currentIndex))
 
 
     title: controllersModel.locationName
 
+    showStatusText: true
+    statusText: isOnWlan ?
+                    (controllersModel.isNewLocation ?
+                         "new location" :
+                        (controllersModel.isCurrentLocation ?
+                            "current location" :
+                            "via Internet")
+                     )
+                    : "via Internet"
+
+    showSubTitle: true
+    subTitle: controllersModel.selecetedControllerStatus
+
     function init(){
-        controllersModel.updateModel();
-        discovery.isRunning = true;
+        console.log("INIT LOCATION PAGE");
+        if(controllersModel.locationUuid != locationPage.locationUuid){
+            console.log("init from emty UUID to: " + locationUuid)
+            controllersModel.locationUuid = locationPage.locationUuid;
+        }
+        else{
+            console.log("updating loaded location UUID to: " + locationUuid)
+            controllersModel.updateModel();
+            if(isOnWlan && controllersModel.isNewLocation)
+                controllerDiscovery.isRunning = true;
+        }
     }
 
     ControllersModel {
         id: controllersModel
-        isOnWlan: netMonitor.onWlan && netMonitor.bssid == selectedControllerMac
-        onModelReset: {
-            console.log("Model reset, index: " + controllersPager.currentIndex);
+        onIsOnWlanChanged: {
+            if(allowedWlan && dataLoaded){
+                console.log("On Wlan");
+                controllerDiscovery.isRunning = true;
+            }
+            else{
+                console.log("On Wan");
+                controllerDiscovery.isRunning = false;
+            }
+        }
+        isDiscovering: controllerDiscovery.isRunning
+        isOnWlan: netMonitor.onWlan
+        bssid: netMonitor.bssid
+        onDataLoadedChanged: {
+            console.log("Data loaded");
+            if(dataLoaded && allowedWlan)
+                controllerDiscovery.isRunning = true;
         }
     }
 
@@ -49,15 +91,23 @@ LeviosaPage {
         Repeater {
             model: controllersModel
             Loader {
-                active: SwipeView.isCurrentItem || SwipeView.isNextItem || SwipeView.isPreviousItem
+                active: SwipeView.isCurrentItem// || SwipeView.isNextItem || SwipeView.isPreviousItem
                 sourceComponent: ControllerPage {
                     anchors.fill: parent
                     controllerMac: mac
-                    onOpenGroupEdit: function(mac, c){ editGroup(mac, c); }
-                    onCmd: function(channel, cmd){ controllersModel.shadeCmd(model.id, channel, cmd); }
-                    onVisibleChanged: {
-                        if(visible) init();
+                    onOpenGroupEdit: function(mac, c){
+                        var ip = controllersModel.ipByMac(mac);
+                        console.log("Open group with ip: " + ip);
+                        editGroup(mac, c, ip);
                     }
+                    Component.onCompleted: {
+                        init();
+                    }
+                    onItemsLoaded: function(n) { selectedShadeGroupsNotFilled = n < 6; }
+                    onCommandShade: function(channel, command){
+                        controllersModel.commandShade(mac, channel, command);
+                    }
+                    failed: (controllerState === 2) || (controllerState === 4)
                 }
             }
         }
@@ -70,17 +120,18 @@ LeviosaPage {
         currentIndex: controllersPager.currentIndex
         Repeater {
             id: tabsRepeater
-            model: controllersPager.count
+            model: controllersModel
             TabButton {
                 width: bar.itemWidth
-                text: controllersModel.nameByIndex(model.index)
-                onPressAndHold: editController(controllersModel.macByIndex(model.index))
+                text: name
+                onPressAndHold: editController(mac)
             }
         }
         Component.onCompleted: controllersPager.currentIndex = currentIndex
         onCurrentIndexChanged: {
             console.log("Current index: " + controllersPager.currentIndex)
             controllersPager.currentIndex = currentIndex;
+            controllersModel.setSelectedControllerIndex(currentIndex);
         }
     }
 
@@ -148,7 +199,7 @@ LeviosaPage {
             MouseArea {
                 id: setupMouse
                 anchors.fill: parent
-                onClicked: setupController(locationId)
+                onClicked: setupController(locationUuid)
             }
         }
 
@@ -166,42 +217,62 @@ LeviosaPage {
             discoFinished = true;
         }
         onFoundList: function(list){
-            console.log("FOUND: " + controllerDiscovery.foundList);
+            console.log("FOUND LIST: " + list);
             controllersModel.addControllersFromList(controllersModel.locationUuid, list);
         }
+        onFound: function(mac, ip) {
+            console.log("FOUND WINGARDIUM: " + mac + " / " + ip);
+            controllersModel.checkIP(mac, ip);
+        }
+    }
+
+    BlockScreen {
+        id: emptyOnWanAlert
+        anchors.fill: parent
+        message: "You need to setup your first Leviosa WiShadeController being connected to WiFi network."
     }
 
     states : [
         State{
             name: "init"
-            when: !controllerDiscovery.discoFinished && !controllerDiscovery.isRunning
+            when: allowedWlan && !controllerDiscovery.discoFinished && !controllerDiscovery.isRunning
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
+            PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "discovery first"
-            when: controllerDiscovery.isRunning && controllersModel.rowCount() === 0
+            when: allowedWlan && controllerDiscovery.isRunning && (controllersModel.count == 0)
             PropertyChanges { target: busyIndi; visible: true }
+            PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "discovery next"
-            when: controllerDiscovery.isRunning && controllersModel.rowCount() > 0
+            when: allowedWlan && controllerDiscovery.isRunning && (controllersModel.count > 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
-            PropertyChanges { target: locationPage; enableAddAction: true; showLogo: true }
+            PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
-            name: "empty"
-            when: !controllerDiscovery.isRunning && controllersModel.rowCount() === 0
+            name: "empty Wlan"
+            when: allowedWlan && controllerDiscovery.discoFinished && (controllersModel.count == 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: true }
+            PropertyChanges { target: emptyOnWanAlert; visible: false }
+        },
+        State {
+            name: "empty Wan"
+            when:  (controllersModel.count == 0) && !allowedWlan
+            PropertyChanges { target: emptyOnWanAlert; visible: true }
+            PropertyChanges { target: busyIndi; visible: false }
+            PropertyChanges { target: setupInquiry; visible: false }
         },
         State {
             name: "ready"
-            when: !controllerDiscovery.isRunning && controllersModel.rowCount() > 0
+            when: (!allowedWlan || controllerDiscovery.discoFinished) && (controllersModel.count > 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
-            PropertyChanges { target: locationPage; enableAddAction: true }
+            PropertyChanges { target: emptyOnWanAlert; visible: false }
         }
     ]
 

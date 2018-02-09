@@ -31,6 +31,7 @@ public:
 
     bool running() const;
     void setRunning(bool isRunning);
+
     QZeroConf mZeroConf;
     MDNSDiscoThread mDiscoThread;
 public slots:
@@ -38,6 +39,7 @@ public slots:
     void discovered(const QString& mac, const QString& ip);
 signals:
     void foundList(const QString& list);
+    void found(const QString& mac, const QString& ip);
     void started();
     void finished();
     void runningChanged();

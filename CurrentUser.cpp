@@ -5,13 +5,14 @@
 #include "aws/CredentialsRequest.h"
 #include <QtConcurrentRun>
 #include <QDebug>
+#include <UserData.h>
 
 
 CurrentUser::CurrentUser(QObject *parent) :
     QObject(parent),
     mDb(DatabaseManager::instance()),
     mIsAuthenticated(false),
-    mStopRequests(false),
+    mStopRequests(true),
     mAuthRequest(new AuthRequest),
     mCredentialsRequest(new CredentialsRequest)
 {
@@ -34,7 +35,7 @@ CurrentUser::~CurrentUser()
 void CurrentUser::stopRequests()
 {
     qDebug() << "CurrentUser: stop requests";
-
+    if(mStopRequests) return;
     mStopRequests = true;
     mAuthRequest->cancelRequests();
     mCredentialsRequest->cancelRequests();
@@ -48,6 +49,7 @@ CurrentUser& CurrentUser::instance()
 
 void CurrentUser::requestCredentials()
 {
+    mStopRequests = false;
     if(mIdToken.expiration() < QDateTime::currentSecsSinceEpoch() - 60){
         // need to refresh tokens firstly
         refreshTokens();
@@ -73,6 +75,7 @@ void CurrentUser::requestCredentials()
         mHasCredentials = false;
         emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
     }
+    mStopRequests = true;
 }
 
 void CurrentUser::fillCredentials(Aws::Auth::AWSCredentials &awsCredentials)
@@ -101,14 +104,19 @@ void CurrentUser::signOut()
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
         mAuthResult = QtConcurrent::run(this, &CurrentUser::logoutUser);
     }
+    setEmail("");
+    mDb.userDAO.clear();
+    mDb.locationsDao.clear(false);
+    mDb.controllersDao.clear(false);
+    mDb.shadeGroupsDao.clear(false);
     setAuthenticated(false);
     mHasCredentials = false;
 }
 
-void CurrentUser::restorePassword()
+void CurrentUser::restorePassword(const QString& email)
 {
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
-        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordRestore);
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordRestore, email);
     }
 
 }
@@ -121,10 +129,11 @@ void CurrentUser::changePassword(const QString &newPassword, const QString &oldP
 }
 void CurrentUser::registerUser(const QString &email, const QString &password)
 {
-    if(mStopRequests) return;
+
     mAuthRequest->signUp(email, password);
     if(mAuthRequest->isSuccessful()){
         emit signedUp();
+        authenticateUser(email, password);
     }
     else{
         mLastMessage = mAuthRequest->getLastMessage();
@@ -134,7 +143,6 @@ void CurrentUser::registerUser(const QString &email, const QString &password)
 
 void CurrentUser::authenticateUser(const QString &email, const QString &password)
 {
-    if(mStopRequests) return;
     mAuthRequest->signIn(email, password);
     if(mAuthRequest->isSuccessful()){
         mUser.setEmail(email);
@@ -149,8 +157,11 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
         mUser.setControllersModified(0);
         mUser.setShadeGroupsModified(0);
         mDb.userDAO.persistUser(mUser);
+        UserData::instance().createDefaultLocation();
+
         setAuthenticated(true);
         emit signedIn();
+        emit emailChanged();
     }
     else{
         mLastMessage = mAuthRequest->getLastMessage();
@@ -161,7 +172,6 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
 
 void CurrentUser::logoutUser()
 {
-    if(mStopRequests) return;
     mAuthRequest->signOut();
     if(mAuthRequest->isSuccessful()){
         mDb.clear();
@@ -173,10 +183,9 @@ void CurrentUser::logoutUser()
     }
 }
 
-void CurrentUser::requestPasswordRestore()
+void CurrentUser::requestPasswordRestore(const QString& email)
 {
-    if(mStopRequests) return;
-    mAuthRequest->restorePassword(mUser.email());
+    mAuthRequest->restorePassword(email);
     if(mAuthRequest->isSuccessful()){
         emit restoreRequestSent();
     }
@@ -188,10 +197,9 @@ void CurrentUser::requestPasswordRestore()
 
 void CurrentUser::requestPasswordChange(const QString& newPassword, const QString& password)
 {
-    if(mStopRequests) return;
     mAuthRequest->changePassword(mAccessToken.raw(), newPassword, password);
     if(mAuthRequest->isSuccessful()){
-        emit restoreRequestSent();
+        emit passwordChanged();
     }
     else{
         mLastMessage = mAuthRequest->getLastMessage();
@@ -215,7 +223,6 @@ void CurrentUser::setAuthenticated(bool isAuthenticated)
 }
 
 void CurrentUser::refreshTokens(){
-    if(mStopRequests) return;
     if(mAuthRequest->refreshTokens(mUser.email(), mUser.refreshToken(), mUser.refreshTokenExpiration())){
         mIdToken.setRaw(mAuthRequest->getIdToken());
         mAccessToken.setRaw(mAuthRequest->getAccessToken());

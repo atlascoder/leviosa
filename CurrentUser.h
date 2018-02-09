@@ -95,7 +95,7 @@ public slots:
     void signUp(const QString& email, const QString& password);
     void signIn(const QString& email, const QString& password);
     void signOut();
-    void restorePassword();
+    void restorePassword(const QString& email);
     void changePassword(const QString& newPassword, const QString& oldPassword);
 
 signals:
@@ -106,6 +106,8 @@ signals:
     void signedUp();
     void signedIn();
     void signedOut();
+    void passwordChanged();
+
     void authError(const QString& message);
     void restoreRequestSent();
 
@@ -119,7 +121,7 @@ private:
     void registerUser(const QString& email, const QString& password);
     void authenticateUser(const QString& email, const QString& password);
     void logoutUser();
-    void requestPasswordRestore();
+    void requestPasswordRestore(const QString& email);
     void requestPasswordChange(const QString& newPassword, const QString& password);
 
     void setAuthenticated(bool isAuthenticated);

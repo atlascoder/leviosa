@@ -3,18 +3,26 @@ import QtQuick.Controls 2.2
 import com.atlascoder.ShadesGroupsModel 1.0
 import com.atlascoder.Shade 1.0
 
+import "DefaultTheme.js" as DefTheme
+
 Item {
     id: rootItem
     anchors.fill:parent
 
-    property alias controllerMac : shadesGroupsModel.controllerMac
+    property string controllerMac
     property alias channel : shadesGroupsModel.selectedChannel
+    property alias dataModel: shadesGroupsModel
 
-    signal cmd(int channel, int cmd)
+    property bool failed : false
+
+    signal itemsLoaded(int count);
     signal openGroupEdit(string mac, int channel)
+    signal commandShade(int channel, int command)
 
     function init(){
-        shadesGroupsModel.updateModel();
+        shadesGroupsModel.controllerMac = controllerMac
+        allShadesControl.visible = shadesGroupsModel.count > 1
+        itemsLoaded(shadesGroupsModel.count);
     }
 
     ShadesGroupsModel {
@@ -22,10 +30,7 @@ Item {
     }
 
     onVisibleChanged: {
-        if(visible){
-            console.log("show controls");
-            init();
-        }
+        if(visible) init();
     }
 
     AllShadesControl {
@@ -33,10 +38,14 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        visible: shadesGroupsModel.rowCount() > 1
+        visible: shadesGroupsModel.count > 1
         z:1
         onCmdShade: function(shade_state){
-            cmd(0, shade_state);
+            commandShade(0, shade_state);
+        }
+        onShadeStateChanged: {
+            console.log("Change states to all");
+            shadesGroupsModel.setStateToAll(allShadesControl.shadeState);
         }
     }
 
@@ -51,7 +60,6 @@ Item {
         cellHeight: height > width ? (height / 3) : (height / 2)
 
         signal editShadesGroup(string n)
-        signal editGroupSchedule(string n)
 
         model: shadesGroupsModel
 
@@ -68,16 +76,41 @@ Item {
                 openAtText: model.openAtText
                 closeAtText: model.closeAtText
 
+                allShadesState: allShadesControl.state
+
                 channel: model.channel
 
                 onEdit: openGroupEdit(controllerMac, channel)
 
-                onCmdShade: function(gid, shade_state){
+                onDoCommandShade: function(gid, shade_state){
                     model.shadeState = shade_state;
-                    cmd(gid, shade_state);
+                    commandShade(gid, shade_state);
+                }
+
+                onDifferentState: {
+                    console.log("Different state")
+                    allShadesControl.state="interim"
                 }
 
             }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: DefTheme.mainModalBg
+        visible: failed
+        z: 2
+
+        Text {
+            anchors.centerIn: parent
+            color: DefTheme.mainNegativeAccent
+            text: "Controller is not responding."
+            font.pixelSize: parent.width / 16
+        }
+
+        MouseArea {
+            anchors.fill: parent
         }
     }
 

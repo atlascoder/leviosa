@@ -39,11 +39,15 @@ public:
     void removeItem(Location& location, bool toSync);
     void persistItems(std::vector<std::unique_ptr<Location>>& locations, bool toSync);
 
+    QString locationBssid(const QString& uuid);
+    int locationUtcOffset(const QString& uuid);
+
     void loadControllers(const QString& locationUuid);
     void persistItem(Controller &controller, bool toSync);
     void removeItem(Controller &controller, bool toSync);
     void persistItems(std::vector<std::unique_ptr<Controller>>& controllers, bool toSync);
 
+    std::unique_ptr<std::vector<std::unique_ptr<ShadeGroup>>> shadeGroupsForController(const QString& mac) const;
     void loadShadeGroups(const QString& controllerMac);
     void persistItem(ShadeGroup &controller, bool toSync);
     void removeItem(ShadeGroup &controller, bool toSync);
@@ -52,6 +56,12 @@ public:
     void stopRequests();
 
     bool isControllerKnown(const QString& mac) const;
+
+    void createDefaultLocation();
+
+    SyncState syncState() const { return mSyncState; }
+
+    void updateLocationWithBssid(const QString& uuid, const QString& bssid);
 
 public slots:
     void sync();

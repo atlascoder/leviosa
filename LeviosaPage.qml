@@ -25,6 +25,9 @@ Page {
     property alias showStatusText: toolbar.showStatusText
     property alias statusText: toolbar.statusText
 
+    property alias showSubTitle: toolbar.showSubHeader
+    property alias subTitle : toolbar.subHeaderText
+
     header: TopBar {
         id: toolbar
         onMenuAction: {

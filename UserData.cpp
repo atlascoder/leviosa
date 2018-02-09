@@ -34,6 +34,7 @@ UserData::UserData() :
 void UserData::stopRequests()
 {
     qDebug() << "UserData: stop requests";
+    if(mCancelled) return;
     mCancelled = true;
     CurrentUser::instance().stopRequests();
     mSyncer->cancelRequests();
@@ -49,6 +50,7 @@ void UserData::run()
     CurrentUser & u = CurrentUser::instance();
     if(!mCancelled){
         u.requestCredentials();
+        if(mCancelled) return;
         if(u.isAuthenticated() && u.hasCredentials()){
             Aws::Auth::AWSCredentials creds;
             u.fillCredentials(creds);
@@ -131,7 +133,7 @@ void UserData::mergeUpdates(SyncableRecord<Location> &locations, SyncableRecord<
     to_del = controllers.deletedIdx().size();
 
     if(to_del > 0){
-        qDebug() << "Deleting " << to_del << "locations";
+        qDebug() << "Deleting " << to_del << " controllers";
         for(int idx : controllers.deletedIdx())
             mDb.controllersDao.destroy(*controllers.items().at(idx), false);
         updated = true;
@@ -161,7 +163,7 @@ void UserData::mergeUpdates(SyncableRecord<Location> &locations, SyncableRecord<
     to_del = shadeGroups.deletedIdx().size();
 
     if(to_del > 0){
-        qDebug() << "Deleting " << to_del << "locations";
+        qDebug() << "Deleting " << to_del << " shades groups";
         for(int idx : shadeGroups.deletedIdx())
             mDb.shadeGroupsDao.destroy(*shadeGroups.items().at(idx), false);
         updated = true;
@@ -248,8 +250,22 @@ void UserData::removeItem(Location &location, bool toSync)
 
 void UserData::loadControllers(const QString &locationUuid)
 {
+    QMap<QString, QString> mac_ip;
+    for(vector<unique_ptr<Controller>>::iterator i = mControllers->begin(); i != mControllers->end(); i++){
+        if(i->get()->ipAddress() != "0.0.0.0")
+            mac_ip.insert(i->get()->mac(), i->get()->ipAddress());
+    }
     mControllers->clear();
-    mDb.controllersDao.loadFiltered(*mControllers.get(), "locationUuid", locationUuid);
+    unique_ptr<vector<unique_ptr<Controller>>> new_c(new vector<unique_ptr<Controller>>);
+
+    mDb.controllersDao.loadFiltered(*new_c.get(), "locationUuid", locationUuid);
+    for(vector<unique_ptr<Controller>>::iterator i = new_c->begin(); i !=new_c->end(); i++){
+        if(mac_ip.contains(i->get()->mac())){
+            i->get()->setIpAddress(mac_ip[i->get()->mac()]);
+            i->get()->api().setControllerState(ControllerAPI::ControllerState::Wlan);
+        }
+        mControllers->push_back(move(*i));
+    }
 }
 
 void UserData::persistItem(Controller& controller, bool toSync)
@@ -337,5 +353,54 @@ void UserData::removeItem(ShadeGroup &shadeGroup, bool toSync)
 
 bool UserData::isControllerKnown(const QString &mac) const
 {
-    return mDb.controllersDao.filtered("mac", mac)->size() > 0;
+    auto filtered = mDb.controllersDao.filtered("mac", mac);
+    return filtered->size() > 0;
+}
+
+unique_ptr<vector<unique_ptr<ShadeGroup>>> UserData::shadeGroupsForController(const QString &mac) const
+{
+    unique_ptr<vector<unique_ptr<ShadeGroup>>> v(new vector<unique_ptr<ShadeGroup>>);
+    mDb.shadeGroupsDao.loadFiltered(*v.get(), "controllerMac", mac);
+    return v;
+}
+
+void UserData::createDefaultLocation()
+{
+    Location l;
+    l.setName("My Home");
+    l.setSynced("false");
+    QDateTime local(QDateTime::currentDateTime());
+    QDateTime utc(local.toUTC());
+    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
+    l.setUtcOffset(dt.secsTo(local));
+    l.setPosition(0);
+    persistItem(l, true);
+}
+
+void UserData::updateLocationWithBssid(const QString &uuid, const QString &bssid)
+{
+    unique_ptr<vector<unique_ptr<Location>>> loc = mDb.locationsDao.filtered("uuid", uuid);
+    for(vector<unique_ptr<Location>>::iterator i = loc->begin(); i != loc->end(); i++){
+        i->get()->setBssid(bssid);
+        mDb.locationsDao.persistItem(*i->get(), true);
+    }
+    CurrentUser::instance().setLocationsSynced(false);
+}
+
+QString UserData::locationBssid(const QString &uuid)
+{
+    auto l = mDb.locationsDao.filtered("uuid", uuid);
+    if(l->size() == 0)
+        return "";
+    else
+        return l->at(0)->bssid();
+}
+
+int UserData::locationUtcOffset(const QString &uuid)
+{
+    auto l = mDb.locationsDao.filtered("uuid", uuid);
+    if(l->size() == 0)
+        return 0;
+    else
+        return l->at(0)->utcOffset();
 }

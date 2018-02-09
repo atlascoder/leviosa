@@ -18,6 +18,9 @@ ToolBar {
     property bool enableAddAction
     property bool enableMenuAction
 
+    property bool showSubHeader : false
+    property string subHeaderText
+
     property bool showStatusText : false
     property string statusText
 
@@ -31,17 +34,6 @@ ToolBar {
             transparentBorder: true
             radius: 3
         }
-    }
-
-    Text {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: parent.height / 25
-        font.pixelSize: parent.height / 5
-        text: statusText
-        font.italic: true
-        color: DefTheme.mainTextColor
-        visible: showStatusText
     }
 
     RowLayout {
@@ -61,15 +53,47 @@ ToolBar {
             }
             onClicked: menuAction()
         }
-        Text {
+        Item {
             id: pageTitle
-            elide: Text.ElideRight
-            verticalAlignment: Qt.AlignVCenter
-            horizontalAlignment: Qt.AlignHCenter
+            height: parent.height
             Layout.fillWidth: true
-            color: DefTheme.mainTextColor
-            text: title
-            font.pixelSize: parent.height / 2
+
+            Text {
+                id: headline
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+                horizontalAlignment: Qt.AlignHCenter
+                width: parent.width
+                color: DefTheme.mainTextColor
+                text: title
+                font.bold: true
+                font.pixelSize: parent.height / 2.5
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                verticalAlignment: Qt.AlignVCenter
+                anchors.top: parent.top
+                anchors.bottom: headline.top
+                font.pixelSize: height * 0.8
+                text: statusText
+                font.italic: true
+                color: DefTheme.mainTextColor
+                visible: showStatusText
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                verticalAlignment: Qt.AlignVCenter
+                anchors.top: headline.bottom
+                anchors.bottom: parent.bottom
+                font.pixelSize: height * 0.8
+                text: subHeaderText
+                font.italic: true
+                color: DefTheme.mainTextColor
+                visible: showSubHeader
+            }
+
             MouseArea {
                 anchors.fill: parent
                 onPressAndHold: headerLongPressed()

@@ -7,9 +7,11 @@
 	<key>CFBundleExecutable</key>
 	<string>${PRODUCT_NAME}</string>
 	<key>CFBundleGetInfoString</key>
-        <string>Leviosa Smart Shades</string>
-	<key>CFBundleIconFile</key>
-	<string></string>
+	<string>Leviosa Smart Shades</string>
+	<key>CFBundleIcons</key>
+	<dict/>
+	<key>CFBundleIcons~ipad</key>
+	<dict/>
 	<key>CFBundleIdentifier</key>
 	<string>com.atlascoder.leviosa</string>
 	<key>CFBundleName</key>

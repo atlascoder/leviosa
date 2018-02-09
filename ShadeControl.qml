@@ -13,6 +13,12 @@ Control {
     width: 200
     height: width
 
+    property string allShadesState
+
+    property bool disabled : allShadesState==="up" || allShadesState==="down" || allShadesState==="opening" || allShadesState==="closing"
+
+    signal differentState()
+
     background: Rectangle {
         radius: rootItem.height / 50
         color: DefTheme.mainColorLight
@@ -27,7 +33,12 @@ Control {
 
     signal edit()
 
-    signal cmdShade(int gid, int cmd)
+    signal doCommandShade(int channel, int command)
+
+    function cmdShade(gid, cmd){
+        differentState();
+        doCommandShade(gid, cmd);
+    }
 
     property int channel
 
@@ -38,11 +49,6 @@ Control {
     property string openAtText
 
     property int margin : width / 30
-
-    onStateChanged: {
-        console.log("State => " + rootItem.state)
-    }
-
 
     Rectangle {
         id: upButton
@@ -103,6 +109,7 @@ Control {
         MouseArea {
             id: upTouchListener
             anchors.fill: parent
+            enabled: !disabled
         }
 
 
@@ -170,6 +177,7 @@ Control {
         MouseArea {
             id: downTouchListener
             anchors.fill: parent
+            enabled: !disabled
         }
 
     }
@@ -199,8 +207,10 @@ Control {
         }
 
         MouseArea {
+            id: titleBarListener
             anchors.fill: parent
             onPressAndHold: edit()
+            enabled: !disabled
         }
 
         Row {
@@ -258,6 +268,35 @@ Control {
 
     states: [
         State {
+            name: "disabled"
+            when: disabled
+            StateChangeScript {
+                script: { openingAnimation.complete(); closingAnimation.complete(); }
+            }
+            PropertyChanges {
+                target: rootItem
+                opacity: 0.6
+            }
+            PropertyChanges {
+                target: upIcon
+                source: "img/ic_up.png"
+                visible: true
+            }
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_down.png"
+                visible: true
+            }
+            StateChangeScript {
+                id: stopAnimation
+                script: { openingAnimation.complete(); closingAnimation.complete(); }
+            }
+            PropertyChanges {
+                target: actionTimer
+                running: false
+            }
+        },
+        State {
             name: "opened"
             when: rootItem.shadeState === Shade.Opened
 
@@ -292,7 +331,6 @@ Control {
         State {
             name: "closed"
             when: rootItem.shadeState === Shade.Closed
-
             PropertyChanges {
                 target: downTouchListener
                 onClicked: cmdShade(rootItem.channel, Shade.Down)
@@ -561,7 +599,6 @@ Control {
                 onPressAndHold: cmdShade(rootItem.channel, Shade.Open)
             }
             StateChangeScript {
-                id: stopAnimation
                 script: { openingAnimation.complete(); closingAnimation.complete(); }
             }
             PropertyChanges {

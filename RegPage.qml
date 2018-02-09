@@ -64,7 +64,7 @@ Page {
             wrapMode: Text.WordWrap
             horizontalAlignment: Qt.AlignHCenter
             verticalAlignment: Qt.AlignVCenter
-            font.pixelSize: 16
+            font.pixelSize: parent.width / 18
         }
 
         Rectangle {
@@ -103,6 +103,7 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                inputMethodHints: Qt.ImhEmailCharactersOnly || Qt.ImhNoPredictiveText
 			}
 
             Rectangle {
@@ -142,7 +143,9 @@ Page {
 				font.capitalization: Font.MixedCase
 				anchors.verticalCenter: parent.verticalCenter
 				font.pixelSize: parent.height / 3
-				Text {
+                echoMode: TextInput.Password
+                passwordMaskDelay: 200
+                Text {
 					anchors.fill: parent
 					visible: !(parent.focus || parent.text.length > 0)
 					color: "#b1b1b1"
@@ -151,6 +154,7 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                inputMethodHints: Qt.ImhNoPredictiveText
 			}
 
             Rectangle {
@@ -191,6 +195,8 @@ Page {
 				font.capitalization: Font.MixedCase
 				anchors.verticalCenter: parent.verticalCenter
 				font.pixelSize: parent.height / 3
+                echoMode: TextInput.Password
+                passwordMaskDelay: 200
 				z: 1
 				Text {
 					anchors.fill: parent
@@ -201,6 +207,7 @@ Page {
 					font.italic: true
 					horizontalAlignment: Text.AlignHCenter
 				}
+                inputMethodHints: Qt.ImhNoPredictiveText
 			}
 
 			Rectangle {
@@ -386,6 +393,18 @@ Page {
         State {
             name: "Authenticating"
             when: currentUser.authState === UserLogin.Authenticating
+            PropertyChanges {
+                target: signUpButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: busyPane
+                visible: true
+            }
+        },
+        State {
+            name: "Downloading"
+            when: currentUser.authState === UserLogin.Downloading
             PropertyChanges {
                 target: signUpButton
                 enabled: false

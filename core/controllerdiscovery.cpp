@@ -11,7 +11,7 @@ ControllerDiscovery::ControllerDiscovery(QObject* parent) :
     connect(&mZeroConf, &QZeroConf::serviceAdded, this, &ControllerDiscovery::serviceFound);
     connect(&mDiscoThread, &MDNSDiscoThread::discovered, this, &ControllerDiscovery::discovered);
     connect(&mTimer, &QTimer::timeout, this, &ControllerDiscovery::timedOut);
-    mTimer.setInterval(5000);
+    mTimer.setInterval(2500);
     mTimer.setSingleShot(true);
 }
 
@@ -23,8 +23,7 @@ int ControllerDiscovery::timeout() const
 void ControllerDiscovery::timedOut()
 {
     stop();
-    if(mDiscovered.size() > 0)
-        emit foundList(mDiscovered.join(","));
+    emit foundList(mDiscovered.join(","));
 }
 
 void ControllerDiscovery::setTimeout(int timeoutSec)
@@ -99,10 +98,12 @@ void ControllerDiscovery::serviceFound(QZeroConfService conf)
     if(pos >=0){
         QStringList hosts = rx.capturedTexts();
         QString mac = "24:0A:C4:" + hosts.at(2) + ":" + hosts.at(3) + ":" + hosts.at(4);
+        emit found(mac.toUpper(), conf.ip().toString());
         mDiscovered.append(mac.append(" ").append(conf.ip().toString()).toUpper());
     }
 }
 
 QString ControllerDiscovery::foundList() const {
-    return mDiscovered.join(",");
+    if(mDiscovered.isEmpty()) return "";
+    else return mDiscovered.join(",");
 }

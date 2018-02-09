@@ -9,7 +9,11 @@ class WanAPI : public QObject
     Q_OBJECT
 
 public:
-    WanAPI(QObject *parent = 0);
+    static WanAPI& instance() {
+        static WanAPI sInstance;
+        return sInstance;
+    }
+
     virtual ~WanAPI();
 
     void shadeCmd(const QString &mac, char channel, int cmd);
@@ -20,6 +24,9 @@ public slots:
 signals:
     void reqSuccessful();
     void reqFailed();
+
+private:
+    WanAPI(QObject *parent = 0);
 
 };
 

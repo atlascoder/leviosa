@@ -11,6 +11,8 @@ Rectangle {
     color: DefTheme.mainColorLight
 
     property int shadeState : Shade.Interim
+    property string connectionStateText : ""
+    property string controllerTimeText : ""
 
     signal cmdShade(int cmd)
 
@@ -33,9 +35,12 @@ Rectangle {
 
         Text {
             id: upText
-            text: "OPENED"
+            text: "OPEN"
             visible: false
-            anchors.centerIn: parent
+            anchors.fill: parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.WordWrap
             font.pixelSize: parent.width / 4
 		}
 
@@ -92,10 +97,13 @@ Rectangle {
         anchors.bottom: parent.bottom
 
 		Text {
-			id: downText
+            id: downText
             text: "CLOSED"
             visible: false
-            anchors.centerIn: parent
+            anchors.fill: parent
+            wrapMode: Text.WordWrap
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
             font.pixelSize: parent.width / 4
 		}
 
@@ -120,17 +128,16 @@ Rectangle {
 
         Image {
             id: downIcon
-            rotation: 180
             anchors.fill: parent
             anchors.margins: width / 8
             fillMode: Image.PreserveAspectFit
-            source: "img/010-arrows.svg"
+            source: "img/ic_down.png"
         }
 
 		MouseArea {
 			id: downTouchListener
-			anchors.fill: parent
-		}
+            anchors.fill: parent
+        }
 
 	}
 
@@ -146,11 +153,15 @@ Rectangle {
 
     Text {
         id: scheduleBar
+        text: "ALL SHADES"
+        font.weight: Font.Bold
+        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+        bottomPadding: 4
+        topPadding: 4
         anchors.top: parent.top
-        anchors.bottom: parent.bottom
         anchors.right: downButton.left
         anchors.left: upButton.right
-        text: "ALL\nshades"
+        anchors.bottom: parent.bottom
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         font.pixelSize: parent.height / 4
@@ -173,7 +184,7 @@ Rectangle {
 
             PropertyChanges {
                 target: upTouchListener
-                onClicked: updateShadeState(Shade.Open)
+                onClicked: updateShadeState(Shade.Up)
                 onPressAndHold: updateShadeState(Shade.Open)
             }
 
@@ -185,16 +196,22 @@ Rectangle {
 
             PropertyChanges {
                 target: upIcon
-                source: "img/ic_open.png"
-                anchors.topMargin: 7
-                anchors.bottomMargin: 7
-                anchors.leftMargin: 7
-                anchors.rightMargin: 7
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_down.png"
                 visible: true
             }
 
             PropertyChanges {
                 target: upText
+                text: "OPEN"
+                visible: true
+            }
+            PropertyChanges {
+                target: downText
                 visible: false
             }
         },
@@ -204,7 +221,7 @@ Rectangle {
 
             PropertyChanges {
                 target: downTouchListener
-                onClicked: updateShadeState(Shade.Close)
+                onClicked: updateShadeState(Shade.Down)
                 onPressAndHold: updateShadeState(Shade.Close)
             }
 
@@ -215,16 +232,27 @@ Rectangle {
             }
 
             PropertyChanges {
-                target: downText
-                visible: false
+                target: upIcon
+                source: "img/ic_up.png"
+                visible: true
             }
 
             PropertyChanges {
                 target: downIcon
-                rotation: 0
-                source: "img/ic_close.png"
+                visible: false
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downText
+                text: "CLOSE"
                 visible: true
             }
+
         },
         State {
             name: "fullOpened"
@@ -248,14 +276,22 @@ Rectangle {
             }
 
             PropertyChanges {
-                target: downText
-                visible: false
+                target: downIcon
+                source: "img/ic_down.png"
+                visible: true
             }
 
             PropertyChanges {
                 target: upText
+                text: "FULL OPEN"
                 visible: true
             }
+
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+
         },
         State {
             name: "fullClosed"
@@ -274,17 +310,24 @@ Rectangle {
             }
 
             PropertyChanges {
-                target: upText
-                visible: false
-            }
-
-            PropertyChanges {
                 target: downIcon
                 visible: false
             }
 
             PropertyChanges {
+                target: upIcon
+                source: "img/ic_up.png"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+
+            PropertyChanges {
                 target: downText
+                text: "FULL CLOSED"
                 visible: true
             }
         },
@@ -293,12 +336,6 @@ Rectangle {
             when: rootItem.shadeState === Shade.Open
 
             PropertyChanges {
-                target: downIcon
-                source: "img/001-circle.svg"
-                visible: true
-            }
-
-            PropertyChanges {
                 target: upTouchListener
                 onClicked: {}
                 onPressAndHold: {}
@@ -309,24 +346,39 @@ Rectangle {
                 onClicked: updateShadeState(Shade.Interim)
                 onPressAndHold: updateShadeState(Shade.Interim)
             }
+
             PropertyChanges {
-                target: openingAnimation
-                running: true
+                target: upIcon
+                source: "img/ic_open.png"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_pause.png"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
             }
             PropertyChanges {
                 target: downText
                 visible: false
             }
+
+            PropertyChanges {
+                target: openingAnimation
+                running: true
+            }
+
             PropertyChanges {
                 target: actionTimer
                 running: true
                 onTriggered: {
-                    rootItem.state = "fullOpened"
+                    rootItem.shadeState = Shade.FullOpened;
                 }
-            }
-            PropertyChanges {
-                target: upIcon
-                source: "img/ic_open.png"
             }
         },
         State {
@@ -334,40 +386,50 @@ Rectangle {
             when: rootItem.shadeState === Shade.Close
 
             PropertyChanges {
-                target: upIcon
-                source: "img/001-circle.svg"
-                visible: true
-            }
-            PropertyChanges {
                 target: upTouchListener
                 onClicked: updateShadeState(Shade.Interim)
                 onPressAndHold: updateShadeState(Shade.Interim)
             }
+
             PropertyChanges {
                 target: downTouchListener
                 onClicked: {}
                 onPressAndHold: {}
             }
+
             PropertyChanges {
-                target: closingAnimation
-                running: true
-            }
-            PropertyChanges {
-                target: upText
-                visible: false
-            }
-            PropertyChanges {
-                target: actionTimer
-                running: true
-                onTriggered: {
-                    rootItem.state = "fullClosed"
-                }
+                target: upIcon
+                source: "img/ic_pause.png"
+                visible: true
             }
 
             PropertyChanges {
                 target: downIcon
-                rotation: 0
                 source: "img/ic_close.png"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: downText
+                visible: false
+            }
+
+            PropertyChanges {
+                target: closingAnimation
+                running: true
+            }
+
+            PropertyChanges {
+                target: actionTimer
+                running: true
+                onTriggered: {
+                    rootItem.shadeState = Shade.FullClosed;
+                }
             }
         },
         State {
@@ -375,12 +437,6 @@ Rectangle {
             when: rootItem.shadeState === Shade.Up
 
             PropertyChanges {
-                target: downIcon
-                source: "img/001-circle.svg"
-                visible: true
-            }
-
-            PropertyChanges {
                 target: upTouchListener
                 onClicked: {}
                 onPressAndHold: {}
@@ -391,19 +447,39 @@ Rectangle {
                 onClicked: updateShadeState(Shade.Interim)
                 onPressAndHold: updateShadeState(Shade.Interim)
             }
+
             PropertyChanges {
-                target: openingAnimation
-                running: true
+                target: upIcon
+                source: "img/ic_up.png"
+                visible: true
             }
+
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_pause.png"
+                visible: true
+            }
+
+            PropertyChanges {
+                target: upText
+                visible: false
+            }
+
             PropertyChanges {
                 target: downText
                 visible: false
             }
+
+            PropertyChanges {
+                target: openingAnimation
+                running: true
+            }
+
             PropertyChanges {
                 target: actionTimer
                 running: true
                 onTriggered: {
-                    rootItem.state = "opened"
+                    rootItem.shadeState = Shade.Opened;
                 }
             }
         },
@@ -412,11 +488,6 @@ Rectangle {
             when: rootItem.shadeState === Shade.Down
 
             PropertyChanges {
-                target: upIcon
-                source: "img/001-circle.svg"
-                visible: true
-            }
-            PropertyChanges {
                 target: upTouchListener
                 onClicked: updateShadeState(Shade.Interim)
                 onPressAndHold: updateShadeState(Shade.Interim)
@@ -427,18 +498,32 @@ Rectangle {
                 onPressAndHold: {}
             }
             PropertyChanges {
-                target: closingAnimation
-                running: true
+                target: upIcon
+                source: "img/ic_pause.png"
+                visible: true
+            }
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_down.png"
+                visible: true
             }
             PropertyChanges {
                 target: upText
                 visible: false
             }
             PropertyChanges {
+                target: downText
+                visible: false
+            }
+            PropertyChanges {
+                target: closingAnimation
+                running: true
+            }
+            PropertyChanges {
                 target: actionTimer
                 running: true
                 onTriggered: {
-                    rootItem.state = "closed"
+                    rootItem.shadeState = Shade.Closed;
                 }
             }
         },
@@ -446,16 +531,6 @@ Rectangle {
             name: "interim"
             when: rootItem.shadeState === Shade.Interim
 
-            PropertyChanges {
-                target: upIcon
-                source: "img/010-arrows.svg"
-                visible: true
-            }
-            PropertyChanges {
-                target: downIcon
-                source: "img/010-arrows.svg"
-                visible: true
-            }
             PropertyChanges {
                 target: downTouchListener
                 onClicked: updateShadeState(Shade.Down)
@@ -465,6 +540,16 @@ Rectangle {
                 target: upTouchListener
                 onClicked: updateShadeState(Shade.Up)
                 onPressAndHold: updateShadeState(Shade.Open)
+            }
+            PropertyChanges {
+                target: upIcon
+                source: "img/ic_up.png"
+                visible: true
+            }
+            PropertyChanges {
+                target: downIcon
+                source: "img/ic_down.png"
+                visible: true
             }
             StateChangeScript {
                 id: stopAnimation
