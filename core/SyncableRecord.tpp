@@ -14,7 +14,7 @@ QString SyncableRecord<T>::syncContent() const
         i++;
     }
     QString s = QJsonDocument(json).toJson(QJsonDocument::Compact);
-    qDebug() << "Locations syncable generated: " << s << "// lastModified: " << mLastModified;
+    qDebug() << "Syncable generated: " << s << "// lastModified: " << mLastModified;
     return s;
 }
 

@@ -38,9 +38,9 @@ LeviosaPage {
     showStatusText: true
     statusText: isOnWlan ?
                     (controllersModel.isNewLocation ?
-                         "new location" :
+                         "Setup controller" :
                         (controllersModel.isCurrentLocation ?
-                            "current location" :
+                            "Via Current location, WiFi" :
                             "via Internet")
                      )
                     : "via Internet"

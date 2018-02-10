@@ -5,6 +5,8 @@
 #include <QApplication>
 #include <QtConcurrent>
 
+#include "aws/CognitoSyncCommand.h"
+
 #include "NAM.h"
 #include <QDebug>
 
@@ -30,8 +32,16 @@ void ControllerAPI::run(){
     ControllerHTTPClient* client = new ControllerHTTPClient;
     connect(this, &ControllerAPI::httpGet, client, &ControllerHTTPClient::get);
     connect(client, &ControllerHTTPClient::requestFinished, this, &ControllerAPI::commandFinished);
+
+    CognitoSyncCommand* commandClient = new CognitoSyncCommand();
+
+    connect(this, &ControllerAPI::sendCloudCommand, commandClient, &CognitoSyncCommand::sendCommand);
+    connect(commandClient, &CognitoSyncCommand::commandSent, this, &ControllerAPI::cloudCommandSent);
+    connect(commandClient, &CognitoSyncCommand::commandFailed, this, &ControllerAPI::cloudCommandFailed);
+
     exec();
     client->deleteLater();
+    commandClient->deleteLater();
 }
 
 void ControllerAPI::setIpAddress(const QString &ipAddress)
@@ -49,13 +59,13 @@ void ControllerAPI::commandHTTPRequest(int channel, int cmd)
     case Shade::Open:
         str.append("channel=").append(QString::number(channel)).append("&command=up");
         httpCommand(str);
-        QObject::thread()->usleep(2000);
+        QObject::thread()->usleep(300000);
         httpCommand(str);
         break;
     case Shade::Close:
         str.append("channel=").append(QString::number(channel)).append("&command=down");
         httpCommand(str);
-        QObject::thread()->usleep(2000);
+        QObject::thread()->usleep(300000);
         httpCommand(str);
         break;
     case Shade::Interim:
@@ -208,6 +218,27 @@ void ControllerAPI::setControllerState(ControllerState state)
 void ControllerAPI::commandAWSRequest(int channel, int command)
 {
     qDebug() << " command WAN to channel[" << channel << "] => " << command;
+
+    Shade::ShadeState state = static_cast<Shade::ShadeState>(command);
+    QString cmd;
+    switch (state){
+    case Shade::Open:
+        cmd = "open";
+        break;
+    case Shade::Close:
+        cmd = "close";
+        break;
+    case Shade::Up:
+        cmd = "up";
+        break;
+    case Shade::Down:
+        cmd = "down";
+        break;
+    default:
+        return;
+    }
+
+    emit sendCloudCommand(mMac, cmd, channel);
 }
 
 void ControllerAPI::setOnWlan(bool onWlan)
@@ -233,3 +264,12 @@ void ControllerAPI::timezoneFinished()
     mTZoneReply->deleteLater();
 }
 
+void ControllerAPI::cloudCommandSent()
+{
+
+}
+
+void ControllerAPI::cloudCommandFailed()
+{
+
+}

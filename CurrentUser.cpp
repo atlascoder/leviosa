@@ -106,6 +106,9 @@ void CurrentUser::signOut()
     }
     setEmail("");
     mDb.userDAO.clear();
+    setLocationsSyncCount(0);
+    setControllersSyncCount(0);
+    setShadeGroupsSyncCount(0);
     mDb.locationsDao.clear(false);
     mDb.controllersDao.clear(false);
     mDb.shadeGroupsDao.clear(false);
@@ -133,6 +136,7 @@ void CurrentUser::registerUser(const QString &email, const QString &password)
     mAuthRequest->signUp(email, password);
     if(mAuthRequest->isSuccessful()){
         emit signedUp();
+        UserData::instance().createDefaultLocation();
         authenticateUser(email, password);
     }
     else{
@@ -157,7 +161,6 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
         mUser.setControllersModified(0);
         mUser.setShadeGroupsModified(0);
         mDb.userDAO.persistUser(mUser);
-        UserData::instance().createDefaultLocation();
 
         setAuthenticated(true);
         emit signedIn();

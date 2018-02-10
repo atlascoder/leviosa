@@ -368,13 +368,15 @@ void UserData::createDefaultLocation()
 {
     Location l;
     l.setName("My Home");
-    l.setSynced("false");
+    l.setSynced(false);
     QDateTime local(QDateTime::currentDateTime());
     QDateTime utc(local.toUTC());
     QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
     l.setUtcOffset(dt.secsTo(local));
     l.setPosition(0);
-    persistItem(l, true);
+    persistItem(l, false);
+    CurrentUser::instance().setLocationsSynced(false);
+    CurrentUser::instance().persistUserDataModified();
 }
 
 void UserData::updateLocationWithBssid(const QString &uuid, const QString &bssid)

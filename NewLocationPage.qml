@@ -164,7 +164,7 @@ Page {
 				anchors.leftMargin: 6
 				height: 40
                 onClicked: {
-                    locationModel.addLocationWithData(locationName.text, tzones.model.get(timezoneCB.currentIndex).utcOffset, netMonitor.ssid, netMonitor.bssid);
+                    locationModel.addLocationWithData(locationName.text, tzones.model.get(timezoneCB.currentIndex).utcOffset, netMonitor.bssid);
                     menuClicked();
                 }
 			}

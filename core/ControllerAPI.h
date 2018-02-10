@@ -83,6 +83,8 @@ signals:
     void sendCommand(int channel, int command);
     void httpGet(const QString& url);
     void controllerStateChanged(const QString& mac);
+
+    void sendCloudCommand(const QString& mac, const QString& command, int channel);
 private slots:
     void commandFinished(QNetworkReply *reply);
     void configFetchFinished();
@@ -92,6 +94,9 @@ private slots:
 
     void commandHTTPRequest(int channel, int command);
     void commandAWSRequest(int channel, int command);
+
+    void cloudCommandSent();
+    void cloudCommandFailed();
 private:
     ControllerState mControllerState;
 

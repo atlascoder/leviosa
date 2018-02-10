@@ -203,7 +203,8 @@ SOURCES += \
     core/SyncableRecord.tpp \
     core/syncablerecord.cpp \
     core/ControllerConfig.cpp \
-    core/ControllerAPI.cpp
+    core/ControllerAPI.cpp \
+    aws/CognitoSyncCommand.cpp
 
 # own codebase
 HEADERS += \
@@ -243,7 +244,8 @@ HEADERS += \
     NAM.h \
     core/ControllerHTTPClient.h \
     core/ControllerAPI.h \
-    core/timeaux.h
+    core/timeaux.h \
+    aws/CognitoSyncCommand.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp
