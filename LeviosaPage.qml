@@ -10,8 +10,6 @@ import "DefaultTheme.js" as DefTheme
 Page {
     id: leviosaPage
     visible: true
-    width: 480
-    height: 800
 
     signal menuClicked()
     signal addClicked()

@@ -30,13 +30,15 @@ class ControllerModel : public QAbstractListModel
     Q_PROPERTY(QString selecetedControllerStatus READ selectedControllerStatus NOTIFY selectedControllerStatusChanged)
 
     Q_PROPERTY(int selectedControllerState READ selectedControllerState NOTIFY selectedControllerStatusChanged)
-
     Q_PROPERTY(QString bssid READ bssid WRITE setBssid NOTIFY bssidChanged)
     Q_PROPERTY(QString locationBssid READ locationBssid WRITE setLocationBssid NOTIFY locationBssidChanged)
 
     Q_PROPERTY(bool isOnWlan READ getOnWlan WRITE setOnWlan NOTIFY onWlanChanged )
     Q_PROPERTY(bool isCurrentLocation READ isCurrentLocation NOTIFY locationStatusChanged )
     Q_PROPERTY(bool isNewLocation READ isNewLocation NOTIFY locationStatusChanged )
+    Q_PROPERTY(bool allowedToSearch READ allowedToSearch NOTIFY locationStatusChanged)
+
+    Q_PROPERTY(QString locationStatusText READ locationStatusText NOTIFY locationStatusChanged)
 
     Q_PROPERTY(bool isDiscovering READ isDiscovering WRITE setIsDiscovering NOTIFY isDiscoveringChanged)
 
@@ -190,6 +192,10 @@ private:
     void setDataLoaded(bool isLoaded);
 
     void checkConfiguration(Controller* controller);
+
+    bool allowedToSearch() const;
+
+    QString locationStatusText() const;
 
 };
 

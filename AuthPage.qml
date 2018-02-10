@@ -10,8 +10,6 @@ import "DefaultTheme.js" as DefTheme
 Page {
 	id: authPage
     visible: true
-    width: 480
-    height: 800
 
 	signal register()
 	signal restore()

@@ -61,7 +61,7 @@ void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
 {
     qDebug() << "netChanges triggered: " << conf.bearerTypeName();
     if(mgr.isOnline()){
-        if(conf.bearerType() == QNetworkConfiguration::BearerWLAN)
+        if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN)
             setConnectionState(Wifi);
         else
             setConnectionState(NotWifi);
@@ -153,10 +153,6 @@ QString NetworkMonitor::getWlanIp() const
 
 void NetworkMonitor::setConnectionState(ConnectionState connectionState)
 {
-    if(mConnectionState == connectionState){
-        qDebug() << "ConnectionState not changed " << CON_STATE_NAME;
-        return;
-    }
     mConnectionState = connectionState;
     qDebug() << "ConnectionState changed to " << CON_STATE_NAME;
     emit connectionStateChanged();

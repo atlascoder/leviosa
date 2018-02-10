@@ -22,13 +22,14 @@ ControllerAPI::~ControllerAPI()
     if(mConfigReply != nullptr) mConfigReply->abort();
     if(mCommandReply != nullptr) mCommandReply->abort();
     if(mScheduleReply != nullptr) mScheduleReply->abort();
-    if(mScheduleReply != nullptr) mTZoneReply->abort();
+    if(mTZoneReply != nullptr) mTZoneReply->abort();
     this->quit();
     this->wait();
     delete mQnam;
 }
 
 void ControllerAPI::run(){
+
     ControllerHTTPClient* client = new ControllerHTTPClient;
     connect(this, &ControllerAPI::httpGet, client, &ControllerHTTPClient::get);
     connect(client, &ControllerHTTPClient::requestFinished, this, &ControllerAPI::commandFinished);
@@ -41,6 +42,7 @@ void ControllerAPI::run(){
 
     exec();
     client->deleteLater();
+    commandClient->cancelRequests();
     commandClient->deleteLater();
 }
 

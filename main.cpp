@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<UserLogin>("com.atlascoder.UserLogin", 1, 0, "UserLogin");
 
     UserData& userData(UserData::instance());
+    CurrentUser& currentUser(CurrentUser::instance());
 
     QQmlApplicationEngine engine;
 
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
 
     ctx->setContextProperty("qGuiApp", &app);
     ctx->setContextProperty("userData", &userData);
+    ctx->setContextProperty("currentUser", &currentUser);
     ctx->setContextProperty("netMonitor", &netMon);
 
 

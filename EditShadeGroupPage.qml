@@ -35,7 +35,10 @@ LeviosaPage {
 
     ShadesGroupsModel {
         id: shadesGroupsModel
-        onScheduleSet: menuClicked()
+        onScheduleSet: {
+            menuClicked()
+            processing = false
+        }
         onScheduleSetFailed: {
             processing = false
             alertScheduleNotSet.visible = true
@@ -481,6 +484,7 @@ LeviosaPage {
                         onPressAndHold: {
                             shadesGroupsModel.removeShadeGroup(controllerMac, selectedChannel);
                             menuClicked();
+                            processing = false;
                         }
                     }
                 }

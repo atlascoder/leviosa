@@ -245,6 +245,7 @@ void ControllerModel::setLocationUuid(const QString& locationUuid)
     emit locationUuidChanged();
     emit locationNameChanged();
     emit locationBssidChanged();
+    emit locationStatusChanged();
     emit countChanged();
 }
 
@@ -502,7 +503,7 @@ void ControllerModel::setOnWlan(bool isOnWlan)
     for(size_t i = 0; i < mControllers->size(); i++)
         mControllers->at(i)->setOnWlan(mIsOnWlan);
     emit onWlanChanged();
-    emit selectedControllerStatusChanged();
+    emit locationStatusChanged();
 }
 
 QString ControllerModel::getSelectedControllerIp() const
@@ -644,6 +645,7 @@ void ControllerModel::setBssid(const QString &bssid){
     if(mCurrentBssid == bssid) return;
     mCurrentBssid = bssid;
     emit bssidChanged();
+    emit locationStatusChanged();
 }
 
 void ControllerModel::checkConfiguration(Controller* controller){
@@ -665,8 +667,9 @@ void ControllerModel::checkConfiguration(Controller* controller){
         for(vector<unique_ptr<ShadeGroup>>::iterator g = shadeGroups->begin(); g != shadeGroups->end(); g++){
             ShadeGroup *pg = g->get();
             if (pg->days() != config.days(pg->channel())
-                    || pg->openAt() != config.openAt(pg->channel())
-                    || pg->closeAt() != config.closeAt(pg->channel())){
+                    || (pg->days() != 0
+                        && (pg->openAt() != config.openAt(pg->channel())
+                            || pg->closeAt() != config.closeAt(pg->channel())))){
                 config_match = false;
                 break;
             }
@@ -695,7 +698,7 @@ void ControllerModel::setIsDiscovering(bool isDiscovering)
         }
     }
     emit isDiscoveringChanged();
-    emit selectedControllerStatusChanged();
+    emit locationStatusChanged();
 }
 
 void ControllerModel::setDataLoaded(bool isLoaded)
@@ -715,9 +718,11 @@ int ControllerModel::selectedControllerState() const
 void ControllerModel::setLocationBssid(const QString &locationBssid)
 {
     qDebug() << "Location BSSID changing: " << mLocationBssid << " -> " << locationBssid;
-    if(mLocationBssid == locationBssid) return;
-    mLocationBssid = locationBssid;
-    emit locationBssidChanged();
+    if(mLocationBssid != locationBssid){
+        mLocationBssid = locationBssid;
+        emit locationBssidChanged();
+    }
+
     emit locationStatusChanged();
 }
 
@@ -729,4 +734,26 @@ bool ControllerModel::isCurrentLocation() const
 bool ControllerModel::isNewLocation() const
 {
     return mLocationBssid.isEmpty();
+}
+
+bool ControllerModel::allowedToSearch() const
+{
+    bool val = mIsOnWlan && (mLocationBssid.isEmpty() || mCurrentBssid == mLocationBssid);
+    qDebug() << "allowedToSearch:" << val << " : isOnWlan=" << mIsOnWlan << " locationBssid=" << mLocationBssid << " currentBssid=" << mCurrentBssid;
+    return val;
+}
+
+QString ControllerModel::locationStatusText() const
+{
+    if(mIsOnWlan){
+        if(mLocationBssid.isEmpty())
+            return "Setup controler";
+        else if(mLocationBssid == mCurrentBssid)
+            return "Via Current location, WiFi";
+        else
+            return "Via Internet";
+    }
+    else{
+        return "Via Internet";
+    }
 }

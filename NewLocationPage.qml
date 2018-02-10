@@ -10,8 +10,9 @@ import "DefaultTheme.js" as DefTheme
 Page {
 	id: newLocationPage
 	visible: true
-	width: 480
-	height: 800
+
+    anchors.fill: parent
+
 
 	signal menuClicked()
 

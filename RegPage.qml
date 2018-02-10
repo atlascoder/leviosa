@@ -10,8 +10,7 @@ import "libs/aws-sdk.js" as AWS
 Page {
 	id: registerPage
     visible: true
-    width: 480
-    height: 800
+
 	title: qsTr("Authentication")
 
 	background: Rectangle {

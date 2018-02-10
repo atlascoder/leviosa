@@ -10,8 +10,7 @@ import "libs/aws-sdk.js" as AWS
 LeviosaPage {
 	id: registerPage
     visible: true
-    width: 480
-    height: 800
+
     title: qsTr("Change password")
 
     showLogo: false

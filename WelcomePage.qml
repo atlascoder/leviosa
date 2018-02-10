@@ -8,8 +8,6 @@ import "DefaultTheme.js" as DefTheme
 Page {
 	id: welcomePage
     visible: true
-    width: 480
-    height: 800
 
 	signal authenticate()
 	signal register()

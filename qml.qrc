@@ -60,15 +60,14 @@
         <file>img/002-left-arrow.svg</file>
         <file>img/001-left-arrow-key.svg</file>
         <file>EditLocationPage.qml</file>
-        <file>EditShadesGroupPage.qml</file>
+        <file>EditShadeGroupPage.qml</file>
         <file>EditControllerPage.qml</file>
         <file>img/001-write.svg</file>
         <file>img/003-black-back-closed-envelope-shape.svg</file>
         <file>ActionButton.qml</file>
         <file>WeekDayCheckBox.qml</file>
         <file>NewLocationPage.qml</file>
-        <file>NewControllerPage.qml</file>
-        <file>NewShadesGroupPage.qml</file>
+        <file>NewShadeGroupPage.qml</file>
         <file>VerticalSpinner.qml</file>
         <file>libs/aws-sdk-2.171.0.js</file>
         <file>libs/aws-sdk.min.js</file>

@@ -15,8 +15,8 @@ LeviosaPage {
 
     property bool swiped : false
 
-    signal openLocation(string bss, string tzone, string bssid)
-	signal editLocation(string bss)
+    signal openLocation(string uuid, string tzone, string bssid)
+    signal editLocation(string uuid)
 
     showStatusText: true
     statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"

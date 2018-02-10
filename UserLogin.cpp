@@ -10,8 +10,11 @@ UserLogin::UserLogin(QObject *parent) : QObject(parent), mCurrentUser(CurrentUse
     connect(&mCurrentUser, &CurrentUser::restoreRequestSent, this, &UserLogin::onResetPasswordSent);
     connect(&mCurrentUser, &CurrentUser::authError, this, &UserLogin::authFailed);
     connect(&UserData::instance(), &UserData::syncStateChanged, this, &UserLogin::syncStateChanged);
-    if(mCurrentUser.isAuthenticated())
+    if(mCurrentUser.isAuthenticated()){
         setAuthState(Authenticated);
+        mEmail = mCurrentUser.email();
+        emit emailChanged();
+    }
 }
 
 void UserLogin::setEmail(const QString &email)
@@ -117,7 +120,6 @@ void UserLogin::setAuthState(AuthState authState)
 
 void UserLogin::signIn()
 {
-    mCurrentUser.setEmail(mEmail);
     mCurrentUser.signIn(mEmail, mPassword);
     setAuthState(Authenticating);
     setLastMessage("User authentication..");
@@ -125,9 +127,8 @@ void UserLogin::signIn()
 
 void UserLogin::signUp()
 {
-    mCurrentUser.setEmail(mEmail);
     mPassword3 = mPassword;
-    mCurrentUser.signUp(mCurrentUser.email(), mPassword3);
+    mCurrentUser.signUp(mEmail, mPassword3);
     setAuthState(Registering);
     setLastMessage("User registration..");
 }
@@ -161,6 +162,7 @@ void UserLogin::signedUp()
 
 void UserLogin::signedIn()
 {
+    emit emailChanged();
     setLastMessage("Downloading...");
     setAuthState(Downloading);
     UserData::instance().sync();

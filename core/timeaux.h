@@ -1,7 +1,7 @@
 #ifndef TIMEAUX_H
 #define TIMEAUX_H
 
-#import <QString>
+#include <QString>
 
 namespace timeaux {
 
@@ -32,7 +32,8 @@ static QString utcOffsetToTimezone(int utcOffset)
 
 static int timezoneToUtcOffset(const QString& timezone)
 {
-
+    Q_UNUSED(timezone)
+    return 0;
 }
 
 }

@@ -11,16 +11,13 @@ import "DefaultTheme.js" as DefTheme
 
 LeviosaPage {
 	id: locationPage
-    anchors.fill: parent
+
     enableMenuAction: false
 
     property string locationUuid
     property alias discovery : controllerDiscovery
     property alias activeController : controllersModel.selectedControllerMac
     property string timezone
-
-    property bool isOnWlan : netMonitor.onWlan ? true : false
-    property bool allowedWlan : controllersModel.isOnWlan && (controllersModel.isCurrentLocation || controllersModel.isNewLocation)
 
     property bool selectedShadeGroupsNotFilled : false
 
@@ -36,14 +33,7 @@ LeviosaPage {
     title: controllersModel.locationName
 
     showStatusText: true
-    statusText: isOnWlan ?
-                    (controllersModel.isNewLocation ?
-                         "Setup controller" :
-                        (controllersModel.isCurrentLocation ?
-                            "Via Current location, WiFi" :
-                            "via Internet")
-                     )
-                    : "via Internet"
+    statusText: controllersModel.locationStatusText
 
     showSubTitle: true
     subTitle: controllersModel.selecetedControllerStatus
@@ -57,15 +47,15 @@ LeviosaPage {
         else{
             console.log("updating loaded location UUID to: " + locationUuid)
             controllersModel.updateModel();
-            if(isOnWlan && controllersModel.isNewLocation)
+            if(netMonitor.onWlan && controllersModel.isNewLocation)
                 controllerDiscovery.isRunning = true;
         }
     }
 
     ControllersModel {
         id: controllersModel
-        onIsOnWlanChanged: {
-            if(allowedWlan && dataLoaded){
+        onAllowedToSearchChanged: {
+            if(allowedToSearch){
                 console.log("On Wlan");
                 controllerDiscovery.isRunning = true;
             }
@@ -79,7 +69,7 @@ LeviosaPage {
         bssid: netMonitor.bssid
         onDataLoadedChanged: {
             console.log("Data loaded");
-            if(dataLoaded && allowedWlan)
+            if(dataLoaded && allowedToSearch)
                 controllerDiscovery.isRunning = true;
         }
     }
@@ -235,41 +225,41 @@ LeviosaPage {
     states : [
         State{
             name: "init"
-            when: allowedWlan && !controllerDiscovery.discoFinished && !controllerDiscovery.isRunning
+            when: controllersModel.allowedToSearch && !controllerDiscovery.discoFinished && !controllerDiscovery.isRunning
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "discovery first"
-            when: allowedWlan && controllerDiscovery.isRunning && (controllersModel.count == 0)
+            when: controllersModel.allowedToSearch && controllerDiscovery.isRunning && (controllersModel.count == 0)
             PropertyChanges { target: busyIndi; visible: true }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "discovery next"
-            when: allowedWlan && controllerDiscovery.isRunning && (controllersModel.count > 0)
+            when: controllersModel.allowedToSearch && controllerDiscovery.isRunning && (controllersModel.count > 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "empty Wlan"
-            when: allowedWlan && controllerDiscovery.discoFinished && (controllersModel.count == 0)
+            when: controllersModel.allowedToSearch && controllerDiscovery.discoFinished && (controllersModel.count == 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: true }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "empty Wan"
-            when:  (controllersModel.count == 0) && !allowedWlan
+            when:  (controllersModel.count == 0) && !controllersModel.allowedToSearch
             PropertyChanges { target: emptyOnWanAlert; visible: true }
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
         },
         State {
             name: "ready"
-            when: (!allowedWlan || controllerDiscovery.discoFinished) && (controllersModel.count > 0)
+            when: (!controllersModel.allowedToSearch || controllerDiscovery.discoFinished) && (controllersModel.count > 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
