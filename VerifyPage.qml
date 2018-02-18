@@ -6,20 +6,29 @@ import "DefaultTheme.js" as DefTheme
 WelcomeBrandPage {
     id: rootItem
 
-	signal register()
+    signal register()
+
     signal signIn()
-    signal resetPassword()
+    signal signedIn()
 
     hintText: currentUser.lastMessage
     hintColor: currentUser.failed ? DefTheme.mainNegativeAccent : (currentUser.ready ? DefTheme.mainPositiveAccent : DefTheme.mainNeutralAccent)
 
+    Component.onCompleted: currentUser.checkVerification()
+
     Connections {
         target: currentUser
-        onRestoreRequestSent: resetPassword()
+        onVerified: {
+            if(currentUser.password === "" || currentUser.email === "")
+                rootItem.signIn()
+            else
+                currentUser.signIn()
+        }
+        onSignedIn: rootItem.signedIn()
     }
 
     Column {
-        id: controlsColumn
+        id: controlsPane
         width: parent.width * 0.75
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.verticalCenter
@@ -41,7 +50,7 @@ WelcomeBrandPage {
                     id: emailPic
                     height: parent.height
                     width: parent.width
-                    source: "img/003-black-back-closed-envelope-shape.svg"
+                    source: "img/key.png"
                     anchors.centerIn: parent
                 }
             }
@@ -60,15 +69,15 @@ WelcomeBrandPage {
                     anchors.fill: parent
                     visible: !(parent.focus || parent.text.length > 0)
                     color: "#b1b1b1"
-                    text: "enter your email"
+                    text: "enter verification code"
                     verticalAlignment: Text.AlignVCenter
                     font.italic: true
                     horizontalAlignment: Text.AlignHCenter
                 }
                 inputMethodHints: Qt.ImhNoPredictiveText || Qt.ImhEmailCharactersOnly
                 onDisplayTextChanged: {
-                    currentUser.email = text
-                    currentUser.checkEmail()
+                    currentUser.password3 = text
+                    currentUser.checkVerification()
                 }
             }
 
@@ -94,9 +103,8 @@ WelcomeBrandPage {
         ActionButton {
             id: signUpButton
             width: parent.width
-            text: "RESTORE"
-            enabled: currentUser.ready
-            onClicked: currentUser.restorePassword()
+            text: "VERIFY"
+            onClicked: currentUser.verify()
         }
 
         Item {
@@ -107,8 +115,8 @@ WelcomeBrandPage {
         SmallButton {
             id: restoreButton
             anchors.right: parent.right
-            text: "REGISTER ACCOUNT"
-            onClicked: register()
+            text: "SEND CODE AGAIN"
+            onClicked: currentUser.retryConfirmation()
         }
 
         Item {
@@ -119,8 +127,8 @@ WelcomeBrandPage {
         SmallButton {
             id: registerButton
             anchors.right: parent.right
-            text: "SIGN IN"
-            onClicked: signIn()
+            text: "SIGN UP"
+            onClicked: register()
         }
     }
 

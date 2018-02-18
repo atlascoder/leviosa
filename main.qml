@@ -1,8 +1,5 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.3
-import QtGraphicalEffects 1.0
-import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -23,10 +20,6 @@ ApplicationWindow {
 	signal espTouchStart
 	signal espTouchFinish
 
-    function disableDrawer(){
-        drawer.interactive = false;
-    }
-
     // Welcome
 
     Loader {
@@ -34,7 +27,6 @@ ApplicationWindow {
         onLoaded: {
             item.onAuthenticate.connect(openAuthPage)
             item.onRegister.connect(openRegPage)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -44,21 +36,55 @@ ApplicationWindow {
         pager.replace(pager.initialItem, welcomePageLoader.item)
     }
 
+    // FirstLogin
+
+    Loader {
+        id: syncPageLoader
+        onLoaded: {
+            item.onDownloaded.connect(function(){
+                doLogin();
+            })
+            item.StackView.onRemoved.connect(function(){
+                syncPageLoader.source = ""
+            })
+        }
+    }
+
+    function openSyncPage(){
+        syncPageLoader.source = "SyncPage.qml"
+        pager.replace(pager.initialItem, syncPageLoader.item)
+    }
+
+    // EmptyAccount
+
+    Loader {
+        id: emptyAccountPageLoader
+        onLoaded: {
+            item.onControllerAdded.connect(doLogin)
+            item.StackView.onRemoved.connect(function(){ emptyAccountPageLoader.source = ""; })
+        }
+    }
+
+    function openEmptyAccountPage(){
+        emptyAccountPageLoader.source = "EmptyAccountPage.qml"
+        pager.replace(pager.initialItem, emptyAccountPageLoader.item)
+    }
+
     // SignIn
 
     Loader {
         id: authPageLoader
         onLoaded: {
             item.onRegister.connect(openRegPage)
-            item.onSignedIn.connect(openLocationsPage)
+            item.onSignedIn.connect(openSyncPage)
             item.onRestore.connect(openRestorePage)
-            item.StackView.onActivated(disableDrawer)
         }
     }
 
     function openAuthPage(){
-        if(authPageLoader.status != Loader.Ready)
-            authPageLoader.source = "AuthPage.qml"
+        if(authPageLoader.status == Loader.Ready)
+            authPageLoader.source = ""
+        authPageLoader.source = "AuthPage.qml"
         pager.replace(pager.currentItem, authPageLoader.item)
     }
 
@@ -69,15 +95,35 @@ ApplicationWindow {
         onLoaded: {
             item.onAuthenticate.connect(openAuthPage)
             item.onRestore.connect(openRestorePage)
-            item.onSignedIn.connect(openLocationsPage)
-            item.StackView.onActivated(disableDrawer)
+            item.onVerificate.connect(openVerifyPage)
+            item.onFirstLogin.connect(doLogin)
         }
     }
 
     function openRegPage(){
-        if(regPageLoader.status != Loader.Ready)
-            regPageLoader.source = "RegPage.qml"
+        if(regPageLoader.status == Loader.Ready)
+            regPageLoader.source = ""
+        regPageLoader.source = "RegisterPage.qml"
         pager.replace(pager.currentItem, regPageLoader.item)
+    }
+
+    // Verify
+
+    Loader {
+        id: verifyPageLoader
+        onLoaded: {
+            item.onRegister.connect(openRegPage)
+            item.onSignIn.connect(openAuthPage)
+            item.onSignedIn.connect(openSyncPage)
+            item.StackView.onRemoved.connect(function(){
+                verifyPageLoader.source = ""
+            })
+        }
+    }
+
+    function openVerifyPage(){
+        verifyPageLoader.source = "VerifyPage.qml"
+        pager.replace(pager.currentItem, verifyPageLoader.item)
     }
 
     // Restore password
@@ -87,7 +133,7 @@ ApplicationWindow {
         onLoaded: {
             item.onSignIn.connect(openAuthPage)
             item.onRegister.connect(openRegPage)
-            item.StackView.onActivated(disableDrawer)
+            item.onResetPassword.connect(openResetPasswordPage)
         }
     }
 
@@ -95,6 +141,23 @@ ApplicationWindow {
         if(restorePageLoader.status != Loader.Ready)
             restorePageLoader.source = "RestorePage.qml"
         pager.replace(pager.currentItem, restorePageLoader.item)
+    }
+
+    // Reset password
+
+    Loader {
+        id: resetPasswordPageLoader
+        onLoaded: {
+            item.onSignIn.connect(openAuthPage)
+            item.onSignedIn.connect(doLogin)
+            item.onSignUp.connect(openRegPage)
+        }
+    }
+
+    function openResetPasswordPage(){
+        if(resetPasswordPageLoader.status != Loader.Ready)
+            resetPasswordPageLoader.source = "ResetPasswordPage.qml"
+        pager.replace(pager.currentItem, resetPasswordPageLoader.item)
     }
 
     // Change password
@@ -105,7 +168,6 @@ ApplicationWindow {
             item.onCancel.connect(pager.pop)
             item.onRestore.connect(openRestorePage)
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated(disableDrawer)
         }
     }
 
@@ -115,23 +177,36 @@ ApplicationWindow {
         pager.push(changePasswordPageLoader.item)
     }
 
+    // doLogin function
+
+    function doLogin() {
+        if(currentUser.isAuthenticated){
+            if(userData.locationsCount > 1)
+                openLocationsPage()
+            else if(userData.locationsCount === 1)
+                openLocationPage(userData.firstLocationUuid, true)
+            else
+                openEmptyAccountPage()
+        }
+        else if(currentUser.requireConfirmation)
+            openVerifyPage()
+        else
+            openWelcomePage()
+    }
+
     // Locations
 
     Loader {
         id: locationsPageLoader
         onLoaded: {
             console.log("locations page loaded")
-            item.onMenuClicked.connect(drawer.open)
             item.onOpenLocation.connect(function(uuid, tzone, bssid){
-                openLocationPage(uuid, tzone)
+                openLocationPage(uuid, false)
 //                pager.push(locationPage, {"locationUuid": uuid, "tzone": tzone})
             })
             item.onEditLocation.connect(openEditLocationPage)
             item.onAddClicked.connect(openNewLocationPage)
-            item.StackView.onActivating.connect(function(){
-                drawer.interactive = true;
-                item.init();
-            })
+            item.StackView.onActivating.connect(item.init)
             item.StackView.onDeactivating.connect(item.pause)
         }
     }
@@ -148,7 +223,6 @@ ApplicationWindow {
         id: newLocationPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -164,7 +238,6 @@ ApplicationWindow {
         id: editLocationPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -175,25 +248,22 @@ ApplicationWindow {
         pager.push(editLocationPageLoader.item)
     }
 
-//    Component {
-//        id: editLocationPage
-//        Loader {
-//            property string locationUuid
-//            sourceComponent: EditLocationPage {
-//                onMenuClicked: {
-//                    pager.pop()
-//                    if(pager.currentItem.id === locationsPage)
-//                        openLocationsPage()//pager.replace(pager.currentItem, locationsPage);
-//                }
-//            }
-//            onLoaded: {
-//                item.locationUuid = locationUuid
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = false;
-//            }
-//        }
-//    }
+    // open Controls
+
+    Loader {
+        id: controlsPageLoader
+        onLoaded: {
+            item.StackView.onRemoved.connect(function(){
+                verifyPageLoader.source = ""
+            })
+        }
+    }
+
+    function openControlsPage(){
+        if(controlsPageLoader.status != Loader.Ready)
+            controlsPageLoader.source = "ControlsPage.qml"
+        pager.replace(pager.currentItem, controlsPageLoader.item)
+    }
 
     // Location
 
@@ -205,64 +275,22 @@ ApplicationWindow {
             item.onEditGroup.connect(openEditShadeGroupPage)
             item.onAddGroup.connect(openNewShadeGroupPage)
             item.onSetupController.connect(openEspTouchPage)
-            item.onTitleLongPressed.connect(openLocationPage)
-            item.StackView.onActivated.connect(function(){
-                drawer.interactive = true
-                item.init()
-            })
+            item.StackView.onActivated.connect(item.init)
             item.StackView.onDeactivating.connect(function(){
-                drawer.interactive = false
                 item.discovery.isRunning = false
+            })
+            item.StackView.onRemoved.connect(function(){
+                locationPageLoader.source = ""
             })
         }
     }
 
-    function openLocationPage(uuid, tzone){
-        if(locationPageLoader.status != Loader.Ready)
-            locationPageLoader.source = "LocationPage.qml"
+    function openLocationPage(uuid, single){
+        locationPageLoader.source = "LocationPage.qml"
         locationPageLoader.item.locationUuid = uuid
-        locationPageLoader.item.timezone = tzone
-        pager.push(locationPageLoader.item)
-        locationsPageLoader.item.init()
+        locationPageLoader.item.single = single
+        pager.replace(pager.initialItem, locationPageLoader.item)
     }
-
-//    Component {
-//        id: locationPage
-//        Loader {
-//            property string locationUuid
-//            property string tzone
-//            sourceComponent: LocationPage {
-//                locationUuid: pager.selectedLocationUuid
-//                onMenuClicked: pager.pop()
-//                onEditController: function(mac){
-//                    pager.push(editControllerPage, {"controllerMac": mac , "locationUuid": locationUuid})
-//                }
-//                onEditGroup:function(mac, channel, controllerIp){
-//                    pager.push(editShadesGroupPage, {"controllerMac": mac, "selectedChannel": channel, "controllerIp": controllerIp});
-//                }
-//                onAddGroup: function(mac){
-//                    pager.push(newShadesGroupPage, {"controllerMac": mac});
-//                }
-//                onSetupController: function(uuid){
-//                    pager.push(espTouchPage, {"locationUuid": uuid});
-//                }
-//                onTitleLongPressed: openLocationPage(locationUuid)
-//            }
-//            onLoaded: {
-//                item.locationUuid = locationUuid
-//                item.timezone = tzone
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = true;
-//                item.init();
-//            }
-//            StackView.onDeactivating: {
-//                drawer.interactive = false;
-//                item.discovery.isRunning = false;
-//            }
-//        }
-//    }
-
 
     // New Shade group
 
@@ -270,7 +298,6 @@ ApplicationWindow {
         id: newShadeGroupPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -281,33 +308,13 @@ ApplicationWindow {
         pager.push(newShadeGroupPageLoader.item)
     }
 
-
-//    Component {
-//        id: newShadesGroupPage
-//        Loader {
-//            property string controllerMac
-//            sourceComponent: NewShadesGroupPage {
-//                onMenuClicked: pager.pop()
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = false;
-//            }
-//            onLoaded: {
-//                item.controllerMac = controllerMac;
-//            }
-//        }
-//    }
-
     // Edit Shade group
 
     Loader {
         id: editShadeGroupPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(function(){
-                disableDrawer()
-                item.init()
-            })
+            item.StackView.onActivated.connect(item.init)
         }
     }
 
@@ -320,36 +327,12 @@ ApplicationWindow {
         pager.push(editShadeGroupPageLoader.item)
     }
 
-
-//    Component {
-//        id: editShadesGroupPage
-//        Loader {
-//            property string controllerMac
-//            property int selectedChannel
-//            property string controllerIp
-
-//            sourceComponent: EditShadesGroupPage {
-//                onMenuClicked: pager.pop();
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = false;
-//                item.init();
-//            }
-//            onLoaded: {
-//                item.controllerMac = controllerMac;
-//                item.selectedChannel = selectedChannel;
-//                item.controllerIp = controllerIp;
-//            }
-//        }
-//    }
-
     // Edit Controller
 
     Loader {
         id: editControllerPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -361,31 +344,12 @@ ApplicationWindow {
         pager.push(editControllerPageLoader.item)
     }
 
-//    Component {
-//        id: editControllerPage
-//        Loader {
-//            property string locationUuid
-//            property string controllerMac
-//            sourceComponent: EditControllerPage {
-//                onMenuClicked: pager.pop()
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = false;
-//            }
-//            onLoaded: {
-//                item.locationUuid = locationUuid;
-//                item.controllerMac = controllerMac;
-//            }
-//        }
-//    }
-
     // Edit Controller
 
     Loader {
         id: espTouchPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
-            item.StackView.onActivated.connect(disableDrawer)
         }
     }
 
@@ -395,127 +359,12 @@ ApplicationWindow {
         pager.push(espTouchPageLoader.item)
     }
 
-//    Component {
-//        id: espTouchPage
-//        Loader {
-//            sourceComponent: EspTouchPage {
-//                onEspTouchFinshed: pager.replace(pager.currentItem, locationsPage)
-//                StackView.onActivated: {
-//                    pageTitle = "Controller setup"
-//                }
-//                onMenuClicked: {
-//                    pager.pop()
-//                }
-//            }
-//            StackView.onActivated: {
-//                drawer.interactive = false;
-//            }
-//        }
-//    }
-
     StackView {
 		id: pager
 		anchors.fill: parent
-
-        Component.onCompleted: {
-            if(currentUser.isAuthenticated)
-                openLocationsPage()
-            else
-                openWelcomePage()
-        }
-
-        property string selectedBss
-
-        property int selectedLocationId : -1
-        property int selectedControllerId : -1
-        property int selectedShadesGroupId : -1
-
 	}
 
-	Drawer {
-		id: drawer
-		width:  0.66 * applicationWindow.width
-		height: applicationWindow.height
-        edge: Qt.LeftEdge
-		background: Rectangle {
-			color: DefTheme.secColorLight
-		}
-
-		Column {
-			anchors.fill: parent
-			anchors.margins: parent.width / 20
-			spacing: 6
-
-			Text{
-				height: parent.width / 8
-				anchors.horizontalCenter: parent.horizontalCenter
-				verticalAlignment: Qt.AlignVCenter
-                text: currentUser.email
-				font.pixelSize: 16
-				color: DefTheme.secTextColor
-				font.bold: true
-			}
-
-            Rectangle {
-				width: parent.width
-				height: 2
-				color: DefTheme.secColorDark
-			}
-
-//			Button {
-//				width: parent.width
-//                text: "Setup Controller"
-//				onClicked: {
-//					drawer.close()
-//					pager.push(espTouchPage);
-//				}
-//			}
-
-            Button {
-                width: parent.width
-                text: "Open WebSite"
-                onClicked: {
-                    Qt.openUrlExternally("https://leviosashades.com") ;
-                }
-            }
-
-            Button {
-				width: parent.width
-				text: "Call to Support"
-				onClicked: {
-					Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
-				}
-			}
-
-            Button {
-                width: parent.width
-                text: "Change password"
-                onClicked: {
-                    drawer.close()
-                    openChangePasswordPage()
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Sign Out"
-                font.bold: true
-                onClicked: {
-                    currentUser.signOut();
-                    drawer.close();
-                    drawer.interactive = false;
-                    pager.clear();
-                    openWelcomePage()
-                }
-            }
-        }
-	}
+    Component.onCompleted: doLogin()
 
 	onClosing: {
 		if (Qt.platform.os == "android" && pager.depth > 1) {
@@ -539,17 +388,45 @@ ApplicationWindow {
             id: sadIcon
             fillMode: Image.PreserveAspectFit
             width: parent.width / 4
-            source: "img/robo.png"
+            source: "img/sad.png"
             anchors.centerIn: parent
         }
 
-        Text {
-            text: "No network - no work!"
-            anchors.horizontalCenter: parent.horizontalCenter
+        Column {
             anchors.top: sadIcon.bottom
-            font.bold: true
-            font.pixelSize: parent.width / 20
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: width / 12
+            anchors.rightMargin: width / 12
+            spacing: width / 12
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "Network unavailable"
+                font.bold: true
+                font.pixelSize: width / 12
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "The application is working only with network connection."
+                font.bold: true
+                font.pixelSize: width / 20
+                wrapMode: Text.Wrap
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "This screen will disappear once some connection established."
+                font.italic: true
+                font.pixelSize: width / 20
+                wrapMode: Text.Wrap
+            }
         }
+
     }
 
 }

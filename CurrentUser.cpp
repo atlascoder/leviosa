@@ -11,25 +11,42 @@
 CurrentUser::CurrentUser(QObject *parent) :
     QObject(parent),
     mDb(DatabaseManager::instance()),
-    mIsAuthenticated(false),
-    mStopRequests(true),
+    mAuthState(Anon),
+    mStopRequests(false),
     mAuthRequest(new AuthRequest),
     mCredentialsRequest(new CredentialsRequest)
 {
-    if(mDb.userDAO.loadUser(mUser)){
-        mIdToken.setRaw(mUser.idToken());
-        mAccessToken.setRaw(mUser.accessToken());
-        mRefreshToken.setRaw(mUser.refreshToken());
-        setAuthenticated(mUser.refreshTokenExpiration() > QDateTime::currentSecsSinceEpoch() + 300);
-    }
-    else
-        setAuthenticated(false);
-
+    loadUser();
 }
 
 CurrentUser::~CurrentUser()
 {
     stopRequests();
+}
+
+void CurrentUser::loadUser()
+{
+    mUser.clear();
+    if(mDb.userDAO.loadUser(mUser)){
+        setEmail(mUser.email());
+        if(mUser.verified()){
+            if(mUser.refreshTokenExpiration() > QDateTime::currentSecsSinceEpoch() + 3600){
+                mIdToken.setRaw(mUser.idToken());
+                mAccessToken.setRaw(mUser.accessToken());
+                mRefreshToken.setRaw(mUser.refreshToken());
+                setAuthState(Authenticated);
+            }
+            else{
+                setAuthState(Confirmed);
+            }
+        }
+        else{
+            setAuthState(Registered);
+        }
+    }
+    else{
+        setAuthState(Anon);
+    }
 }
 
 void CurrentUser::stopRequests()
@@ -39,6 +56,7 @@ void CurrentUser::stopRequests()
     mStopRequests = true;
     mAuthRequest->cancelRequests();
     mCredentialsRequest->cancelRequests();
+    setBusy(false);
 }
 
 CurrentUser& CurrentUser::instance()
@@ -49,7 +67,7 @@ CurrentUser& CurrentUser::instance()
 
 void CurrentUser::requestCredentials()
 {
-    mStopRequests = false;
+    setBusy(true);
     if(mIdToken.expiration() < QDateTime::currentSecsSinceEpoch() - 60){
         // need to refresh tokens firstly
         refreshTokens();
@@ -75,7 +93,7 @@ void CurrentUser::requestCredentials()
         mHasCredentials = false;
         emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
     }
-    mStopRequests = true;
+    setBusy(false);
 }
 
 void CurrentUser::fillCredentials(Aws::Auth::AWSCredentials &awsCredentials)
@@ -85,17 +103,49 @@ void CurrentUser::fillCredentials(Aws::Auth::AWSCredentials &awsCredentials)
     awsCredentials.SetSessionToken(mCredentials.GetSessionToken());
 }
 
-void CurrentUser::signUp(const QString& email, const QString& password)
+void CurrentUser::signUp()
 {
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
-        mAuthResult = QtConcurrent::run(this, &CurrentUser::registerUser, email, password);
+        setLastMessage("Registering..");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::registerUser);
+    }
+    else{
+        setErrorMessage("Can't make request now, try later.");
     }
 }
 
-void CurrentUser::signIn(const QString& email, const QString& password)
+void CurrentUser::verify()
+{
+    mAuthResult.cancel();
+    if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
+        setLastMessage("Sending verification..");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::verifyEmail);
+    }
+    else{
+        setErrorMessage("Can't make request now, try later.");
+    }
+}
+
+void CurrentUser::retryConfirmation()
 {
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
-        mAuthResult = QtConcurrent::run(this, &CurrentUser::authenticateUser, email, password);
+        setLastMessage("Requesting new code..");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestConfirmation);
+    }
+    else{
+        setErrorMessage("Can't make request now, try later.");
+    }
+}
+
+void CurrentUser::signIn()
+{
+    mAuthResult.cancel();
+    if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
+        setLastMessage("Authentication...");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::authenticateUser);
+    }
+    else{
+        setErrorMessage("Can't make request now, try later.");
     }
 }
 
@@ -104,52 +154,102 @@ void CurrentUser::signOut()
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
         mAuthResult = QtConcurrent::run(this, &CurrentUser::logoutUser);
     }
-    setEmail("");
+    clearUser();
+    setAuthState(Anon);
+}
+
+void CurrentUser::clearUser()
+{
     mDb.userDAO.clear();
-    setLocationsSyncCount(0);
-    setControllersSyncCount(0);
-    setShadeGroupsSyncCount(0);
-    mDb.locationsDao.clear(false);
-    mDb.controllersDao.clear(false);
-    mDb.shadeGroupsDao.clear(false);
-    setAuthenticated(false);
-    mHasCredentials = false;
+    UserData::instance().clear();
+    clearPasswords();
+    setEmail("");
+    mUser.clear();
 }
 
-void CurrentUser::restorePassword(const QString& email)
+void CurrentUser::clearPasswords()
+{
+    mPassword = mPassword2 = mPassword3 = "";
+}
+
+void CurrentUser::restorePassword()
 {
     if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
-        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordRestore, email);
-    }
-
-}
-
-void CurrentUser::changePassword(const QString &newPassword, const QString &oldPassword)
-{
-    if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
-        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordChange, newPassword, oldPassword);
-    }
-}
-void CurrentUser::registerUser(const QString &email, const QString &password)
-{
-
-    mAuthRequest->signUp(email, password);
-    if(mAuthRequest->isSuccessful()){
-        emit signedUp();
-        UserData::instance().createDefaultLocation();
-        authenticateUser(email, password);
+        setLastMessage("Requesting restore password..");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordRestore);
     }
     else{
-        mLastMessage = mAuthRequest->getLastMessage();
-        emit authError(mLastMessage);
+        setErrorMessage("Can't make request now, try later.");
     }
 }
 
-void CurrentUser::authenticateUser(const QString &email, const QString &password)
+void CurrentUser::changePassword()
 {
-    mAuthRequest->signIn(email, password);
+    if(mAuthResult.isCanceled() || mAuthResult.isFinished()){
+        setLastMessage("Changing password..");
+        mAuthResult = QtConcurrent::run(this, &CurrentUser::requestPasswordChange);
+    }
+    else{
+        setErrorMessage("Can't make request now, try later.");
+    }
+}
+void CurrentUser::registerUser()
+{
+    setBusy(true);
+    mAuthRequest->signUp(mEmail, mPassword);
     if(mAuthRequest->isSuccessful()){
-        mUser.setEmail(email);
+        mUser.setEmail(mEmail);
+        mUser.setVerified(mAuthRequest->userConfirmed());
+        mDb.userDAO.persistUser(mUser);
+        if(mUser.verified())
+            emit signedUpConfirmed();
+        else
+            emit signedUpNotConfirmed();
+    }
+    else{
+        setErrorMessage(mAuthRequest->getLastMessage());
+        emit authError(mLastMessage);
+    }
+    setBusy(false);
+}
+
+void CurrentUser::verifyEmail()
+{
+    setBusy(true);
+    mAuthRequest->verify(mUser.email(), mPassword3);
+    if(mAuthRequest->isSuccessful()){
+        mUser.setVerified(true);
+        mDb.userDAO.persistUser(mUser);
+        emit verified();
+    }
+    else{
+        setErrorMessage(mAuthRequest->getLastMessage());
+        emit authError(mLastMessage);
+    }
+    setBusy(false);
+}
+
+void CurrentUser::requestConfirmation()
+{
+    setBusy(true);
+    mAuthRequest->requestConfirmation(mUser.email());
+    if(mAuthRequest->isSuccessful()){
+        setLastMessage("Request was sent. Check your mailbox for new confirmation code.");
+        emit confirmationResent();
+    }
+    else{
+        setErrorMessage(mAuthRequest->getLastMessage());
+        emit authError(mLastMessage);
+    }
+    setBusy(false);
+}
+
+void CurrentUser::authenticateUser()
+{
+    setBusy(true);
+    mAuthRequest->signIn(mEmail, mPassword);
+    if(mAuthRequest->isSuccessful()){
+        mUser.setEmail(mEmail);
         mIdToken.setRaw(mAuthRequest->getIdToken());
         mUser.setIdToken(mAuthRequest->getIdToken());
         mAccessToken.setRaw(mAuthRequest->getAccessToken());
@@ -160,84 +260,256 @@ void CurrentUser::authenticateUser(const QString &email, const QString &password
         mUser.setLocationsModified(0);
         mUser.setControllersModified(0);
         mUser.setShadeGroupsModified(0);
+        mUser.setVerified(true);
         mDb.userDAO.persistUser(mUser);
 
-        setAuthenticated(true);
+        setLastMessage("Authenticated");
+        setAuthState(Authenticated);
         emit signedIn();
         emit emailChanged();
     }
     else{
-        mLastMessage = mAuthRequest->getLastMessage();
-        setAuthenticated(false);
+        setErrorMessage(mAuthRequest->getLastMessage());
         emit authError(mLastMessage);
     }
+    setBusy(false);
 }
 
 void CurrentUser::logoutUser()
 {
+    setBusy(true);
     mAuthRequest->signOut();
     if(mAuthRequest->isSuccessful()){
         mDb.clear();
+        setLastMessage("Signed out.");
         emit signedOut();
     }
     else {
-        mLastMessage = mAuthRequest->getLastMessage();
+        setErrorMessage(mAuthRequest->getLastMessage());
         emit authError(mLastMessage);
     }
+    setBusy(false);
 }
 
-void CurrentUser::requestPasswordRestore(const QString& email)
+void CurrentUser::requestPasswordRestore()
 {
-    mAuthRequest->restorePassword(email);
+    setBusy(true);
+    mAuthRequest->restorePassword(mEmail);
     if(mAuthRequest->isSuccessful()){
+        setLastMessage("Request has been sent, check your mailbox.");
         emit restoreRequestSent();
     }
     else {
-        mLastMessage = mAuthRequest->getLastMessage();
+        setErrorMessage(mAuthRequest->getLastMessage());
         emit authError(mLastMessage);
     }
+    setBusy(false);
 }
 
-void CurrentUser::requestPasswordChange(const QString& newPassword, const QString& password)
+void CurrentUser::requestPasswordChange()
 {
-    mAuthRequest->changePassword(mAccessToken.raw(), newPassword, password);
+    setBusy(true);
+    mAuthRequest->changePassword(mEmail, mPassword3, mPassword);
     if(mAuthRequest->isSuccessful()){
-        emit passwordChanged();
+        setLastMessage("Password was changed");
+        emit passwordChangeCompleted();
     }
     else{
-        mLastMessage = mAuthRequest->getLastMessage();
+        setErrorMessage(mAuthRequest->getLastMessage());
         emit authError(mLastMessage);
     }
+    setBusy(false);
 }
 
 void CurrentUser::setEmail(const QString &email)
 {
-    if(email == mUser.email()) return;
-    mUser.setEmail(email);
-    emit emailChanged();
-}
-
-void CurrentUser::setAuthenticated(bool isAuthenticated)
-{
-    if(isAuthenticated == mIsAuthenticated) return;
-    mIsAuthenticated = isAuthenticated;
-    emit isAuthenticatedChanged();
+    if(email == mEmail) return;
+    mEmail = email;
     emit emailChanged();
 }
 
 void CurrentUser::refreshTokens(){
+    if(mStopRequests) return;
+    setBusy(true);
     if(mAuthRequest->refreshTokens(mUser.email(), mUser.refreshToken(), mUser.refreshTokenExpiration())){
         mIdToken.setRaw(mAuthRequest->getIdToken());
         mAccessToken.setRaw(mAuthRequest->getAccessToken());
-        setAuthenticated(true);
+        setLastMessage("Tokens were refreshed");
+        setAuthState(Authenticated);
     }
     else{
-        mLastMessage = mAuthRequest->getLastMessage();
-        setAuthenticated(false);
+        setErrorMessage(mAuthRequest->getLastMessage());
+        setAuthState(Confirmed);
     }
+    setBusy(false);
 }
 
 void CurrentUser::persistUserDataModified()
 {
     mDb.userDAO.persistUserDataModified(mUser);
+}
+
+void CurrentUser::setAuthState(const AuthState authState)
+{
+    if(authState == mAuthState) return;
+    mAuthState = authState;
+    emit authStateChanged();
+}
+
+void CurrentUser::checkEmail(){
+    if(!QRegExp("[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").exactMatch(mEmail)){
+        setLastMessage("Enter valid email");
+        setReady(false);
+    }
+    else{
+        setReady(true);
+    }
+}
+
+void CurrentUser::checkEmailPassword()
+{
+    if(mEmail == "change@password.my"){
+        if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
+            setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+            setReady(false);
+        }
+        else if(mPassword.length() != mPassword2.length()){
+            setLastMessage("Enter the same password as comformation");
+            setReady(false);
+        }
+        else if(mPassword != mPassword2){
+            setLastMessage("Password and its confirmation are not match");
+            setReady(false);
+        }
+        else if(mPassword3.length() < 8){
+            setLastMessage("Current password is too short");
+            setReady(false);
+        }
+        else{
+            setLastMessage("Ready");
+            setReady(true);
+        }
+    }
+    else{
+        if(!QRegExp("[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").exactMatch(mEmail)){
+            setLastMessage("Enter valid email");
+            setReady(false);
+        }
+        else if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
+            setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+            setReady(false);
+        }
+        else if(mPassword.length() != mPassword2.length()){
+            setLastMessage("Enter the same password as comformation");
+            setReady(false);
+        }
+        else if(mPassword != mPassword2){
+            setLastMessage("Password and its confirmation do not match");
+            setReady(false);
+        }
+        else{
+            setLastMessage("Ready");
+            setReady(true);
+        }
+    }
+}
+
+void CurrentUser::checkCodeAndPasswords()
+{
+    if(!QRegExp("\\d{6}").exactMatch(mPassword3)){
+        setLastMessage("Verification code should contain 6 numbers");
+        setReady(false);
+    }
+    else if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
+        setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+        setReady(false);
+    }
+    else if(mPassword.length() != mPassword2.length()){
+        setLastMessage("Enter the same password as comformation");
+        setReady(false);
+    }
+    else if(mPassword != mPassword2){
+        setLastMessage("Password and its confirmation do not match");
+        setReady(false);
+    }
+    else{
+        setLastMessage("Ready");
+        setReady(true);
+    }
+}
+
+void CurrentUser::checkVerification()
+{
+    if(!QRegExp("\\d{6}").exactMatch(mPassword3)){
+        setLastMessage("Verification code should contain 6 numbers");
+        setReady(false);
+    }
+    else{
+        setLastMessage("Ready");
+        setReady(true);
+    }
+}
+
+void CurrentUser::setReady(const bool ready)
+{
+    if(ready == mIsReady) return;
+    mIsReady = ready;
+    emit readyChanged();
+}
+
+void CurrentUser::setBusy(const bool busy)
+{
+    if(busy == mIsBusy) return;
+    mIsBusy = busy;
+    emit busyChanged();
+}
+
+void CurrentUser::setLastMessage(const QString &lastMessage)
+{
+    setFailed(false);
+    if(lastMessage == mLastMessage) return;
+    mLastMessage = lastMessage;
+    emit lastMessageChanged();
+}
+
+void CurrentUser::setErrorMessage(const QString &errorMessage)
+{
+    setFailed(true);
+    if(errorMessage == mLastMessage) return;
+    mLastMessage = errorMessage;
+    emit lastMessageChanged();
+}
+
+void CurrentUser::setPassword(const QString &password)
+{
+    if(password == mPassword) return;
+    mPassword = password;
+    emit passwordChanged();
+}
+
+void CurrentUser::setPassword2(const QString &password)
+{
+    if(password == mPassword2) return;
+    mPassword2 = password;
+    emit password2Changed();
+}
+
+void CurrentUser::setPassword3(const QString &password)
+{
+    if(password == mPassword3) return;
+    mPassword3 = password;
+    emit password3Changed();
+}
+
+void CurrentUser::setFailed(const bool failed)
+{
+    if(failed == mFailed) return;
+    mFailed = failed;
+    emit failedChanged();
+}
+
+void CurrentUser::clearInputs()
+{
+    clearPasswords();
+    setEmail("");
 }

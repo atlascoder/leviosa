@@ -17,6 +17,8 @@ class UserData : public QThread
 
     Q_PROPERTY(QString email READ email NOTIFY emailChanged)
     Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncStateChanged)
+    Q_PROPERTY(int locationsCount READ locationsCount NOTIFY locationsCountChanged)
+    Q_PROPERTY(QString firstLocationUuid READ firstLocationUuid NOTIFY firstLocationUuidChanged)
 
     void run() override;
 
@@ -57,11 +59,14 @@ public:
 
     bool isControllerKnown(const QString& mac) const;
 
-    void createDefaultLocation();
+    Q_INVOKABLE void createDefaultLocation();
+    Q_INVOKABLE void addFirstController(const QString& mac, const QString& bssid);
 
     SyncState syncState() const { return mSyncState; }
 
     void updateLocationWithBssid(const QString& uuid, const QString& bssid);
+
+    void clear();
 
 public slots:
     void sync();
@@ -70,9 +75,12 @@ public slots:
 signals:
     void dataUpdated();
 
+    void synced();
+
     void syncStateChanged();
     void emailChanged();
-
+    void locationsCountChanged();
+    void firstLocationUuidChanged();
 private:
     SyncState mSyncState;
     bool mCancelled;
@@ -88,6 +96,9 @@ private:
 
     bool isSyncing() const { return mSyncState == Syncing; }
     void setState(SyncState state);
+
+    int locationsCount();
+    QString firstLocationUuid();
 
     QString email() const { return mUser.email(); }
 

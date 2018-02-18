@@ -5,9 +5,7 @@
 #include <QString>
 #include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/cognito-identity/CognitoIdentityClient.h>
-#include <QMutex>
 #include <QFuture>
-#include <QThread>
 
 #include "aws/IdToken.h"
 #include "aws/AccessToken.h"
@@ -23,42 +21,53 @@ class CurrentUser : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString email READ email WRITE setEmail NOTIFY emailChanged)
-    Q_PROPERTY(bool isAuthenticated READ isAuthenticated NOTIFY isAuthenticatedChanged)
 
-    User mUser;
-    IdToken mIdToken;
-    AccessToken mAccessToken;
-    RefreshToken mRefreshToken;
-    DatabaseManager& mDb;
-    Aws::CognitoIdentity::Model::Credentials mCredentials;
-    QMutex mCredentialsMutex;
+    Q_PROPERTY(QString password READ password WRITE setPassword NOTIFY passwordChanged)
+    Q_PROPERTY(QString password2 READ password2 WRITE setPassword2 NOTIFY password2Changed)
+    Q_PROPERTY(QString password3 READ password3 WRITE setPassword3 NOTIFY password3Changed)
 
-    QFuture<void> mAuthResult;
+    Q_PROPERTY(AuthState authState READ authState WRITE setAuthState NOTIFY authStateChanged)
+    Q_PROPERTY(bool isAuthenticated READ isAuthenticated NOTIFY authStateChanged)
 
-    QString mLastMessage;
-    bool mIsAuthenticated;
-    bool mHasCredentials;
+    Q_PROPERTY(QString lastMessage READ lastMessage NOTIFY lastMessageChanged)
 
-    bool mStopRequests;
+    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    Q_PROPERTY(bool failed READ failed NOTIFY failedChanged)
+    Q_PROPERTY(bool requireConfirmation READ requireConfirmation NOTIFY authStateChanged)
 
-    std::unique_ptr<AuthRequest> mAuthRequest;
-    std::unique_ptr<CredentialsRequest> mCredentialsRequest;
 public:
     static CurrentUser& instance();
+
+    enum AuthState { Anon, Registered, Confirmed, Authenticated, Expired };
+    Q_ENUMS(AuthState)
 
     void fillCredentials(Aws::Auth::AWSCredentials & awsCredentials);
 
     // blocking credentials request
     void requestCredentials();
 
-    QString email() const { return mUser.email(); }
+    QString email() const { return mEmail; }
     void setEmail(const QString& email);
+
+    bool isAuthenticated() const { return mAuthState == Authenticated; }
 
     bool hasCredentials() const { return mHasCredentials; }
 
-    bool isAuthenticated() const {return mIsAuthenticated; }
-
     void refreshTokens();
+
+    AuthState authState() const { return mAuthState; }
+    void setAuthState(const AuthState authState);
+
+    bool ready() const { return mIsReady; }
+
+    bool busy() const { return mIsBusy; }
+
+    bool failed() const { return mFailed; }
+
+    bool requireConfirmation() const { return mAuthState == AuthState::Registered; }
+
+    QString lastMessage() const { return mLastMessage; }
 
     int locationsModified() const { return mUser.locationsModified(); }
     void setLocationsModified(int modified) { mUser.setLocationsModified(modified); }
@@ -92,39 +101,112 @@ public:
     void stopRequests();
 
 public slots:
-    void signUp(const QString& email, const QString& password);
-    void signIn(const QString& email, const QString& password);
+    void signUp();
+    void verify();
+    void retryConfirmation();
+    void signIn();
     void signOut();
-    void restorePassword(const QString& email);
-    void changePassword(const QString& newPassword, const QString& oldPassword);
+    void restorePassword();
+    void changePassword();
+
+    void clearInputs();
+    void checkEmail();
+    void checkCodeAndPasswords();
+    void checkEmailPassword();
+    void checkVerification();
 
 signals:
     void authRequired();
     void credentialsReady();
     void credentialsRequestFailed(const QString& message);
 
-    void signedUp();
+    void signedUpConfirmed();
+    void signedUpNotConfirmed();
+    void verified();
+    void confirmationResent();
     void signedIn();
     void signedOut();
-    void passwordChanged();
+    void passwordChangeCompleted();
 
     void authError(const QString& message);
     void restoreRequestSent();
 
     void emailChanged();
-    void isAuthenticatedChanged();
 
+    void passwordChanged();
+    void password2Changed();
+    void password3Changed();
+
+    void isAuthenticatedChanged();
+    void verifiedChanged();
+
+    void authStateChanged();
+    void readyChanged();
+    void busyChanged();
+    void requireConfirmationChanged();
+    void failedChanged();
+    void lastMessageChanged();
 private:
+    User mUser;
+    IdToken mIdToken;
+    AccessToken mAccessToken;
+    RefreshToken mRefreshToken;
+    DatabaseManager& mDb;
+    Aws::CognitoIdentity::Model::Credentials mCredentials;
+
+    QFuture<void> mAuthResult;
+
+    AuthState mAuthState;
+
+    QString mEmail;
+    QString mPassword;
+    QString mPassword2;
+    QString mPassword3;
+
+    QString mLastMessage;
+    bool mHasCredentials;
+
+    bool mStopRequests;
+
+    bool mIsReady;
+    bool mIsBusy;
+
+    bool mFailed;
+
+    std::unique_ptr<AuthRequest> mAuthRequest;
+    std::unique_ptr<CredentialsRequest> mCredentialsRequest;
+
     CurrentUser(QObject *parent = 0);
     virtual ~CurrentUser();
 
-    void registerUser(const QString& email, const QString& password);
-    void authenticateUser(const QString& email, const QString& password);
+    void registerUser();
+    void verifyEmail();
+    void requestConfirmation();
+    void authenticateUser();
     void logoutUser();
-    void requestPasswordRestore(const QString& email);
-    void requestPasswordChange(const QString& newPassword, const QString& password);
+    void requestPasswordRestore();
+    void requestPasswordChange();
 
-    void setAuthenticated(bool isAuthenticated);
+    void setReady(const bool ready);
+    void setBusy(const bool busy);
+    void setFailed(const bool failed);
+
+    void setErrorMessage(const QString& errorMessage);
+    void setLastMessage(const QString& lastMessage);
+
+    void clearUser();
+    void clearPasswords();
+
+    QString password() const { return mPassword; }
+    void setPassword(const QString& password);
+
+    QString password2() const { return mPassword2; }
+    void setPassword2(const QString& password);
+
+    QString password3() const { return mPassword3; }
+    void setPassword3(const QString& password);
+
+    void loadUser();
 
 };
 

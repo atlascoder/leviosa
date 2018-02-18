@@ -15,6 +15,12 @@
 #include <aws/cognito-idp/model/DescribeUserPoolClientRequest.h>
 #include <aws/cognito-idp/model/SignUpRequest.h>
 #include <aws/cognito-idp/model/SignUpResult.h>
+#include <aws/cognito-idp/model/ConfirmSignUpRequest.h>
+#include <aws/cognito-idp/model/ConfirmSignUpResult.h>
+#include <aws/cognito-idp/model/ConfirmForgotPasswordRequest.h>
+#include <aws/cognito-idp/model/ConfirmForgotPasswordRequest.h>
+#include <aws/cognito-idp/model/ResendConfirmationCodeRequest.h>
+#include <aws/cognito-idp/model/ResendConfirmationCodeResult.h>
 #include <aws/core/utils/Outcome.h>
 #include <aws/core/client/AWSError.h>
 #include <aws/cognito-idp/model/InitiateAuthRequest.h>
@@ -54,7 +60,7 @@ template <class T> T my_powm(const T& a, const T& p, const T& c) {
 }
 
 
-AuthRequest::AuthRequest() : mCancelled(true)
+AuthRequest::AuthRequest() : mCancelled(false), mConfirmed(false)
 {
     mN = static_cast<cpp_int>("0x" \
             "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -101,7 +107,6 @@ AuthRequest::~AuthRequest()
 void AuthRequest::cancelRequests()
 {
     qDebug() << "Stop Auth request";
-    if(mCancelled) return;
     mCancelled = true;
     mClient->DisableRequestProcessing();
 }
@@ -203,7 +208,6 @@ QByteArray AuthRequest::getPasswordAuthenticationKey(const QString &userId, cons
 
 void AuthRequest::signIn(const QString& email, const QString& password)
 {
-    mCancelled = false;
     mEmail = email;
     mPassword = password;
     mSuccessful = false;
@@ -264,15 +268,14 @@ void AuthRequest::signIn(const QString& email, const QString& password)
     } else {
         mLastMessage = QString(authResp.GetError().GetMessage().c_str());
     }
-    mCancelled = true;
 }
 
 void AuthRequest::signUp(const QString& email, const QString& password)
 {
-    mCancelled = false;
     mEmail = email;
     mPassword = password;
     mSuccessful = false;
+    mConfirmed = false;
     Aws::CognitoIdentityProvider::Model::DescribeUserPoolClientRequest describeUserPoolReq;
     describeUserPoolReq.WithUserPoolId(ClientConfig::instance().userPoolId).WithClientId(ClientConfig::instance().clientId);
 
@@ -292,13 +295,50 @@ void AuthRequest::signUp(const QString& email, const QString& password)
 
     if(mCancelled) return;
     Aws::CognitoIdentityProvider::Model::SignUpOutcome mResult = mClient->SignUp(mReq);
-    if(mResult.GetResult().GetUserConfirmed()){
+    if(mResult.IsSuccess()){
         mSuccessful = true;
+        mConfirmed = mResult.GetResult().GetUserConfirmed();
     }
     else{
         mLastMessage = QString(mResult.GetError().GetMessage().c_str());
     }
-    mCancelled = true;
+}
+
+void AuthRequest::verify(const QString &email, const QString &code)
+{
+    mSuccessful = false;
+    Aws::CognitoIdentityProvider::Model::ConfirmSignUpRequest req;
+    req.SetClientId(ClientConfig::instance().clientId);
+    req.SetConfirmationCode(Aws::String(code.toStdString().c_str()));
+    req.SetUsername(email.toStdString().c_str());
+
+    Aws::CognitoIdentityProvider::Model::ConfirmSignUpOutcome outp;
+    if(mCancelled) return;
+    outp = mClient->ConfirmSignUp(req);
+    if(outp.IsSuccess()){
+        mSuccessful = true;
+    }
+    else{
+        mLastMessage = QString::fromStdString(outp.GetError().GetMessage().c_str());
+    }
+}
+
+void AuthRequest::requestConfirmation(const QString &email)
+{
+    mSuccessful = false;
+    Aws::CognitoIdentityProvider::Model::ResendConfirmationCodeRequest req;
+    req.SetClientId(ClientConfig::instance().clientId);
+    req.SetUsername(email.toStdString().c_str());
+
+    Aws::CognitoIdentityProvider::Model::ResendConfirmationCodeOutcome outp;
+    if(mCancelled) return;
+    outp = mClient->ResendConfirmationCode(req);
+    if(outp.IsSuccess()){
+        mSuccessful = true;
+    }
+    else{
+        mLastMessage = QString::fromStdString(outp.GetError().GetMessage().c_str());
+    }
 }
 
 void AuthRequest::signOut()
@@ -306,16 +346,16 @@ void AuthRequest::signOut()
     mSuccessful = true;
 }
 
-void AuthRequest::changePassword(const QString& accessToken, const QString& newPassword, const QString& password)
+void AuthRequest::changePassword(const QString& email, const QString& code, const QString& password)
 {
-    mCancelled = false;
-    Aws::CognitoIdentityProvider::Model::ChangePasswordRequest req;
-    req.SetAccessToken(Aws::Utils::StringUtils::to_string(accessToken.toStdString()));
-    req.SetProposedPassword(Aws::Utils::StringUtils::to_string(newPassword.toStdString()));
-    req.SetPreviousPassword(Aws::Utils::StringUtils::to_string(password.toStdString()));
-
+    mSuccessful = false;
+    Aws::CognitoIdentityProvider::Model::ConfirmForgotPasswordRequest req;
+    req.SetClientId(ClientConfig::instance().clientId);
+    req.SetConfirmationCode(Aws::String(code.toStdString().c_str()));
+    req.SetPassword(Aws::String(password.toStdString().c_str()));
+    req.SetUsername(Aws::String(email.toStdString().c_str()));
     if(mCancelled) return;
-    auto resp = mClient->ChangePassword(req);
+    auto resp = mClient->ConfirmForgotPassword(req);
 
     if(resp.IsSuccess()){
         mSuccessful = true;
@@ -323,13 +363,12 @@ void AuthRequest::changePassword(const QString& accessToken, const QString& newP
     else{
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
     }
-    mCancelled = true;
 }
 
 void AuthRequest::restorePassword(const QString& email)
 {
-    mCancelled = false;
     mEmail = email;
+    mSuccessful = false;
     Aws::CognitoIdentityProvider::Model::ForgotPasswordRequest req;
     req.SetClientId(ClientConfig::instance().clientId);
     req.SetUsername(Aws::Utils::StringUtils::to_string(mEmail.toStdString()));
@@ -340,12 +379,10 @@ void AuthRequest::restorePassword(const QString& email)
         mSuccessful = true;
     else
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
-    mCancelled = true;
 }
 
 bool AuthRequest::refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration)
 {
-    mCancelled = false;
     mEmail = email;
     mRefreshToken = refreshToken;
     mRefreshTokenExpiration = refreshTokenExpiration;
@@ -368,13 +405,11 @@ bool AuthRequest::refreshTokens(const QString& email, const QString&  refreshTok
         if(initAuthResp.IsSuccess()){
             mIdToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetIdToken().c_str());
             mAccessToken = QString(initAuthResp.GetResult().GetAuthenticationResult().GetAccessToken().c_str());
-            mCancelled = true;
             return true;
         }
         else {
             mLastMessage = QString(initAuthResp.GetError().GetMessage().c_str());
         }
     }
-    mCancelled = true;
     return false;
 }

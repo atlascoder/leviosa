@@ -264,6 +264,7 @@ void ControllerAPI::setTimezone(const QString &timezone)
 void ControllerAPI::timezoneFinished()
 {
     mTZoneReply->deleteLater();
+    mTZoneReply = nullptr;
 }
 
 void ControllerAPI::cloudCommandSent()

@@ -15,13 +15,14 @@ ControllerModel::ControllerModel(QObject* parent):
     mIsOnWlan(false),
     mLocationUuid(),
     mCurrentIp("0.0.0.0"),
-    mControllers(UserData::instance().mControllers.get()),
+    mControllers(nullptr),
     mSelectedIndex(QModelIndex()),
     mCurrentBssid(""),
     mLocationBssid(""),
-    mIsDiscovering(false),
+    mCanDiscovery(false),
     mIsDataLoaded(false)
 {
+    UserData::instance().loadLocations();
     connect(&UserData::instance(), &UserData::dataUpdated, this, &ControllerModel::updateModel);
 }
 
@@ -39,7 +40,7 @@ void ControllerModel::updateModel()
 
     long diff = mControllers->size() - rows;
 
-    qDebug() << "Update controlles model from rows: " << rowCount();
+    qDebug() << "Update controlles model, changing rows: " << diff;
 
     if(diff < 0){
         beginRemoveRows(QModelIndex(), mControllers->size(), rows-1);
@@ -52,6 +53,8 @@ void ControllerModel::updateModel()
 
     emit dataChanged(index(0,0), index(rowCount()-1,0));
     emit countChanged();
+    emit locationNameChanged();
+    emit locationBssidChanged();
 }
 
 QModelIndex ControllerModel::addController(const Controller& controller)
@@ -126,7 +129,7 @@ QModelIndex ControllerModel::findController(const QString& mac)
 int ControllerModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return static_cast<int>(mControllers->size());
+    return mControllers == nullptr ? 0 : static_cast<int>(mControllers->size());
 }
 
 int ControllerModel::roleByName(const QString &name) const
@@ -225,6 +228,7 @@ QHash<int, QByteArray> ControllerModel::roleNames() const
 void ControllerModel::loadControllers(const QString& locationUuid)
 {
     qDebug() << "Location UUID to model: " << locationUuid;
+    if(mControllers == nullptr) mControllers = UserData::instance().mControllers.get();
     UserData::instance().loadControllers(locationUuid);
     setLocationBssid(UserData::instance().locationBssid(locationUuid));
 }
@@ -238,6 +242,7 @@ void ControllerModel::setLocationUuid(const QString& locationUuid)
 {
     if(locationUuid == mLocationUuid) return;
     mLocationUuid = locationUuid;
+    setDataLoaded(false);
     beginResetModel();
     loadControllers(mLocationUuid);
     endResetModel();
@@ -278,31 +283,33 @@ QString ControllerModel::getFreeName(vector<unique_ptr<Controller>>& newItems)
 
 void ControllerModel::addControllersFromList(const QString &uuid, const QString &list)
 {
+    Q_UNUSED(uuid)
+    Q_UNUSED(list)
     if(!mIsOnWlan) return;
-    QStringList ctrs = list.split(",");
-    vector<unique_ptr<Controller>> v;
+//    QStringList ctrs = list.split(",");
+//    vector<unique_ptr<Controller>> v;
 
-    vector<unique_ptr<ShadeGroup>> sg;
+//    vector<unique_ptr<ShadeGroup>> sg;
 
-    int count = list.isEmpty() ? 0 : ctrs.size();
+//    int count = list.isEmpty() ? 0 : ctrs.size();
 
-    for(int i = 0; i < count; i++){
-        QStringList mac_ip = ctrs.at(i).split(" ");
-        if(!UserData::instance().isControllerKnown(mac_ip.at(0))){
-            unique_ptr<Controller> c(new Controller(mac_ip.at(0)));
-            c->setName(getFreeName(v));
-            c->setLocationUuid(uuid);
-            c->setIpAddress(mac_ip.at(1));
-            c->api().setControllerState(ControllerAPI::ControllerState::Wlan);
-            c->setPosition(mControllers->size() + i);
-            c->setSynced(false);
-            v.push_back(move(c));
-            unique_ptr<ShadeGroup> g(new ShadeGroup(1));
-            g->setControllerMac(mac_ip.at(0));
-            g->setName("Room");
-            sg.push_back(move(g));
-        }
-    }
+//    for(int i = 0; i < count; i++){
+//        QStringList mac_ip = ctrs.at(i).split(" ");
+//        if(!UserData::instance().isControllerKnown(mac_ip.at(0))){
+//            unique_ptr<Controller> c(new Controller(mac_ip.at(0)));
+//            c->setName(getFreeName(v));
+//            c->setLocationUuid(uuid);
+//            c->setIpAddress(mac_ip.at(1));
+//            c->api().setControllerState(ControllerAPI::ControllerState::Wlan);
+//            c->setPosition(mControllers->size() + i);
+//            c->setSynced(false);
+//            v.push_back(move(c));
+//            unique_ptr<ShadeGroup> g(new ShadeGroup(1));
+//            g->setControllerMac(mac_ip.at(0));
+//            g->setName("Room");
+//            sg.push_back(move(g));
+//        }
+//    }
 
     for(size_t i = 0; i < mControllers->size(); i++){
         Controller* c = mControllers->at(i).get();
@@ -314,27 +321,27 @@ void ControllerModel::addControllersFromList(const QString &uuid, const QString 
         }
     }
 
-    if(v.size() > 0) {
-        vector<unique_ptr<ShadeGroup>> sgs;
-        if(mControllers->size() == 0){
-            qDebug() << "Update location" << mLocationUuid << " with bssid " << mCurrentBssid;
-            UserData::instance().updateLocationWithBssid(mLocationUuid, mCurrentBssid);
-        }
-        beginInsertRows(QModelIndex(), mControllers->size(), mControllers->size() + v.size() - 1);
-        for(vector<unique_ptr<Controller>>::iterator i = v.begin(); i != v.end(); i++){
-            unique_ptr<ShadeGroup> sg(new ShadeGroup(1));
-            sg->setControllerMac(v.at(0)->mac());
-            sg->setName("Group 1");
-            sgs.push_back(move(sg));
-            mControllers->push_back(move(*i));
-        }
-        UserData::instance().persistItems(sgs, false);
-        CurrentUser::instance().setShadeGroupsSynced(false);
-        UserData::instance().persistItems(*mControllers, true);
-        endInsertRows();
-        emit countChanged();
-        emit selectedControllerStatusChanged();
-    }
+//    if(v.size() > 0) {
+//        vector<unique_ptr<ShadeGroup>> sgs;
+//        if(mControllers->size() == 0){
+//            qDebug() << "Update location" << mLocationUuid << " with bssid " << mCurrentBssid;
+//            UserData::instance().updateLocationWithBssid(mLocationUuid, mCurrentBssid);
+//        }
+//        beginInsertRows(QModelIndex(), mControllers->size(), mControllers->size() + v.size() - 1);
+//        for(vector<unique_ptr<Controller>>::iterator i = v.begin(); i != v.end(); i++){
+//            unique_ptr<ShadeGroup> sg(new ShadeGroup(1));
+//            sg->setControllerMac(v.at(0)->mac());
+//            sg->setName("Group 1");
+//            sgs.push_back(move(sg));
+//            mControllers->push_back(move(*i));
+//        }
+//        UserData::instance().persistItems(sgs, false);
+//        CurrentUser::instance().setShadeGroupsSynced(false);
+//        UserData::instance().persistItems(*mControllers, true);
+//        endInsertRows();
+//        emit countChanged();
+//        emit selectedControllerStatusChanged();
+//    }
 }
 
 
@@ -500,7 +507,7 @@ void ControllerModel::setOnWlan(bool isOnWlan)
 {
     if(mIsOnWlan == isOnWlan) return;
     mIsOnWlan = isOnWlan;
-    for(size_t i = 0; i < mControllers->size(); i++)
+    for(int i = 0; i < rowCount(); i++)
         mControllers->at(i)->setOnWlan(mIsOnWlan);
     emit onWlanChanged();
     emit locationStatusChanged();
@@ -641,10 +648,10 @@ QString ControllerModel::ipByMac(const QString &mac)
         return "127.0.0.1";
 }
 
-void ControllerModel::setBssid(const QString &bssid){
+void ControllerModel::setCurrentBssid(const QString &bssid){
     if(mCurrentBssid == bssid) return;
     mCurrentBssid = bssid;
-    emit bssidChanged();
+    emit currentBssidChanged();
     emit locationStatusChanged();
 }
 
@@ -686,19 +693,18 @@ void ControllerModel::checkConfiguration(Controller* controller){
     }
 }
 
-void ControllerModel::setIsDiscovering(bool isDiscovering)
+void ControllerModel::setCanDiscovery(bool canDiscovery)
 {
-    qDebug() << "DISCOVERING:" << mIsDiscovering << " => " << isDiscovering;
-    if(mIsDiscovering == isDiscovering) return;
-    mIsDiscovering = isDiscovering;
-    if(mIsDiscovering){
+    qDebug() << "CAN DISCOVERY: " << mCanDiscovery << " => " << canDiscovery;
+    if(mCanDiscovery == canDiscovery) return;
+    mCanDiscovery = canDiscovery;
+    if(mCanDiscovery){
         for(vector<unique_ptr<Controller>>::iterator c = mControllers->begin(); c != mControllers->end(); c++){
             c->get()->setIpAddress("0.0.0.0");
             c->get()->api().setControllerState(ControllerAPI::Searching);
         }
     }
-    emit isDiscoveringChanged();
-    emit locationStatusChanged();
+    emit canDiscoveryChanged();
 }
 
 void ControllerModel::setDataLoaded(bool isLoaded)
@@ -717,18 +723,15 @@ int ControllerModel::selectedControllerState() const
 
 void ControllerModel::setLocationBssid(const QString &locationBssid)
 {
+    if(mLocationBssid == locationBssid) return;
     qDebug() << "Location BSSID changing: " << mLocationBssid << " -> " << locationBssid;
-    if(mLocationBssid != locationBssid){
-        mLocationBssid = locationBssid;
-        emit locationBssidChanged();
-    }
-
-    emit locationStatusChanged();
+    mLocationBssid = locationBssid;
+    emit locationBssidChanged();
 }
 
 bool ControllerModel::isCurrentLocation() const
 {
-    return mIsOnWlan && mCurrentBssid == mLocationBssid;
+    return mIsOnWlan && !mLocationBssid.isEmpty() && mCurrentBssid == mLocationBssid;
 }
 
 bool ControllerModel::isNewLocation() const
@@ -736,18 +739,11 @@ bool ControllerModel::isNewLocation() const
     return mLocationBssid.isEmpty();
 }
 
-bool ControllerModel::allowedToSearch() const
-{
-    bool val = mIsOnWlan && (mLocationBssid.isEmpty() || mCurrentBssid == mLocationBssid);
-    qDebug() << "allowedToSearch:" << val << " : isOnWlan=" << mIsOnWlan << " locationBssid=" << mLocationBssid << " currentBssid=" << mCurrentBssid;
-    return val;
-}
-
 QString ControllerModel::locationStatusText() const
 {
     if(mIsOnWlan){
         if(mLocationBssid.isEmpty())
-            return "Setup controler";
+            return "Setup controller";
         else if(mLocationBssid == mCurrentBssid)
             return "Via Current location, WiFi";
         else

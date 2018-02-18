@@ -183,7 +183,6 @@ SOURCES += \
     CurrentUser.cpp \
     aws/CredentialsRequest.cpp \
     aws/AuthRequest.cpp \
-    UserLogin.cpp \
     UserData.cpp \
     core/shadegroup.cpp \
     core/BasicDAO.cpp \
@@ -204,7 +203,9 @@ SOURCES += \
     core/syncablerecord.cpp \
     core/ControllerConfig.cpp \
     core/ControllerAPI.cpp \
-    aws/CognitoSyncCommand.cpp
+    aws/CognitoSyncCommand.cpp \
+    core/ControllersMgr.cpp \
+    core/ControllerCfg.cpp
 
 # own codebase
 HEADERS += \
@@ -221,7 +222,6 @@ HEADERS += \
     CurrentUser.h \
     aws/CredentialsRequest.h \
     aws/AuthRequest.h \
-    UserLogin.h \
     UserData.h \
     core/shadegroup.h \
     core/BasicDAO.h \
@@ -245,7 +245,9 @@ HEADERS += \
     core/ControllerHTTPClient.h \
     core/ControllerAPI.h \
     core/timeaux.h \
-    aws/CognitoSyncCommand.h
+    aws/CognitoSyncCommand.h \
+    core/ControllersMgr.h \
+    core/ControllerCfg.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

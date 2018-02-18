@@ -12,66 +12,66 @@ import "DefaultTheme.js" as DefTheme
 LeviosaPage {
 	id: locationPage
 
-    enableMenuAction: false
-
-    property string locationUuid
+    property alias locationUuid : controllersModel.locationUuid
     property alias discovery : controllerDiscovery
     property alias activeController : controllersModel.selectedControllerMac
+
+    property bool single : true
     property string timezone
 
+    enableMenuAction: single
+
     property bool selectedShadeGroupsNotFilled : false
+
+    property bool isActive : false
 
     signal setupController(string uuid)
     signal editController(string mac)
     signal editGroup(string mac, int channel, string ip)
     signal addGroup(string mac)
+    signal controllersLoaded()
 
     enableAddAction: selectedShadeGroupsNotFilled && (controllersModel.selectedControllerState == 0 || controllersModel.selectedControllerState == 5)
     onAddClicked: addGroup(controllersModel.macByIndex(controllersPager.currentIndex))
-
 
     title: controllersModel.locationName
 
     showStatusText: true
     statusText: controllersModel.locationStatusText
 
-    showSubTitle: true
+    showSubTitle: false
     subTitle: controllersModel.selecetedControllerStatus
 
     function init(){
-        console.log("INIT LOCATION PAGE");
+        console.log("INIT LOCATION PAGE (n=" + controllersModel.rowCount() + ")");
         if(controllersModel.locationUuid != locationPage.locationUuid){
-            console.log("init from emty UUID to: " + locationUuid)
+            console.log("Init controllers from empty/wrong UUID with " + locationUuid)
             controllersModel.locationUuid = locationPage.locationUuid;
         }
         else{
-            console.log("updating loaded location UUID to: " + locationUuid)
+            console.log("Updating controllers for UUID " + locationUuid)
             controllersModel.updateModel();
-            if(netMonitor.onWlan && controllersModel.isNewLocation)
-                controllerDiscovery.isRunning = true;
         }
+    }
+
+    function pause() {
+        discovery.isRunning = false
     }
 
     ControllersModel {
         id: controllersModel
-        onAllowedToSearchChanged: {
-            if(allowedToSearch){
-                console.log("On Wlan");
-                controllerDiscovery.isRunning = true;
-            }
-            else{
-                console.log("On Wan");
-                controllerDiscovery.isRunning = false;
-            }
-        }
-        isDiscovering: controllerDiscovery.isRunning
         isOnWlan: netMonitor.onWlan
-        bssid: netMonitor.bssid
-        onDataLoadedChanged: {
-            console.log("Data loaded");
-            if(dataLoaded && allowedToSearch)
-                controllerDiscovery.isRunning = true;
+        currentBssid: netMonitor.bssid
+        onCanDiscoveryChanged: {
+            if(canDiscovery)
+                discovery.isRunning = true
+            else
+                discovery.isRunning = false
         }
+        onDataLoadedChanged: {
+            if(dataLoaded) locationPage.controllersLoaded()
+        }
+        canDiscovery: isCurrentLocation && dataLoaded
     }
 
     SwipeView {
@@ -98,6 +98,8 @@ LeviosaPage {
                         controllersModel.commandShade(mac, channel, command);
                     }
                     failed: (controllerState === 2) || (controllerState === 4)
+                    onRunEspTouch: setupController(locationUuid)
+                    onDeleteController: controllersModel.remove(mac)
                 }
             }
         }
@@ -211,7 +213,7 @@ LeviosaPage {
             controllersModel.addControllersFromList(controllersModel.locationUuid, list);
         }
         onFound: function(mac, ip) {
-            console.log("FOUND WINGARDIUM: " + mac + " / " + ip);
+            console.log("FOUND CONTROLLER: " + mac + " / " + ip);
             controllersModel.checkIP(mac, ip);
         }
     }
@@ -219,7 +221,98 @@ LeviosaPage {
     BlockScreen {
         id: emptyOnWanAlert
         anchors.fill: parent
-        message: "You need to setup your first Leviosa WiShadeController being connected to WiFi network."
+        message: "Please, connect to your WiFi network in order to begin Setup!"
+    }
+
+    onMenuClicked: {
+        if(single) drawer.open()
+    }
+
+    Drawer {
+        id: drawer
+        width:  0.66 * applicationWindow.width
+        height: applicationWindow.height
+        edge: Qt.LeftEdge
+        interactive: single
+
+        background: Rectangle {
+            color: DefTheme.secColorLight
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: parent.width / 20
+            spacing: 6
+
+            Text{
+                height: parent.width / 8
+                anchors.horizontalCenter: parent.horizontalCenter
+                verticalAlignment: Qt.AlignVCenter
+                text: currentUser.email
+                font.pixelSize: 16
+                color: DefTheme.secTextColor
+                font.bold: true
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                width: parent.width
+                text: "Add this location"
+                visible: netMonitor.onWlan && controllersModel.locationBssid != netMonitor.bssid
+                onClicked: {
+                    drawer.close()
+                    openNewLocationPage()
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Open WebSite"
+                onClicked: {
+                    Qt.openUrlExternally("https://leviosashades.com") ;
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Call to Support"
+                onClicked: {
+                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Change password"
+                onClicked: {
+                    drawer.close()
+                    openChangePasswordPage()
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Sign Out"
+                font.bold: true
+                onClicked: {
+                    currentUser.signOut();
+                    drawer.close();
+                    drawer.interactive = false;
+                    openWelcomePage()
+                }
+            }
+        }
     }
 
     states : [

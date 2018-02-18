@@ -46,7 +46,7 @@
         <file>img/004-bars.svg</file>
         <file>img/auth_btn_bg.svg</file>
         <file>DefaultTheme.js</file>
-        <file>RegPage.qml</file>
+        <file>RegisterPage.qml</file>
         <file>EspTouchPage.qml</file>
         <file>img/003-wifi.svg</file>
         <file>img/002-computer.svg</file>
@@ -85,5 +85,16 @@
         <file>img/robo.png</file>
         <file>AlertMessage.qml</file>
         <file>BlockScreen.qml</file>
+        <file>img/smile.png</file>
+        <file>img/sad.png</file>
+        <file>img/information.png</file>
+        <file>VerifyPage.qml</file>
+        <file>img/key.png</file>
+        <file>WelcomeBrandPage.qml</file>
+        <file>SmallButton.qml</file>
+        <file>SyncPage.qml</file>
+        <file>ResetPasswordPage.qml</file>
+        <file>EmptyAccountPage.qml</file>
+        <file>img/password.png</file>
     </qresource>
 </RCC>

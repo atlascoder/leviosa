@@ -39,8 +39,8 @@ bool ControllerDiscovery::running() const
 void ControllerDiscovery::setRunning(bool isRunning)
 {
     if(isRunning == mIsRunning) return;
-
-    if(isRunning)
+    mIsRunning = isRunning;
+    if(mIsRunning)
         discovery();
     else
         stop();
@@ -54,11 +54,7 @@ void ControllerDiscovery::discovered(const QString &mac, const QString &ip)
 }
 
 void ControllerDiscovery::discovery(){
-    if(mIsRunning)
-        return;
-    else
-        mIsRunning = true;
-    qDebug() << "DISCO STARTED";
+    qDebug() << "DISCO START";
     mDiscovered.clear();
     mDiscoThread.start();
     mTimer.start();
@@ -66,12 +62,9 @@ void ControllerDiscovery::discovery(){
 }
 
 void ControllerDiscovery::stop(){
-    if(!mIsRunning)
-        return;
+    qDebug() << "DISCO STOP";
     mZeroConf.stopBrowser();
     mDiscoThread.quit();
-    qDebug() << "DISCO STOPPED";
-    mIsRunning = false;
     onFinished();
 }
 

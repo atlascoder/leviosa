@@ -1,13 +1,16 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
+
 import "DefaultTheme.js" as DefTheme
 
 WelcomeBrandPage {
     id: rootItem
 
-	signal register()
-	signal restore()
-	signal signedIn()
+    signal verificate()
+    signal firstLogin()
+
+    signal restore()
+	signal authenticate()
 
     hintText: currentUser.lastMessage
     hintColor: currentUser.failed ? DefTheme.mainNegativeAccent : (currentUser.ready ? DefTheme.mainPositiveAccent : DefTheme.mainNeutralAccent)
@@ -19,37 +22,31 @@ WelcomeBrandPage {
 
     Connections{
         target: currentUser
-        onSignedIn: signedIn()
+        onSignedUpConfirmed: firstLogin()
+        onSignedUpNotConfirmed: verificate()
     }
 
     Column {
-        id: inputsColumn
+        id: controlsColumn
         width: parent.width * 0.75
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.verticalCenter
 
         Rectangle {
-            id: emailRow
             height: rootItem.height * 0.08
             width: parent.width
-
             color: "#00000000"
 
-            Item {
+            Image {
                 id: emailIcon
+                source: "img/003-black-back-closed-envelope-shape.svg"
                 height: parent.height / 2
+                antialiasing: true
+                fillMode: Image.PreserveAspectFit
                 width: height
-                anchors.verticalCenter: parent.verticalCenter
                 x: 10
-                Image {
-                    id: emailPic
-                    height: parent.height
-                    width: parent.width
-                    source: "img/003-black-back-closed-envelope-shape.svg"
-                    anchors.centerIn: parent
-                }
+                anchors.verticalCenter: parent.verticalCenter
             }
-
 
             TextInput {
                 id: emailInput
@@ -58,18 +55,18 @@ WelcomeBrandPage {
                 anchors.rightMargin: 10
                 height: emailIcon.height
                 horizontalAlignment: Text.AlignHCenter
+                font.capitalization: Font.MixedCase
                 anchors.verticalCenter: parent.verticalCenter
                 font.pixelSize: parent.height / 3
                 Text {
                     anchors.fill: parent
                     visible: !(parent.focus || parent.text.length > 0)
                     color: "#b1b1b1"
-                    text: "enter your email"
+                    text: "enter valid email"
                     verticalAlignment: Text.AlignVCenter
                     font.italic: true
                     horizontalAlignment: Text.AlignHCenter
                 }
-                Keys.onEnterPressed: passwordInput.forceActiveFocus()
                 inputMethodHints: Qt.ImhEmailCharactersOnly || Qt.ImhNoPredictiveText
                 onDisplayTextChanged: {
                     currentUser.email = text
@@ -89,24 +86,20 @@ WelcomeBrandPage {
         }
 
         Rectangle {
-            id: passwordRow
             height: rootItem.height * 0.08
             width: parent.width
             color: "#00000000"
+            border.color: "#00000000"
 
-            Item {
+            Image {
                 id: passwordIcon
+                source: "img/001-write.svg"
                 height: parent.height / 2
+                antialiasing: true
+                fillMode: Image.PreserveAspectFit
                 width: height
                 x: 10
                 anchors.verticalCenter: parent.verticalCenter
-                Image {
-                    id: passwordPic
-                    source: "img/001-write.svg"
-                    anchors.fill: parent
-                    anchors.centerIn: parent
-                }
-
             }
 
             TextInput {
@@ -115,11 +108,12 @@ WelcomeBrandPage {
                 anchors.right: parent.right
                 anchors.rightMargin: 10
                 height: passwordIcon.height
-                echoMode: TextInput.Password
-                passwordMaskDelay: 200
                 horizontalAlignment: Text.AlignHCenter
+                font.capitalization: Font.MixedCase
                 anchors.verticalCenter: parent.verticalCenter
                 font.pixelSize: parent.height / 3
+                echoMode: TextInput.Password
+                passwordMaskDelay: 200
                 Text {
                     anchors.fill: parent
                     visible: !(parent.focus || parent.text.length > 0)
@@ -132,7 +126,6 @@ WelcomeBrandPage {
                 inputMethodHints: Qt.ImhNoPredictiveText
                 onDisplayTextChanged: {
                     currentUser.password = text
-                    currentUser.password2 = text
                     currentUser.checkEmailPassword()
                 }
             }
@@ -140,6 +133,63 @@ WelcomeBrandPage {
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: passwordInput.bottom
+                anchors.topMargin: 2
+                width: parent.width - 20
+                height: 2
+                color: "#000000"
+            }
+
+        }
+
+        Rectangle {
+            height: rootItem.height * 0.08
+            width: parent.width
+            color: "#00000000"
+            border.color: "#00000000"
+
+            Image {
+                id: passwordConfirmIcon
+                source: "img/001-write.svg"
+                height: parent.height / 2
+                antialiasing: true
+                fillMode: Image.PreserveAspectFit
+                width: height
+                x: 10
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            TextInput {
+                id: passwordConfirmInput
+                anchors.left: passwordConfirmIcon.right
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                height: passwordConfirmIcon.height
+                horizontalAlignment: Text.AlignHCenter
+                font.capitalization: Font.MixedCase
+                anchors.verticalCenter: parent.verticalCenter
+                font.pixelSize: parent.height / 3
+                echoMode: TextInput.Password
+                passwordMaskDelay: 200
+                z: 1
+                Text {
+                    anchors.fill: parent
+                    visible: !(parent.focus || parent.text.length > 0)
+                    color: "#b1b1b1"
+                    text: "confirm password"
+                    verticalAlignment: Text.AlignVCenter
+                    font.italic: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                inputMethodHints: Qt.ImhNoPredictiveText
+                onDisplayTextChanged: {
+                    currentUser.password2 = text
+                    currentUser.checkEmailPassword()
+                }
+            }
+
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: passwordConfirmInput.bottom
                 anchors.topMargin: 2
                 width: parent.width - 20
                 height: 2
@@ -157,11 +207,12 @@ WelcomeBrandPage {
         anchors.bottomMargin: DefTheme.buttonHeight / 3
 
         ActionButton {
-            id: signInButton
+            id: signUpButton
             width: parent.width
-            text: "SIGN IN"
+            text: "SIGN UP"
             enabled: currentUser.ready
-            onClicked: currentUser.signIn(emailInput.text, passwordInput.text)
+            checkable: false
+            onClicked: currentUser.signUp()
         }
 
         Item {
@@ -184,9 +235,10 @@ WelcomeBrandPage {
         SmallButton {
             id: registerButton
             anchors.right: parent.right
-            text: "SIGN UP"
-            onClicked: register()
+            text: "SIGN IN"
+            onClicked: authenticate()
         }
+
     }
 
     Item {
@@ -208,5 +260,4 @@ WelcomeBrandPage {
             onClicked: {}
         }
     }
-
 }

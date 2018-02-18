@@ -30,11 +30,11 @@ static QString utcOffsetToTimezone(int utcOffset)
     }
 }
 
-static int timezoneToUtcOffset(const QString& timezone)
-{
-    Q_UNUSED(timezone)
-    return 0;
-}
+//static int timezoneToUtcOffset(const QString& timezone)
+//{
+//    Q_UNUSED(timezone)
+//    return 0;
+//}
 
 }
 

@@ -192,6 +192,7 @@ void UserData::setState(SyncState state)
 {
     if(state == mSyncState) return;
     mSyncState = state;
+    if(mSyncState == SyncState::Clean) emit synced();
     emit syncStateChanged();
 }
 
@@ -204,6 +205,7 @@ void UserData::loadLocations()
 {
     mLocations->clear();
     mDb.locationsDao.loadItems(*mLocations.get());
+    emit locationsCountChanged();
 }
 
 void UserData::persistItem(Location& location, bool toSync)
@@ -405,4 +407,71 @@ int UserData::locationUtcOffset(const QString &uuid)
         return 0;
     else
         return l->at(0)->utcOffset();
+}
+
+void UserData::clear()
+{
+    mDb.locationsDao.clear(false);
+    mLocations->clear();
+    mDb.controllersDao.clear(false);
+    mControllers->clear();
+    mDb.shadeGroupsDao.clear(false);
+    mShadeGroups->clear();
+}
+
+int UserData::locationsCount()
+{
+    unique_ptr<vector<unique_ptr<Location>>> items(mDb.locationsDao.items());
+    if(items->size() != mLocations->size()){
+        mLocations = move(items);
+    }
+    return mLocations->size();
+}
+
+QString UserData::firstLocationUuid()
+{
+    auto l = mDb.locationsDao.items();
+    return l->size() > 0 ? l->at(0)->uuid().toString() : "";
+}
+
+void UserData::addFirstController(const QString &mac, const QString &bssid)
+{
+    Location l;
+    l.setName("My Home");
+    l.setSynced(false);
+    l.setBssid(bssid);
+    QString cmac;
+
+    if(mac.length() == 12){
+        cmac.append(mac.mid(0,2).toUpper());
+        for(int i = 1; i < 6; i++){
+            cmac.append(":").append(mac.mid(i*2,2).toUpper());
+        }
+    }
+    else
+        cmac = mac.toUpper();
+
+    QDateTime local(QDateTime::currentDateTime());
+    QDateTime utc(local.toUTC());
+    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
+    l.setUtcOffset(dt.secsTo(local));
+    l.setPosition(0);
+    persistItem(l, false);
+    CurrentUser::instance().setLocationsSynced(false);
+    CurrentUser::instance().persistUserDataModified();
+    loadLocations();
+    Controller c(cmac);
+    c.setLocationUuid(mLocations->at(0)->uuid().toString());
+    persistItem(c, false);
+    CurrentUser::instance().setControllersSynced(false);
+    CurrentUser::instance().persistUserDataModified();
+    loadControllers(l.uuid().toString());
+    ShadeGroup g;
+    g.setControllerMac(c.mac());
+    g.setName("Group 1");
+    g.setChannel(1);
+    persistItem(g, false);
+    CurrentUser::instance().setShadeGroupsSynced(false);
+    CurrentUser::instance().persistUserDataModified();
+    UserData::instance().sync();
 }

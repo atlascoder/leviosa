@@ -30,8 +30,30 @@ class User
     bool mControllersSynced;
     bool mShadeGroupsSynced;
 
+    bool mVerified;
+
 public:
     User();
+
+    void clear(){
+        mEmail = "";
+        mIdToken = "";
+        mIdTokenExpiration = 0;
+        mAccessToken = "";
+        mAccessTokenExpiration = 0;
+        mRefreshToken = "";
+        mRefreshTokenExpiration = 0;
+        mLocationsModified = false;
+        mControllersModified = false;
+        mShadeGroupsModified = false;
+        mLocationsSyncCount = 0;
+        mControllersSyncCount = 0;
+        mShadeGroupsSyncCount = 0;
+        mLocationsSynced = false;
+        mControllersSynced = false;
+        mShadeGroupsSynced = 0;
+        mVerified = false;
+    }
 
     QString email() const;
     void setEmail(const QString &email);
@@ -80,6 +102,9 @@ public:
 
     bool shadeGroupsSynced() const { return mShadeGroupsSynced; }
     void setShadeGroupsSynced(bool isSynced) { mShadeGroupsSynced = isSynced; }
+
+    bool verified() const { return mVerified; }
+    void setVerified(bool verified) { mVerified = verified; }
 };
 
 #endif // USER_H

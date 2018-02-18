@@ -33,6 +33,7 @@ CognitoSyncCommand::~CognitoSyncCommand()
 
 void CognitoSyncCommand::resetWithCredentials(const Aws::Auth::AWSCredentials &credentials)
 {
+    cancelRequests();
     Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
     mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, credentials, ClientConfig::instance());
 }
@@ -47,7 +48,6 @@ void CognitoSyncCommand::sendCommand(const QString &controllerMac, const QString
 {
     CurrentUser& u = CurrentUser::instance();
     if(mCancelled) return;
-
     u.requestCredentials();
 
     if(u.isAuthenticated() && u.hasCredentials()){

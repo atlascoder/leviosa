@@ -13,20 +13,21 @@ Rectangle {
 
     Image {
         id: icon
-        anchors.centerIn: parent
-        source: "img/robo.png"
+        anchors.bottom: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        source: "img/information.png"
     }
 
     Text {
         id: messageText
         text: message
-        anchors.top: icon.bottom
+        anchors.top: parent.verticalCenter
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: mod
         anchors.leftMargin: mod
         anchors.rightMargin: mod
-        font.pixelSize: mod / 3
+        font.pixelSize: mod / 2.5
         horizontalAlignment: Qt.AlignHCenter
         wrapMode: Text.WordWrap
     }

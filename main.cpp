@@ -10,7 +10,6 @@
 #include "core/shade.h"
 #include "core/ControllerAPI.h"
 #include "EspTouchSetup.h"
-#include "UserLogin.h"
 
 #include <aws/core/utils/memory/stl/AWSString.h>
 
@@ -36,7 +35,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<ControllerAPI>("com.atlascoder.ControllerAPI", 1, 0, "ControllerAPI");
 
     qmlRegisterType<Shade>("com.atlascoder.Shade", 1, 0, "Shade");
-    qmlRegisterType<UserLogin>("com.atlascoder.UserLogin", 1, 0, "UserLogin");
 
     UserData& userData(UserData::instance());
     CurrentUser& currentUser(CurrentUser::instance());

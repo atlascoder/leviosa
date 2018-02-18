@@ -17,6 +17,7 @@ class ControllerModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(QString locationUuid READ locationUuid WRITE setLocationUuid NOTIFY locationUuidChanged)
     Q_PROPERTY(QString locationName READ getLocationName NOTIFY locationNameChanged)
+    Q_PROPERTY(QString locationBssid READ locationBssid NOTIFY locationBssidChanged)
 
     Q_PROPERTY(QString selectedControllerMac READ getSelectedControllerMac WRITE setSelectedControllerMac NOTIFY selectedControllerMacChanged)
     Q_PROPERTY(QString selectedControllerName READ getSelectedControllerName WRITE setSelectedControllerName NOTIFY selectedControllerNameChanged)
@@ -30,17 +31,15 @@ class ControllerModel : public QAbstractListModel
     Q_PROPERTY(QString selecetedControllerStatus READ selectedControllerStatus NOTIFY selectedControllerStatusChanged)
 
     Q_PROPERTY(int selectedControllerState READ selectedControllerState NOTIFY selectedControllerStatusChanged)
-    Q_PROPERTY(QString bssid READ bssid WRITE setBssid NOTIFY bssidChanged)
-    Q_PROPERTY(QString locationBssid READ locationBssid WRITE setLocationBssid NOTIFY locationBssidChanged)
+    Q_PROPERTY(QString currentBssid READ currentBssid WRITE setCurrentBssid NOTIFY currentBssidChanged)
 
     Q_PROPERTY(bool isOnWlan READ getOnWlan WRITE setOnWlan NOTIFY onWlanChanged )
     Q_PROPERTY(bool isCurrentLocation READ isCurrentLocation NOTIFY locationStatusChanged )
     Q_PROPERTY(bool isNewLocation READ isNewLocation NOTIFY locationStatusChanged )
-    Q_PROPERTY(bool allowedToSearch READ allowedToSearch NOTIFY locationStatusChanged)
 
     Q_PROPERTY(QString locationStatusText READ locationStatusText NOTIFY locationStatusChanged)
 
-    Q_PROPERTY(bool isDiscovering READ isDiscovering WRITE setIsDiscovering NOTIFY isDiscoveringChanged)
+    Q_PROPERTY(bool canDiscovery READ canDiscovery WRITE setCanDiscovery NOTIFY canDiscoveryChanged)
 
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 
@@ -107,14 +106,14 @@ signals:
     void positionOrderChanged();
     void countChanged();
 
-    void bssidChanged();
+    void currentBssidChanged();
     void locationBssidChanged();
 
     void locationStatusChanged();
 
     void onWlanChanged();
 
-    void isDiscoveringChanged();
+    void canDiscoveryChanged();
 
     void selectedControllerStatusChanged();
 
@@ -139,7 +138,7 @@ private:
     QString mLocationBssid;
 
     bool mControllerTimeMismatch;
-    bool mIsDiscovering;
+    bool mCanDiscovery;
     bool mIsDataLoaded;
 
     QMutex mUpdatingMtx;
@@ -173,8 +172,8 @@ private:
 
     int selectedControllerState() const;
 
-    QString bssid() const { return mCurrentBssid; }
-    void setBssid(const QString& bssid);
+    QString currentBssid() const { return mCurrentBssid; }
+    void setCurrentBssid(const QString& currentBssid);
 
     QString locationBssid() const { return mLocationBssid; }
     void setLocationBssid(const QString& locationBssid);
@@ -185,15 +184,13 @@ private:
     bool isCurrentLocation() const;
     bool isNewLocation() const;
 
-    bool isDiscovering() const { return mIsDiscovering; }
-    void setIsDiscovering(bool isDiscovering);
+    bool canDiscovery() const { return mCanDiscovery; }
+    void setCanDiscovery(bool canDiscovery);
 
     bool dataLoaded() const { return mIsDataLoaded; }
     void setDataLoaded(bool isLoaded);
 
     void checkConfiguration(Controller* controller);
-
-    bool allowedToSearch() const;
 
     QString locationStatusText() const;
 

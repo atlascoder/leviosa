@@ -1,7 +1,7 @@
 #include "controller.h"
 
 Controller::Controller(const QString& mac):
-    mMac(mac), mName("A Controller"), mControllerAPI(new ControllerAPI)
+    mMac(mac), mName("Controller 1"), mControllerAPI(new ControllerAPI)
 {
     mControllerAPI->setMac(mMac);
 }

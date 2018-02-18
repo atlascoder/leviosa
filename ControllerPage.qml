@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
+import QtGraphicalEffects 1.0
 import com.atlascoder.ShadesGroupsModel 1.0
 import com.atlascoder.Shade 1.0
 
@@ -18,6 +19,8 @@ Item {
     signal itemsLoaded(int count);
     signal openGroupEdit(string mac, int channel)
     signal commandShade(int channel, int command)
+    signal runEspTouch()
+    signal deleteController(string mac)
 
     function init(){
         shadesGroupsModel.controllerMac = controllerMac
@@ -98,20 +101,99 @@ Item {
 
     Rectangle {
         anchors.fill: parent
+        id: disabledModal
         color: DefTheme.mainModalBg
         visible: failed
         z: 2
 
-        Text {
-            anchors.centerIn: parent
-            color: DefTheme.mainNegativeAccent
-            text: "Controller is not responding."
-            font.pixelSize: parent.width / 16
-        }
-
         MouseArea {
             anchors.fill: parent
+            enabled: parent.visible
         }
+
+        Image {
+            id: sadIcon
+            fillMode: Image.PreserveAspectFit
+            width: parent.width / 4
+            source: "img/sad.png"
+            anchors.bottom: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        Column {
+            anchors.top: sadIcon.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: width / 12
+            anchors.rightMargin: width / 12
+            spacing: width / 24
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "Controller is not responding"
+                font.bold: true
+                font.pixelSize: width / 14
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "You may reset your contoroller by holding 'Reset' button for 8 seconds, and then run Setup: "
+                font.bold: true
+                font.pixelSize: width / 20
+                wrapMode: Text.Wrap
+            }
+            Button {
+                id: setupButton
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width / 2
+                onClicked: runEspTouch()
+                contentItem: Text {
+                    horizontalAlignment: Qt.AlignHCenter
+                    text: "SETUP"
+                    font.bold: true
+                    font.pixelSize: width / 8
+                    color: DefTheme.mainTextColor
+                }
+                background: Rectangle {
+                    color: DefTheme.mainColorDark
+                    radius: height / 4
+                    layer.enabled: true
+                    layer.effect: DropShadow {
+                        radius: setupButton.down ? 1 : 3
+                        transparentBorder: true
+                    }
+                }
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "Or, you can delete controller with all its settings:"
+                font.italic: true
+                font.pixelSize: width / 20
+                wrapMode: Text.Wrap
+            }
+            Button {
+                id: deleteButton
+                text: "DELETE\npress and hold"
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width / 2
+                font.bold: true
+                font.pixelSize: width / 12
+                background: Rectangle {
+                    color: DefTheme.mainNegativeAccent
+                    layer.enabled: true
+                    layer.effect: DropShadow {
+                        radius: deleteButton.down ? 1 : 3
+                        transparentBorder: true
+                    }
+                }
+                onPressAndHold: deleteController(controllerMac)
+            }
+        }
+
     }
 
 }

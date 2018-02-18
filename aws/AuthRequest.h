@@ -14,6 +14,7 @@ class AuthRequest
     QString mEmail;
     QString mPassword;
     bool mSuccessful;
+    bool mConfirmed;
     QString mIdToken;
     QString mAccessToken;
     QString mRefreshToken;
@@ -35,10 +36,12 @@ public:
     ~AuthRequest();
 
     void signUp(const QString& email, const QString& password);
+    void verify(const QString& email, const QString& code);
+    void requestConfirmation(const QString& email);
     void signIn(const QString& email, const QString& password);
     void signOut();
     void restorePassword(const QString& email);
-    void changePassword(const QString& accessToken, const QString& newPassword, const QString& password);
+    void changePassword(const QString& email, const QString& newPassword, const QString& password);
 
     QString getIdToken() const { return mIdToken; }
     QString getAccessToken() const { return mAccessToken; }
@@ -48,6 +51,8 @@ public:
     int getRefreshTokenExpiration() const { return mRefreshTokenExpiration; }
 
     bool refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration);
+
+    bool userConfirmed() const {return mConfirmed; }
 
     void cancelRequests();
 private:

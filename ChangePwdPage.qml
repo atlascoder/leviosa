@@ -8,19 +8,13 @@ import "DefaultTheme.js" as DefTheme
 import "libs/aws-sdk.js" as AWS
 
 LeviosaPage {
-	id: registerPage
-    visible: true
+    id: rootItem
 
     title: qsTr("Change password")
 
     showLogo: false
     enableAddAction: false
     enableMenuAction: false
-
-	background: Rectangle {
-		anchors.fill: parent
-		color: DefTheme.mainColorBg
-	}
 
     signal cancel()
     signal restore()
@@ -38,42 +32,27 @@ LeviosaPage {
         width: parent.width * 0.75
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
-		spacing: 5
 
-		Rectangle {
-			width: parent.width * 0.8
-			color: "#00000000"
-			Image {
-				id: logoPic
-				width: parent.width
-				fillMode: Image.PreserveAspectFit
-				source: "img/logo-big.svg"
-			}
-			ColorOverlay {
-				width: logoPic.width
-				height: logoPic.height
-				source: logoPic
-				color: DefTheme.mainColorDark
-			}
-			height: childrenRect.height
-			anchors.horizontalCenter: parent.horizontalCenter
-		}
-
-        Text {
-            id: hintText
-            height: registerPage.height * 0.08
+        Flickable {
+            height: rootItem.height * 0.08
+            clip: true
             width: parent.width
-            text: currentUser.lastMessage
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-            font.pixelSize: 16
+            Text {
+                id: hintText
+                width: parent.width
+                text: currentUser.lastMessage
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+                font.pixelSize: parent.width / 18
+            }
         }
 
         Rectangle {
-			height: registerPage.height * 0.08
+            height: rootItem.height * 0.08
             width: parent.width
             color: "#00000000"
+            border.color: "#00000000"
 
             Image {
                 id: passwordIcon
@@ -119,7 +98,7 @@ LeviosaPage {
         }
 
 		Rectangle {
-			height: registerPage.height * 0.08
+            height: rootItem.height * 0.08
 			width: parent.width
 			color: "#00000000"
 			border.color: "#00000000"
@@ -169,7 +148,7 @@ LeviosaPage {
 		}
 
         Rectangle {
-            height: registerPage.height * 0.08
+            height: rootItem.height * 0.08
             width: parent.width
             color: "#00000000"
 
@@ -216,116 +195,16 @@ LeviosaPage {
 
         }
 
-        Button {
-            id: signUpButton
+        Item {
             width: parent.width
-            height: registerPage.height * 0.08
-            background: Rectangle{
-                anchors.fill:parent
-                color: DefTheme.mainColorLight
-                border.color: DefTheme.mainColorLight
-                radius: height * 0.4
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    radius: signUpButton.down ? 1 : 3
-                }
-            }
-            Text {
-                color:DefTheme.mainTextColor
-                opacity: signUpButton.enabled ? 1 : 0.3
-                anchors.centerIn: parent
-                font.pixelSize: parent.height / 2
-                text: qsTr("CHANGE")
-            }
+            height: DefTheme.buttonHeight / 3
+        }
+
+        ActionButton {
+            width: parent.width
             onClicked: currentUser.changePassword()
+            text: "CHANGE"
         }
-
-        Rectangle {
-            color: "#00000000"
-            width: parent.width
-			height: registerPage.height * 0.03
-        }
-
-        Rectangle {
-            color: "#00000000"
-            width: parent.width
-			height: registerPage.height * 0.05
-
-            Rectangle {
-                id: restoreButton
-                anchors.right: parent.right
-				color: DefTheme.secColor
-                anchors.verticalCenter: parent.verticalCenter
-                Text{
-					text: "Restore"
-					font.pointSize: 14
-					font.family: "Verdana"
-					topPadding: 3
-					bottomPadding: 3
-					leftPadding: 6
-					rightPadding: 6
-					color: DefTheme.mainTextColor
-					font.capitalization: Font.AllUppercase
-				}
-				width: childrenRect.width
-				height: childrenRect.height
-                radius: height * 0.5
-
-				MouseArea {
-					anchors.fill: parent
-					onClicked: restore()
-				}
-            }
-
-            Text {
-                anchors.right: restoreButton.left
-				anchors.rightMargin: 8
-				anchors.verticalCenter: parent.verticalCenter
-				text: qsTr("Forgot password?")
-            }
-        }
-
-        Rectangle {
-            id: rectangle
-            color: "#00000000"
-            width: parent.width
-			height: registerPage.height * 0.05
-
-            Rectangle {
-                id: registerButton
-                anchors.right: parent.right
-				color: DefTheme.secColor
-                anchors.verticalCenter: parent.verticalCenter
-                Text{
-                    text: "Back"
-					font.pointSize: 14
-					style: Text.Normal
-					topPadding: 3
-					bottomPadding: 3
-					leftPadding: 6
-					rightPadding: 6
-					color: DefTheme.mainTextColor
-					font.capitalization: Font.AllUppercase
-				}
-				width: childrenRect.width
-				height: childrenRect.height
-                radius: height * 0.5
-
-				MouseArea {
-					anchors.fill: parent
-                    onClicked: menuClicked();
-				}
-            }
-
-            Text {
-                anchors.right: registerButton.left
-				anchors.rightMargin: 8
-				anchors.verticalCenter: parent.verticalCenter
-                text: qsTr("Not sure?")
-			}
-        }
-
     }
 
     Item {
@@ -402,7 +281,7 @@ LeviosaPage {
             when: currentUser.authState === UserLogin.Authenticated
             StateChangeScript {
                 script: {
-                    registerPage.signedIn();
+                    rootItem.signedIn();
                 }
             }
         },

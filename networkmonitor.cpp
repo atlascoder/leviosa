@@ -61,8 +61,10 @@ void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
 {
     qDebug() << "netChanges triggered: " << conf.bearerTypeName();
     if(mgr.isOnline()){
-        if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN)
+        if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN){
             setConnectionState(Wifi);
+            emit bssidChanged();
+        }
         else
             setConnectionState(NotWifi);
     }
@@ -127,7 +129,6 @@ QString NetworkMonitor::getBssid() const
     }
 #endif
     }
-    qDebug() << "bssid: " << _bssid;
     return _bssid;
 }
 

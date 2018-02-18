@@ -10,6 +10,7 @@ var mainTextColor = "#ffffff";
 var mainPositiveAccent = "#388e3c";
 var mainNegativeAccent = "#af4448";
 var mainWarningAccent = "#a9a9a9";
+var mainNeutralAccent = "#808080";
 
 var mainInputBg = "#d1d1d1";
 var mainDisabledTextColor = "#a1a1a1";
@@ -22,3 +23,4 @@ var secColorLight = "#8eacbb";
 var secTextColor = "#000000";
 
 var toolbarHeight = 54;
+var buttonHeight = 48;

@@ -30,7 +30,8 @@ void UserDAO::init() const
                     "shadeGroupsSyncCount INTEGER DEFAULT 0, " \
                     "locationsSynced INTEGER DEFAULT 0, " \
                     "controllersSynced INTEGER DEFAULT 0, " \
-                    "shadeGroupsSynced INTEGER DEFAULT 0" \
+                    "shadeGroupsSynced INTEGER DEFAULT 0, " \
+                    "verified INTEGER DEFAULT 0" \
                     ")"
                    );
     }
@@ -39,8 +40,8 @@ void UserDAO::init() const
 void UserDAO::createUser(User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("INSERT INTO users (email, idToken, idTokenExpiration, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration, locationsModified, controllersModified, shadeGroupsModified, locationsSyncCount, controllersSyncCount, shadeGroupsSyncCount, locationsSynced, controllersSynced, shadeGroupsSynced)" \
-                  " VALUES (:email, :idToken, :idTokenExpiration, :accessToken, :accessTokenExpiration, :refreshToken, :refreshTokenExpiration, :locationsModified, :controllersModified, :shadeGroupsModified, :locationsSyncCount, :controllersSyncCount, :shadeGroupsSyncCount, :locationsSynced, :controllersSynced, :shadeGroupsSynced)"
+    query.prepare("INSERT INTO users (email, idToken, idTokenExpiration, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration, locationsModified, controllersModified, shadeGroupsModified, locationsSyncCount, controllersSyncCount, shadeGroupsSyncCount, locationsSynced, controllersSynced, shadeGroupsSynced, verified)" \
+                  " VALUES (:email, :idToken, :idTokenExpiration, :accessToken, :accessTokenExpiration, :refreshToken, :refreshTokenExpiration, :locationsModified, :controllersModified, :shadeGroupsModified, :locationsSyncCount, :controllersSyncCount, :shadeGroupsSyncCount, :locationsSynced, :controllersSynced, :shadeGroupsSynced, :verified)"
                   );
     query.bindValue(":email", user.email());
     query.bindValue(":idToken", user.idToken());
@@ -58,6 +59,7 @@ void UserDAO::createUser(User &user) const
     query.bindValue(":locationsSynced", user.locationsSynced());
     query.bindValue(":controllersSynced", user.controllersSynced());
     query.bindValue(":shadeGroupsSynced", user.shadeGroupsSynced());
+    query.bindValue(":verified", user.verified() ? 1 : 0);
     query.exec();
     if(query.lastError().isValid()){
         qDebug() << "User " << user.email() << " not created: " << query.lastError().text() << "\n" << \
@@ -68,7 +70,7 @@ void UserDAO::createUser(User &user) const
 void UserDAO::updateUser(const User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("UPDATE users SET idToken=:idToken, idTokenExpiration=:idTokenExpiration, accessToken=:accessToken, accessTokenExpiration=:accessTokenExpiration, refreshToken=:refreshToken, refreshTokenExpiration=:refreshTokenExpiration, locationsModified=:locationsModified, controllersModified=:controllersModified, shadeGroupsModified=:shadeGroupsModified, locationsSyncCount=:locationsSyncCount, controllersSyncCount=:controllersSyncCount, shadeGroupsSyncCount=:shadeGroupsSyncCount, locationsSynced=:locationsSynced, controllersSynced=:controllersSynced, shadeGroupsSynced=:shadeGroupsSynced WHERE email=:email");
+    query.prepare("UPDATE users SET idToken=:idToken, idTokenExpiration=:idTokenExpiration, accessToken=:accessToken, accessTokenExpiration=:accessTokenExpiration, refreshToken=:refreshToken, refreshTokenExpiration=:refreshTokenExpiration, locationsModified=:locationsModified, controllersModified=:controllersModified, shadeGroupsModified=:shadeGroupsModified, locationsSyncCount=:locationsSyncCount, controllersSyncCount=:controllersSyncCount, shadeGroupsSyncCount=:shadeGroupsSyncCount, locationsSynced=:locationsSynced, controllersSynced=:controllersSynced, shadeGroupsSynced=:shadeGroupsSynced, verified=:verified WHERE email=:email");
     query.bindValue(":idToken", user.idToken());
     query.bindValue(":idTokenExpiration", user.idTokenExpiration());
     query.bindValue(":accessToken", user.idToken());
@@ -85,6 +87,7 @@ void UserDAO::updateUser(const User &user) const
     query.bindValue(":controllersSynced", user.controllersSynced() ? 1 : 0);
     query.bindValue(":shadeGroupsSynced", user.shadeGroupsSynced() ? 1 : 0);
     query.bindValue(":email", user.email());
+    query.bindValue(":verified", user.verified() ? 1 : 0);
     query.exec();
     if(query.lastError().isValid())
         qDebug() << "Updating user " << user.email() << "failed: " << query.lastError().text() << "\n" << \
@@ -117,6 +120,7 @@ bool UserDAO::loadUser(User &user) const
         user.setLocationsSynced(query.value("locationsSynced").toBool());
         user.setControllersSynced(query.value("controllersSynced").toBool());
         user.setShadeGroupsSynced(query.value("shadeGroupsSynced").toBool());
+        user.setVerified(query.value("verified").toBool());
         return true;
     }
     else{
@@ -150,7 +154,7 @@ void UserDAO::persistUser(User &user) const
 void UserDAO::persistUserDataModified(const User& user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("UPDATE users SET locationsModified=:lm, controllersModified=:cm, shadeGroupsModified=:gm, locationsSyncCount=:lsc, controllersSyncCount=:csc, shadeGroupsSyncCount=:sgsc, locationsSynced=:ls, controllersSynced=:cs, shadeGroupsSynced=:sgs WHERE email=:email");
+    query.prepare("UPDATE users SET locationsModified=:lm, controllersModified=:cm, shadeGroupsModified=:gm, locationsSyncCount=:lsc, controllersSyncCount=:csc, shadeGroupsSyncCount=:sgsc, locationsSynced=:ls, controllersSynced=:cs, shadeGroupsSynced=:sgs, verified=:verified WHERE email=:email");
     query.bindValue(":lm", user.locationsModified());
     query.bindValue(":cm", user.controllersModified());
     query.bindValue(":gm", user.shadeGroupsLastModified());
@@ -161,6 +165,7 @@ void UserDAO::persistUserDataModified(const User& user) const
     query.bindValue(":cs", user.controllersSynced());
     query.bindValue(":sgs", user.shadeGroupsSynced());
     query.bindValue(":email", user.email());
+    query.bindValue(":verified", user.verified() ? 1 : 0);
     if(query.exec()){
         qDebug() << "UserData modified persisted";
     }

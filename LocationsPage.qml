@@ -11,7 +11,7 @@ import "DefaultTheme.js" as DefTheme
 LeviosaPage {
     id: rootItem
 	title: "Locations"
-    enableAddAction: true
+    enableAddAction: false
 
     property bool swiped : false
 
@@ -20,6 +20,9 @@ LeviosaPage {
 
     showStatusText: true
     statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"
+
+    showSubTitle: true
+    subTitle: "Loading..."
 
     Timezones {
         id: tzones
@@ -92,7 +95,7 @@ LeviosaPage {
 
 
                 Timer {
-                    interval: 20
+                    interval: 500
                     repeat: true
                     property string timezoneName : tzones.getSignature(utcOffset)
                     property int tOff: utcOffset*1000
@@ -149,11 +152,105 @@ LeviosaPage {
                     openLocation(uuid, locationModel.timezone, bssid);
 				}
 				onPressAndHold: {
+                    if(rootItem.state === "Synced")
                     editLocation(uuid);
 				}
 			}
 		}
 	}
+
+    PropertyAnimation {
+        id: syncing
+    }
+
+    onMenuClicked: drawer.open()
+
+    Drawer {
+        id: drawer
+        width:  0.66 * applicationWindow.width
+        height: applicationWindow.height
+        edge: Qt.LeftEdge
+        interactive: true
+
+        background: Rectangle {
+            color: DefTheme.secColorLight
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: parent.width / 20
+            spacing: 6
+
+            Text{
+                height: parent.width / 8
+                anchors.horizontalCenter: parent.horizontalCenter
+                verticalAlignment: Qt.AlignVCenter
+                text: currentUser.email
+                font.pixelSize: 16
+                color: DefTheme.secTextColor
+                font.bold: true
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                width: parent.width
+                text: "Add this location"
+                onClicked: {
+                    drawer.close()
+                    openNewLocationPage()
+                }
+                visible: netMonitor.onWlan
+            }
+
+            Button {
+                width: parent.width
+                text: "Open WebSite"
+                onClicked: {
+                    Qt.openUrlExternally("https://leviosashades.com") ;
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Call to Support"
+                onClicked: {
+                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Change password"
+                onClicked: {
+                    drawer.close()
+                    openChangePasswordPage()
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Sign Out"
+                font.bold: true
+                onClicked: {
+                    currentUser.signOut();
+                    drawer.close();
+                    drawer.interactive = false;
+                    openWelcomePage()
+                }
+            }
+        }
+    }
 
     states: [
         State {
@@ -168,6 +265,10 @@ LeviosaPage {
                     console.log("Status: Syncing")
                 }
             }
+            PropertyChanges {
+                target: rootItem
+                subTitle: "Syncing data..."
+            }
         },
         State {
             name: "Synced"
@@ -180,6 +281,10 @@ LeviosaPage {
                 script: {
                     console.log("Status: Synced")
                 }
+            }
+            PropertyChanges {
+                target: rootItem
+                subTitle: "Data synced"
             }
         }
     ]

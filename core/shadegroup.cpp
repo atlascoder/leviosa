@@ -18,7 +18,7 @@ QString ShadeGroup::controllerMac() const
 
 void ShadeGroup::setControllerMac(const QString& mac)
 {
-    mControllerMac = mac;
+    mControllerMac = mac.toUpper();
 }
 
 QString ShadeGroup::name() const

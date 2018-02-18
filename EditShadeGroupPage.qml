@@ -56,7 +56,7 @@ LeviosaPage {
             width: editorTabs.width / 2
         }
         TabButton {
-            text: "Control"
+            text: "Name"
             width: editorTabs.width / 2
         }
     }

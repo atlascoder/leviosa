@@ -15,7 +15,7 @@
 
 #include <QDebug>
 
-CredentialsRequest::CredentialsRequest() : mIdToken(), mIsSuccessful(false), mCancelled(true)
+CredentialsRequest::CredentialsRequest() : mIdToken(), mIsSuccessful(false), mCancelled(false)
 {
     mClient = Aws::New<Aws::CognitoIdentity::CognitoIdentityClient>(nullptr, ClientConfig::instance());
 }
@@ -34,14 +34,12 @@ void CredentialsRequest::setIdToken(const IdToken &idToken)
 void CredentialsRequest::cancelRequests()
 {
     qDebug() << "Stop credentials requests";
-    if(mCancelled) return;
-    mClient->DisableRequestProcessing();
     mCancelled = true;
+    mClient->DisableRequestProcessing();
 }
 
 void CredentialsRequest::requestId()
 {
-    mCancelled = false;
     Aws::CognitoIdentity::Model::GetIdRequest idReq;
     idReq.SetAccountId(ClientConfig::instance().accoundId);
     idReq.SetIdentityPoolId(ClientConfig::instance().identityPool);
@@ -61,12 +59,10 @@ void CredentialsRequest::requestId()
         mError = idResp.GetError().GetErrorType();
         mIsSuccessful = false;
     }
-    mCancelled = true;
 }
 
 void CredentialsRequest::requestCredentials()
 {
-    mCancelled = false;
     Aws::CognitoIdentity::Model::GetCredentialsForIdentityRequest req;
     req.SetIdentityId(ClientConfig::instance().identityId);
     QString login = mIdToken.issuer().split("//").at(1);
@@ -82,5 +78,4 @@ void CredentialsRequest::requestCredentials()
         mLastMessage = QString(creds.GetError().GetMessage().c_str());
         mError = creds.GetError().GetErrorType();
     }
-    mCancelled = true;
 }
