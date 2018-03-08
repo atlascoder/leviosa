@@ -96,5 +96,8 @@
         <file>ResetPasswordPage.qml</file>
         <file>EmptyAccountPage.qml</file>
         <file>img/password.png</file>
+        <file>EmptyLocationPage.qml</file>
+        <file>DeleteButton.qml</file>
+        <file>img/wifi.png</file>
     </qresource>
 </RCC>

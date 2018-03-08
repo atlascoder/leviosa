@@ -36,6 +36,7 @@ void CognitoSyncCommand::resetWithCredentials(const Aws::Auth::AWSCredentials &c
     cancelRequests();
     Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
     mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, credentials, ClientConfig::instance());
+    mCancelled = false;
 }
 
 void CognitoSyncCommand::cancelRequests()

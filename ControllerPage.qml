@@ -19,7 +19,8 @@ Item {
     signal itemsLoaded(int count);
     signal openGroupEdit(string mac, int channel)
     signal commandShade(int channel, int command)
-    signal runEspTouch()
+    signal doSetup()
+    signal doRefresh()
     signal deleteController(string mac)
 
     function init(){
@@ -116,7 +117,8 @@ Item {
             fillMode: Image.PreserveAspectFit
             width: parent.width / 4
             source: "img/sad.png"
-            anchors.bottom: parent.verticalCenter
+            anchors.top: parent.top
+            anchors.topMargin: parent.width / 5
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -139,57 +141,47 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 horizontalAlignment: Qt.AlignHCenter
-                text: "You may reset your contoroller by holding 'Reset' button for 8 seconds, and then run Setup: "
+                text: "1. You can try to find it again"
                 font.bold: true
                 font.pixelSize: width / 20
                 wrapMode: Text.Wrap
             }
-            Button {
-                id: setupButton
+            ActionButton {
+                id: refreshButton
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width / 2
-                onClicked: runEspTouch()
-                contentItem: Text {
-                    horizontalAlignment: Qt.AlignHCenter
-                    text: "SETUP"
-                    font.bold: true
-                    font.pixelSize: width / 8
-                    color: DefTheme.mainTextColor
-                }
-                background: Rectangle {
-                    color: DefTheme.mainColorDark
-                    radius: height / 4
-                    layer.enabled: true
-                    layer.effect: DropShadow {
-                        radius: setupButton.down ? 1 : 3
-                        transparentBorder: true
-                    }
+                text: "REFRESH"
+                onClicked: {
+                    rootItem.doRefresh()
                 }
             }
             Text {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 horizontalAlignment: Qt.AlignHCenter
-                text: "Or, you can delete controller with all its settings:"
+                text: "2. You may reinstall your contoroller by holding 'Reset' button for 8 seconds, and then run Setup"
+                font.bold: true
+                font.pixelSize: width / 20
+                wrapMode: Text.Wrap
+            }
+            ActionButton {
+                id: setupButton
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "SETUP"
+                outline: true
+                onClicked: doSetup()
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                horizontalAlignment: Qt.AlignHCenter
+                text: "3. Or, you can delete controller with all its settings"
                 font.italic: true
                 font.pixelSize: width / 20
                 wrapMode: Text.Wrap
             }
-            Button {
+            DeleteButton {
                 id: deleteButton
-                text: "DELETE\npress and hold"
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width / 2
-                font.bold: true
-                font.pixelSize: width / 12
-                background: Rectangle {
-                    color: DefTheme.mainNegativeAccent
-                    layer.enabled: true
-                    layer.effect: DropShadow {
-                        radius: deleteButton.down ? 1 : 3
-                        transparentBorder: true
-                    }
-                }
                 onPressAndHold: deleteController(controllerMac)
             }
         }

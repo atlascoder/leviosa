@@ -205,7 +205,9 @@ SOURCES += \
     core/ControllerAPI.cpp \
     aws/CognitoSyncCommand.cpp \
     core/ControllersMgr.cpp \
-    core/ControllerCfg.cpp
+    core/ControllerCfg.cpp \
+    aws/ControllerThing.cpp \
+    core/ControllerHTTPClient.cpp
 
 # own codebase
 HEADERS += \
@@ -247,7 +249,8 @@ HEADERS += \
     core/timeaux.h \
     aws/CognitoSyncCommand.h \
     core/ControllersMgr.h \
-    core/ControllerCfg.h
+    core/ControllerCfg.h \
+    aws/ControllerThing.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

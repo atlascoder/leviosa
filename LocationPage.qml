@@ -13,10 +13,12 @@ LeviosaPage {
 	id: locationPage
 
     property alias locationUuid : controllersModel.locationUuid
-    property alias discovery : controllerDiscovery
     property alias activeController : controllersModel.selectedControllerMac
 
+    property alias discovery : controllerDiscovery
+
     property bool single : true
+    property bool refresh : true
     property string timezone
 
     enableMenuAction: single
@@ -29,9 +31,12 @@ LeviosaPage {
     signal editController(string mac)
     signal editGroup(string mac, int channel, string ip)
     signal addGroup(string mac)
-    signal controllersLoaded()
+    signal editLocation(string uuid)
 
-    enableAddAction: selectedShadeGroupsNotFilled && (controllersModel.selectedControllerState == 0 || controllersModel.selectedControllerState == 5)
+//    signal controllersLoaded()
+
+    signal goBack()
+
     onAddClicked: addGroup(controllersModel.macByIndex(controllersPager.currentIndex))
 
     title: controllersModel.locationName
@@ -39,39 +44,63 @@ LeviosaPage {
     showStatusText: true
     statusText: controllersModel.locationStatusText
 
-    showSubTitle: false
+    showSubTitle: true
     subTitle: controllersModel.selecetedControllerStatus
 
+    onTitleLongPressed: editLocation(locationUuid)
+
+    function fireRefresh(){
+        if(controllersModel.dataLoaded && controllersModel.isCurrentLocation && !controllerDiscovery.isRunning){
+            controllerDiscovery.discoFinished = false
+            controllerDiscovery.isRunning = true
+        }
+    }
+
     function init(){
-        console.log("INIT LOCATION PAGE (n=" + controllersModel.rowCount() + ")");
+        console.log("INIT LOCATION PAGE (n = " + controllersModel.rowCount() + ")");
         if(controllersModel.locationUuid != locationPage.locationUuid){
             console.log("Init controllers from empty/wrong UUID with " + locationUuid)
-            controllersModel.locationUuid = locationPage.locationUuid;
+            controllersModel.locationUuid = locationPage.locationUuid
         }
         else{
             console.log("Updating controllers for UUID " + locationUuid)
-            controllersModel.updateModel();
+            controllersModel.updateModel()
+            fireRefresh()
+        }
+    }
+
+    Connections {
+        target: qGuiApp
+        onApplicationStateChanged: {
+            console.log("Application state: " + state);
+            if(state !== 4 /*Qt::ApplicationActive*/){
+                fireRefresh()
+            }
+        }
+    }
+
+    Connections {
+        target: netMonitor
+        onOnWlanChanged: {
+            if(netMonitor.onWlan) fireRefresh()
         }
     }
 
     function pause() {
-        discovery.isRunning = false
+        console.log("Pause")
+        controllerDiscovery.isRunning = false
     }
 
     ControllersModel {
         id: controllersModel
         isOnWlan: netMonitor.onWlan
         currentBssid: netMonitor.bssid
-        onCanDiscoveryChanged: {
-            if(canDiscovery)
-                discovery.isRunning = true
-            else
-                discovery.isRunning = false
+        discovering: controllerDiscovery.isRunning
+
+        onDataLoadedChanged: fireRefresh()
+        onSelectedControllerStatusChanged: {
+            enableAddAction = selectedShadeGroupsNotFilled && (controllersModel.selectedControllerState === 0 || controllersModel.selectedControllerState === 5)
         }
-        onDataLoadedChanged: {
-            if(dataLoaded) locationPage.controllersLoaded()
-        }
-        canDiscovery: isCurrentLocation && dataLoaded
     }
 
     SwipeView {
@@ -81,7 +110,7 @@ LeviosaPage {
         Repeater {
             model: controllersModel
             Loader {
-                active: SwipeView.isCurrentItem// || SwipeView.isNextItem || SwipeView.isPreviousItem
+                active: SwipeView.isCurrentItem
                 sourceComponent: ControllerPage {
                     anchors.fill: parent
                     controllerMac: mac
@@ -98,8 +127,17 @@ LeviosaPage {
                         controllersModel.commandShade(mac, channel, command);
                     }
                     failed: (controllerState === 2) || (controllerState === 4)
-                    onRunEspTouch: setupController(locationUuid)
-                    onDeleteController: controllersModel.remove(mac)
+                    onDoSetup: setupController(locationUuid)
+                    onDoRefresh: {
+                        controllersModel.searchController(controllerMac)
+                        fireRefresh()
+                    }
+                    onDeleteController: {
+                        controllersModel.remove(controllerMac)
+                        init()
+                        controllersModel.searchController(controllerMac)
+                        fireRefresh()
+                    }
                 }
             }
         }
@@ -208,10 +246,10 @@ LeviosaPage {
         onFinished: {
             discoFinished = true;
         }
-        onFoundList: function(list){
-            console.log("FOUND LIST: " + list);
-            controllersModel.addControllersFromList(controllersModel.locationUuid, list);
-        }
+//        onFoundList: function(list){
+//            console.log("FOUND LIST: " + list);
+//            controllersModel.addControllersFromList(controllersModel.locationUuid, list);
+//        }
         onFound: function(mac, ip) {
             console.log("FOUND CONTROLLER: " + mac + " / " + ip);
             controllersModel.checkIP(mac, ip);
@@ -220,12 +258,16 @@ LeviosaPage {
 
     BlockScreen {
         id: emptyOnWanAlert
+        visible: false
         anchors.fill: parent
         message: "Please, connect to your WiFi network in order to begin Setup!"
     }
 
     onMenuClicked: {
-        if(single) drawer.open()
+        if(single)
+            drawer.open()
+        else
+            locationPage.goBack()
     }
 
     Drawer {
@@ -262,7 +304,7 @@ LeviosaPage {
 
             Button {
                 width: parent.width
-                text: "Add this location"
+                text: "Add current location"
                 visible: netMonitor.onWlan && controllersModel.locationBssid != netMonitor.bssid
                 onClicked: {
                     drawer.close()
@@ -286,15 +328,6 @@ LeviosaPage {
                 }
             }
 
-            Button {
-                width: parent.width
-                text: "Change password"
-                onClicked: {
-                    drawer.close()
-                    openChangePasswordPage()
-                }
-            }
-
             Rectangle {
                 width: parent.width
                 height: 2
@@ -312,6 +345,11 @@ LeviosaPage {
                     openWelcomePage()
                 }
             }
+        }
+        Text {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            text: "ver 1"
         }
     }
 
@@ -338,14 +376,14 @@ LeviosaPage {
         },
         State {
             name: "empty Wlan"
-            when: controllersModel.allowedToSearch && controllerDiscovery.discoFinished && (controllersModel.count == 0)
+            when: controllersModel.isCurrentLocation && controllerDiscovery.discoFinished && (controllersModel.count == 0)
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: true }
             PropertyChanges { target: emptyOnWanAlert; visible: false }
         },
         State {
             name: "empty Wan"
-            when:  (controllersModel.count == 0) && !controllersModel.allowedToSearch
+            when:  (controllersModel.count == 0) && !controllersModel.isCurrentLocation
             PropertyChanges { target: emptyOnWanAlert; visible: true }
             PropertyChanges { target: busyIndi; visible: false }
             PropertyChanges { target: setupInquiry; visible: false }

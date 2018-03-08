@@ -59,7 +59,11 @@ void ControllerConfig::parse(const QString &jsonized)
         };
 
         QLocale loc(QLocale::English);
-        if(obj.contains("time")) mTime = loc.toDateTime(obj.value("time").toString(), "ddd MMM  d HH:mm:ss yyyy");
+        if(obj.contains("time")){
+            mTime = loc.toDateTime(obj.value("time").toString(), "ddd MMM d HH:mm:ss yyyy");
+            if(!mTime.isValid())
+                mTime = loc.toDateTime(obj.value("time").toString(), "ddd MMM  d HH:mm:ss yyyy");
+        }
         else{
             qDebug() << "Controller config failed: time not found";
             return;

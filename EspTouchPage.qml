@@ -3,20 +3,26 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import com.atlascoder.EspTouch 1.0
+import com.atlascoder.ControllersModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
 LeviosaPage {
-	id: espTouchPage
-    enableAddAction: false
+    id: rootItem
     enableMenuAction: false
+
+    title: "Controller Setup"
     showLogo: false
 
-    title: "Connecting controller"
+    property string locationUuid
 
-    signal espTouchStarted()
-    signal espTouchFinshed()
-    signal onConnected()
+    showStatusText: true
+    statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"
+
+    signal controllerAdded()
+    signal goBack()
+
+    onMenuClicked: goBack()
 
     EspTouch {
         id: esptouch
@@ -25,10 +31,10 @@ LeviosaPage {
         bssid: netMonitor.bssid
         ipAddress: netMonitor.wlanIp
         onFailed: {
-            espTouchPage.state = "timeout";
+            rootItem.state = "timeout";
         }
         onHostFound: {
-            espTouchPage.state = "found";
+            rootItem.state = "registering";
         }
     }
 
@@ -36,12 +42,16 @@ LeviosaPage {
         esptouch.running = false;
     }
 
+    ControllersModel {
+        locationUuid: locationUuid
+    }
+
     Connections {
         target: qGuiApp
         onApplicationStateChanged: {
             console.log("Application state: " + state);
             if(state !== 4 /*Qt::ApplicationActive*/){
-                espTouchPage.state = "prepare";
+                rootItem.state = "prepare";
             }
         }
     }
@@ -61,21 +71,20 @@ LeviosaPage {
                 width: parent.width * 0.8
                 anchors.horizontalCenter: parent.horizontalCenter
                 fillMode: Image.PreserveAspectFit
-                source: "img/003-wifi.svg"
+                source: "img/password.png"
             }
 
             Text {
                 width: parent.width
-                text: "<b>WiFi connection setup</b>"
+                text: "Provide WiFi credentials"
                 font.pixelSize: parent.width/16
-                textFormat: Text.RichText
-                verticalAlignment: Text.AlignVCenter
+                font.bold: true
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
             }
 
             Rectangle {
-                height: espTouchPage.height * 0.02
+                height: rootItem.height * 0.02
                 width: parent.width
                 color: "#00000000"
                 border.color: "#00000000"
@@ -84,16 +93,17 @@ LeviosaPage {
             Text {
                 id: ssidIntro
                 width: parent.width
-                text: "<b>Check that the current WiFi network is the network you want connect WiShadeController to!</b><br><br>Try to use the same network for all Controllers in singe location."
+                text: "Check that the current WiFi network is the really network you want connect WiShadeController to!"
                 font.pixelSize: parent.width / 20
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
+                font.bold: true
             }
 
             Rectangle {
                 id: rectangle
                 width: parent.width
-                height: espTouchPage.height * 0.08
+                height: rootItem.height * 0.08
                 color: "#00000000"
                 border.color: "#00000000"
 
@@ -126,7 +136,7 @@ LeviosaPage {
 
             Rectangle {
                 id: rectangle1
-                height: espTouchPage.height * 0.08
+                height: rootItem.height * 0.08
                 width: parent.width
                 color: "#00000000"
                 border.color: "#00000000"
@@ -168,6 +178,13 @@ LeviosaPage {
             width: parent.width
             spacing: 5
 
+            Image {
+                width: parent.width * 0.8
+                anchors.horizontalCenter: parent.horizontalCenter
+                fillMode: Image.PreserveAspectFit
+                source: "img/wifi.png"
+            }
+
             BusyIndicator {
                 width: parent.width * 0.8
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -176,10 +193,9 @@ LeviosaPage {
 
             Text {
                 width: parent.width
-                text: "<b>Connecting controller...</b>"
-                font.pixelSize: parent.width/16
-                textFormat: Text.RichText
-                verticalAlignment: Text.AlignVCenter
+                text: "Connecting controller..."
+                font.pixelSize: parent.width / 16
+                font.bold: true
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
             }
@@ -191,32 +207,30 @@ LeviosaPage {
             spacing: 5
 
             Image {
-                id: image
                 width: parent.width * 0.8
                 anchors.horizontalCenter: parent.horizontalCenter
                 fillMode: Image.PreserveAspectFit
-                source: "img/002-001-computer-1.svg"
-            }
-
-            Text {
-                width: parent.width
-                text: "<b>Controller connected!</b>"
-                font.pixelSize: parent.width/16
-                textFormat: Text.RichText
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
+                source: "img/smile.png"
             }
 
             Rectangle {
-                height: espTouchPage.height * 0.08
+                height: rootItem.height * 0.08
                 width: parent.width
                 color: "#00000000"
                 border.color: "#00000000"
             }
 
+            Text {
+                width: parent.width
+                text: "Controller connected!"
+                font.pixelSize: parent.width / 16
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+            }
+
             Rectangle {
-                height: espTouchPage.height * 0.08
+                height: rootItem.height * 0.08
                 width: parent.width
                 color: "#00000000"
                 border.color: "#00000000"
@@ -229,19 +243,24 @@ LeviosaPage {
             spacing: 5
 
             Image {
-                id: image1
                 width: parent.width * 0.8
                 anchors.horizontalCenter: parent.horizontalCenter
                 fillMode: Image.PreserveAspectFit
-                source: "img/002-computer.svg"
+                source: "img/sad.png"
+            }
+
+            Rectangle {
+                height: rootItem.height * 0.08
+                width: parent.width
+                color: "#00000000"
+                border.color: "#00000000"
             }
 
             Text {
                 width: parent.width
-                text: "<b>Connection has timed out.</b>"
-                font.pixelSize: parent.width/16
-                textFormat: Text.RichText
-                verticalAlignment: Text.AlignVCenter
+                text: "Connection has timed out."
+                font.pixelSize: parent.width / 16
+                font.bold: true
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
             }
@@ -250,50 +269,77 @@ LeviosaPage {
                 width: parent.width
                 text: "Check credentials, set your controller in Setup mode again and do retry."
                 font.pixelSize: parent.width/16
-                textFormat: Text.RichText
-                verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
             }
         }
 
+        Column {
+            id: wlanRequiredAlert
+            width: parent.width * 0.8
+            height: childrenRect.height
+            anchors.centerIn: parent
+            spacing: width / 20
+
+            Image {
+                id: notNetworkIcon
+                source: "img/information.png"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                text: "WiFi connection required!"
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Qt.AlignHCenter
+                font.pixelSize: parent.width / 16
+                font.bold: true
+            }
+
+            Text {
+                text: "You can setup Leviosa WiShadeController only via WiFi network."
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Qt.AlignHCenter
+                font.pixelSize: width / 20
+            }
+
+            Text {
+                text: "Please, connect this device to your WiFi network to start Setup."
+                width: parent.width
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Qt.AlignHCenter
+                font.pixelSize: width / 20
+            }
+        }
     }
 
-    Rectangle {
+    ActionButton {
         id: actionButton
-        property string title
         anchors.top: stackLayout.bottom
         anchors.left: stackLayout.left
         anchors.right: stackLayout.right
         anchors.topMargin: 16
-
-        color: DefTheme.mainColorLight
-        border.color: DefTheme.mainColorLight
-
-        height: espTouchPage.height * 0.08
-        radius: height * 0.4
-
-        Text {
-            color: DefTheme.mainTextColor
-            anchors.centerIn: parent
-            font.pixelSize: parent.height / 2
-            text: actionButton.title
-        }
-        MouseArea {
-            id: actionButtonMouseArea
-            anchors.fill: parent
-        }
     }
 
     Timer {
         id: espTouchTimeout
         repeat: false
-        interval: 30000
+        interval: 60000
         onTriggered: {
-            espTouchPage.state = "timeout"
+            rootItem.state = "timeout"
         }
     }
 
+    Connections {
+        target: netMonitor
+        onOnWlanChanged: {
+            if(netMonitor.onWlan)
+                rootItem.state = "prepare"
+            else
+                rootItem.state = "offline"
+        }
+    }
 
     states: [
         State {
@@ -303,14 +349,10 @@ LeviosaPage {
                 currentIndex: 0
             }
             PropertyChanges {
-                target: actionButtonMouseArea
-                onClicked: {
-                    espTouchPage.state = "transferring";
-                }
-            }
-            PropertyChanges {
                 target: actionButton
-                title: "Start"
+                text: "Start"
+                visible: true
+                onClicked: rootItem.state = "transferring"
             }
             PropertyChanges {
                 target: esptouch
@@ -319,6 +361,11 @@ LeviosaPage {
             PropertyChanges {
                 target: passwordInput
                 focus: false
+            }
+
+            PropertyChanges {
+                target: ssidIntro
+                font.bold: false
             }
         },
         State {
@@ -332,12 +379,10 @@ LeviosaPage {
                 focus: false
             }
             PropertyChanges {
-                target: actionButtonMouseArea
-                onClicked:  espTouchPage.state = "prepare"
-            }
-            PropertyChanges {
                 target: actionButton
-                title: "Stop"
+                text: "Stop"
+                visible: true
+                onClicked: rootItem.state = "prepare"
             }
             PropertyChanges {
                 target: espTouchTimeout
@@ -346,10 +391,39 @@ LeviosaPage {
             PropertyChanges {
                 target: esptouch
                 running: true
+                onHostFound: rootItem.state = "registering"
+            }
+        },
+        State{
+            name: "registering"
+            PropertyChanges {
+                target: stackLayout
+                currentIndex: 1
             }
             PropertyChanges {
-                target: esptouch
-                onHostFound: espTouchPage.state = "found"
+                target: passwordInput
+                focus: false
+            }
+            PropertyChanges {
+                target: actionButton
+                text: "Stop"
+                visible: false
+                onClicked: rootItem.state = "prepare"
+            }
+            PropertyChanges {
+                target: espTouchTimeout
+                running: false
+            }
+            StateChangeScript {
+                script: {
+                    userData.setupController(esptouch.hostMac, esptouch.hostIP)
+                    userData.onControllerSetupSuccessful.connect(function(){
+                        rootItem.state = "found"
+                    })
+                    userData.onControllerSetupFailed.connect(function(errmsg){
+                        rootItem.state = "timeout"
+                    })
+                }
             }
         },
         State {
@@ -359,16 +433,19 @@ LeviosaPage {
                 currentIndex: 2
             }
             PropertyChanges {
-                target: actionButtonMouseArea
-                onClicked: onConnected()
-            }
-            PropertyChanges {
                 target: actionButton
-                title: "Open Location"
+                text: "Go to location"
+                visible: false
             }
             PropertyChanges {
                 target: esptouch
                 running: false
+            }
+            StateChangeScript {
+                script: {
+                    userData.addControllerToLocation(esptouch.hostMac, netMonitor.bssid)
+                    controllerAdded()
+                }
             }
         },
         State {
@@ -378,16 +455,29 @@ LeviosaPage {
                 currentIndex: 3
             }
             PropertyChanges {
-                target: actionButtonMouseArea
-                onClicked: espTouchPage.state = "prepare"
-            }
-            PropertyChanges {
                 target: actionButton
-                title: "Retry"
+                text: "Retry"
+                visible: true
+                onClicked: rootItem.state = "prepare"
             }
             PropertyChanges {
                 target: esptouch
                 running: false
+            }
+        },
+        State {
+            name: "offline"
+            PropertyChanges {
+                target: stackLayout
+                currentIndex: 4
+            }
+            PropertyChanges {
+                target: esptouch
+                running: false
+            }
+            PropertyChanges {
+                target: actionButton
+                visible: false
             }
         }
     ]

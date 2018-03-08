@@ -5,13 +5,23 @@
 #include <QApplication>
 #include <QtConcurrent>
 
+#include <QHttpMultiPart>
+
 #include "aws/CognitoSyncCommand.h"
 
 #include "NAM.h"
 #include <QDebug>
 
-ControllerAPI::ControllerAPI(QObject *parent)
-    : QThread(parent), mCommandReply(nullptr), mConfigReply(nullptr), mScheduleReply(nullptr), mTZoneReply(nullptr), mScheduleCommands(), mControllerConfig(), mIpAddress("0.0.0.0"), mOnWlan(false), mControllerState(Wan)
+ControllerAPI::ControllerAPI(QObject *parent):
+    QThread(parent),
+    mCommandReply(nullptr),
+    mConfigReply(nullptr),
+    mScheduleReply(nullptr),
+    mTZoneReply(nullptr),
+    mScheduleCommands(),
+    mControllerConfig(),
+    mIpAddress("0.0.0.0"),
+    mControllerState(Wan)
 {
     mQnam = new QNetworkAccessManager;
     this->start();
@@ -32,7 +42,10 @@ void ControllerAPI::run(){
 
     ControllerHTTPClient* client = new ControllerHTTPClient;
     connect(this, &ControllerAPI::httpGet, client, &ControllerHTTPClient::get);
+    connect(this, &ControllerAPI::postKeysAndCertificate, client, &ControllerHTTPClient::postKeysAndCert);
     connect(client, &ControllerHTTPClient::requestFinished, this, &ControllerAPI::commandFinished);
+    connect(client, &ControllerHTTPClient::keysWasSet, this, &ControllerAPI::onKeysAndCertSet);
+    connect(client, &ControllerHTTPClient::setKeysFailed, this, &ControllerAPI::onKeysAndCertSetFailed);
 
     CognitoSyncCommand* commandClient = new CognitoSyncCommand();
 
@@ -116,8 +129,10 @@ void ControllerAPI::commandFinished(QNetworkReply *reply)
     else{
         emit commandFailed();
     }
-    reply->deleteLater();
-    reply = nullptr;
+    if(reply != nullptr){
+        reply->deleteLater();
+        reply = nullptr;
+    }
 }
 
 void ControllerAPI::configFetchFinished()
@@ -131,13 +146,13 @@ void ControllerAPI::configFetchFinished()
             emit configFetched();
         }
         else{
-            qDebug() << "Config failed for " << mIpAddress;
+            qDebug() << "Config failed for " << mIpAddress << " with invalid config";
             setControllerState(ConfigFailed);
             emit configFailed();
         }
     }
     else{
-        qDebug() << "Config failed for " << mIpAddress;
+        qDebug() << "Config failed for " << mIpAddress << " with error " << mConfigReply->errorString();
         setControllerState(ConfigFailed);
         emit configFailed();
     }
@@ -182,10 +197,8 @@ void ControllerAPI::pushConfig()
 
 void ControllerAPI::sendSchedule()
 {
-    qDebug() << "qnam thread " << mQnam->thread() << QApplication::instance()->thread();
     if(mScheduleCommands.size() > 0){
         QUrl url = QUrl::fromUserInput(mScheduleCommands.first());
-        qDebug() << "Sending: " << url;
         mScheduleCommands.pop_front();
         mScheduleReply = mQnam->get(QNetworkRequest(url));
         connect(mScheduleReply, &QNetworkReply::finished, this, &ControllerAPI::scheduleFinished);
@@ -243,16 +256,6 @@ void ControllerAPI::commandAWSRequest(int channel, int command)
     emit sendCloudCommand(mMac, cmd, channel);
 }
 
-void ControllerAPI::setOnWlan(bool onWlan)
-{
-    if(onWlan == mOnWlan) return;
-    mOnWlan = onWlan;
-    if(mOnWlan)
-        setControllerState(Searching);
-    else
-        setControllerState(Wan);
-}
-
 void ControllerAPI::setTimezone(const QString &timezone)
 {
     QString str = QString("http://").append(mIpAddress).append("/api?command=set_tz&timezone=").append(timezone);
@@ -275,4 +278,28 @@ void ControllerAPI::cloudCommandSent()
 void ControllerAPI::cloudCommandFailed()
 {
 
+}
+
+void ControllerAPI::pushKeysAndCert(const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert)
+{
+    mPubKey = pubKey;
+    mPriKey = priKey;
+    mCert = cert;
+    emit postKeysAndCertificate(mIpAddress, mPubKey, mPriKey, mCert);
+}
+
+void ControllerAPI::onKeysAndCertSet()
+{
+    emit keysWasSet();
+    mPubKey.clear();
+    mPriKey.clear();
+    mCert.clear();
+}
+
+void ControllerAPI::onKeysAndCertSetFailed(const QString &msg)
+{
+    emit setKeysFailed(msg);
+    mPubKey.clear();
+    mPriKey.clear();
+    mCert.clear();
 }

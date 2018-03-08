@@ -8,6 +8,7 @@
 #include <QNetworkReply>
 #include <QThread>
 #include <QFuture>
+#include <QByteArray>
 
 #include "ControllerConfig.h"
 #include "ControllerHTTPClient.h"
@@ -26,7 +27,6 @@ class ControllerAPI : public QThread
     QStringList mScheduleCommands;
     ControllerConfig mControllerConfig;
     QString mIpAddress;
-    bool mOnWlan;
 
     bool mIsSyncing;
 
@@ -35,6 +35,10 @@ class ControllerAPI : public QThread
     QNetworkAccessManager* mQnam;
 
     QFuture<void> mCommandRequest;
+
+    QByteArray mPubKey;
+    QByteArray mPriKey;
+    QByteArray mCert;
 
     void run() override;
 public:
@@ -63,11 +67,9 @@ public:
 
     void pushConfigAndWait();
 
+    void pushKeysAndCert(const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
 
-    void setOnWlan(bool onWlan);
-
-
-    bool onWlan() const { return mOnWlan; }
+    bool onWlan() const { return mControllerState != Wan; }
 
 signals:
     void ipAddressChanged();
@@ -79,7 +81,10 @@ signals:
     void configPushed();
     void scheduleSet();
     void scheduleFailed();
+    void keysWasSet();
+    void setKeysFailed(const QString& msg);
 
+    void postKeysAndCertificate(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
     void sendCommand(int channel, int command);
     void httpGet(const QString& url);
     void controllerStateChanged(const QString& mac);
@@ -97,6 +102,9 @@ private slots:
 
     void cloudCommandSent();
     void cloudCommandFailed();
+
+    void onKeysAndCertSet();
+    void onKeysAndCertSetFailed(const QString& msg);
 private:
     ControllerState mControllerState;
 

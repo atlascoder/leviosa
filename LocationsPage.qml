@@ -40,6 +40,7 @@ LeviosaPage {
             userData.sync();
         }
         swiper.start();
+        drawer.interactive = true;
     }
 
     Timer {
@@ -55,7 +56,7 @@ LeviosaPage {
     }
 
     function pause(){
-
+        drawer.interactive = false
     }
 
 	GridView {
@@ -199,12 +200,12 @@ LeviosaPage {
 
             Button {
                 width: parent.width
-                text: "Add this location"
+                text: "Add current location"
                 onClicked: {
                     drawer.close()
                     openNewLocationPage()
                 }
-                visible: netMonitor.onWlan
+                visible: netMonitor.onWlan && !userData.isBssidKnown(netMonitor.bssid)
             }
 
             Button {
@@ -220,15 +221,6 @@ LeviosaPage {
                 text: "Call to Support"
                 onClicked: {
                     Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
-                }
-            }
-
-            Button {
-                width: parent.width
-                text: "Change password"
-                onClicked: {
-                    drawer.close()
-                    openChangePasswordPage()
                 }
             }
 
@@ -250,6 +242,16 @@ LeviosaPage {
                 }
             }
         }
+
+        Text{
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            text: "version: " + userData.version
+            font.pixelSize: 10
+            font.italic: true
+            color: "#a0000000"
+        }
     }
 
     states: [
@@ -258,30 +260,12 @@ LeviosaPage {
             when: userData.isSyncing
             PropertyChanges {
                 target: rootItem
-                enableAddAction: false
-            }
-            StateChangeScript {
-                script: {
-                    console.log("Status: Syncing")
-                }
-            }
-            PropertyChanges {
-                target: rootItem
                 subTitle: "Syncing data..."
             }
         },
         State {
             name: "Synced"
             when: !userData.isSyncing
-            PropertyChanges {
-                target: rootItem
-                enableAddAction: true
-            }
-            StateChangeScript {
-                script: {
-                    console.log("Status: Synced")
-                }
-            }
             PropertyChanges {
                 target: rootItem
                 subTitle: "Data synced"

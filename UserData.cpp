@@ -7,8 +7,11 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QJsonParseError>
+#include <QtConcurrent>
 
 #include <QDebug>
+
+#include "aws/ControllerThing.h"
 
 using namespace std;
 
@@ -236,9 +239,16 @@ void UserData::persistItems(std::vector<std::unique_ptr<Location>> &locations, b
 void UserData::removeItem(Location &location, bool toSync)
 {
     mDb.locationsDao.destroy(location, false);
+    auto cs = mDb.controllersDao.filtered("locationUuid", location.uuid().toString());
+    for(auto c = cs->begin(); c != cs->end(); c++)
+        removeItem(*c->get(), false);
     if(toSync){
         CurrentUser::instance().setLocationsModified(QDateTime::currentSecsSinceEpoch());
         CurrentUser::instance().setLocationsSynced(false);
+        CurrentUser::instance().setControllersModified(QDateTime::currentSecsSinceEpoch());
+        CurrentUser::instance().setControllersSynced(false);
+        CurrentUser::instance().setShadeGroupsModified(QDateTime::currentSecsSinceEpoch());
+        CurrentUser::instance().setShadeGroupsSynced(false);
         CurrentUser::instance().persistUserDataModified();
         sync();
     }
@@ -252,22 +262,8 @@ void UserData::removeItem(Location &location, bool toSync)
 
 void UserData::loadControllers(const QString &locationUuid)
 {
-    QMap<QString, QString> mac_ip;
-    for(vector<unique_ptr<Controller>>::iterator i = mControllers->begin(); i != mControllers->end(); i++){
-        if(i->get()->ipAddress() != "0.0.0.0")
-            mac_ip.insert(i->get()->mac(), i->get()->ipAddress());
-    }
     mControllers->clear();
-    unique_ptr<vector<unique_ptr<Controller>>> new_c(new vector<unique_ptr<Controller>>);
-
-    mDb.controllersDao.loadFiltered(*new_c.get(), "locationUuid", locationUuid);
-    for(vector<unique_ptr<Controller>>::iterator i = new_c->begin(); i !=new_c->end(); i++){
-        if(mac_ip.contains(i->get()->mac())){
-            i->get()->setIpAddress(mac_ip[i->get()->mac()]);
-            i->get()->api().setControllerState(ControllerAPI::ControllerState::Wlan);
-        }
-        mControllers->push_back(move(*i));
-    }
+    mDb.controllersDao.loadFiltered(*mControllers.get(), "locationUuid", locationUuid);
 }
 
 void UserData::persistItem(Controller& controller, bool toSync)
@@ -298,9 +294,14 @@ void UserData::persistItems(std::vector<std::unique_ptr<Controller>> &controller
 void UserData::removeItem(Controller &controller, bool toSync)
 {
     mDb.controllersDao.destroy(controller, false);
+    auto sg = mDb.shadeGroupsDao.filtered("controllerMac", controller.mac());
+    for(auto g = sg->begin(); g != sg->end(); g++)
+        removeItem(*g->get(), false);
     if(toSync){
         CurrentUser::instance().setControllersModified(QDateTime::currentSecsSinceEpoch());
         CurrentUser::instance().setControllersSynced(false);
+        CurrentUser::instance().setShadeGroupsModified(QDateTime::currentSecsSinceEpoch());
+        CurrentUser::instance().setShadeGroupsSynced(false);
         CurrentUser::instance().persistUserDataModified();
         sync();
     }
@@ -434,6 +435,37 @@ QString UserData::firstLocationUuid()
     return l->size() > 0 ? l->at(0)->uuid().toString() : "";
 }
 
+void UserData::addControllerToLocation(const QString &mac, const QString &bssid)
+{
+    auto location = mDb.locationsDao.filtered("bssid", bssid);
+    if(location->size() == 1){
+        QString cmac;
+        if(mac.length() == 12){
+            cmac.append(mac.mid(0,2).toUpper());
+            for(int i = 1; i < 6; i++){
+                cmac.append(":").append(mac.mid(i*2,2).toUpper());
+            }
+        }
+        else
+            cmac = mac.toUpper();
+
+        Controller c(cmac);
+        c.setLocationUuid(location->at(0)->uuid().toString());
+        persistItem(c, false);
+        CurrentUser::instance().setControllersSynced(false);
+        CurrentUser::instance().persistUserDataModified();
+        loadControllers(location->at(0)->uuid().toString());
+        ShadeGroup g;
+        g.setControllerMac(cmac);
+        g.setName("Group 1");
+        g.setChannel(1);
+        persistItem(g, false);
+        CurrentUser::instance().setShadeGroupsSynced(false);
+        CurrentUser::instance().persistUserDataModified();
+        UserData::instance().sync();
+    }
+}
+
 void UserData::addFirstController(const QString &mac, const QString &bssid)
 {
     Location l;
@@ -474,4 +506,80 @@ void UserData::addFirstController(const QString &mac, const QString &bssid)
     CurrentUser::instance().setShadeGroupsSynced(false);
     CurrentUser::instance().persistUserDataModified();
     UserData::instance().sync();
+}
+
+bool UserData::isLocationEmpty(const QString &uuid)
+{
+    auto controllers = mDb.controllersDao.filtered("locationUuid", uuid);
+    return controllers->size() == 0;
+}
+
+bool UserData::isBssidKnown(const QString &bssid)
+{
+    auto locations = mDb.locationsDao.filtered("bssid", bssid);
+    return locations->size() > 0;
+}
+
+void UserData::setupController(const QString &mac, const QString& ip)
+{
+    mKeysAndCertResp.cancel();
+    if(mControllerClient){
+        mControllerClient->deleteLater();
+        mControllerClient = nullptr;
+    }
+    mControllerClient = new ControllerHTTPClient;
+    connect(this, &UserData::installKeysAndCert, mControllerClient, &ControllerHTTPClient::postKeysAndCert);
+    connect(mControllerClient, &ControllerHTTPClient::keysWasSet, this, &UserData::setupControllerSuccessful);
+    connect(mControllerClient, &ControllerHTTPClient::setKeysFailed, this, &UserData::setupControllerFailed);
+    if(mKeysAndCertResp.isCanceled() || mKeysAndCertResp.isFinished()){
+        mKeysAndCertResp = QtConcurrent::run(this, &UserData::createThingKeys, mac, ip);
+    }
+}
+
+void UserData::createThingKeys(const QString mac, const QString& ip)
+{
+    ControllerThing *thing = new ControllerThing;
+    CurrentUser& u = CurrentUser::instance();
+    if(!mCancelled){
+        u.requestCredentials();
+        if(mCancelled) {
+            delete thing;
+            return;
+        }
+        if(u.isAuthenticated() && u.hasCredentials()){
+            Aws::Auth::AWSCredentials creds;
+            u.fillCredentials(creds);
+            if(mCancelled) {
+                delete thing;
+                return;
+            }
+            thing->resetWithCredentials(creds);
+            thing->setupController(mac);
+            if(thing->isSuccessful())
+                emit installKeysAndCert(ip, thing->pubKey(), thing->priKey(), thing->cert());
+            else
+                emit setupControllerFailed("Setup controller failed");
+        }
+        else
+            emit setupControllerFailed("User is not authenticated");
+    }
+    delete thing;
+}
+
+void UserData::setupControllerSuccessful()
+{
+    emit controllerSetupSuccessful();
+    if(mControllerClient){
+        mControllerClient->deleteLater();
+        mControllerClient = nullptr;
+    }
+}
+
+void UserData::setupControllerFailed(const QString& msg)
+{
+    emit controllerSetupFailed(msg);
+    if(mControllerClient){
+        mControllerClient->deleteLater();
+        mControllerClient = nullptr;
+    }
 }

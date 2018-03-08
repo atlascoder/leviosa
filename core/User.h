@@ -43,15 +43,19 @@ public:
         mAccessTokenExpiration = 0;
         mRefreshToken = "";
         mRefreshTokenExpiration = 0;
+
         mLocationsModified = false;
         mControllersModified = false;
         mShadeGroupsModified = false;
+
         mLocationsSyncCount = 0;
         mControllersSyncCount = 0;
         mShadeGroupsSyncCount = 0;
+
         mLocationsSynced = false;
         mControllersSynced = false;
-        mShadeGroupsSynced = 0;
+        mShadeGroupsSynced = false;
+
         mVerified = false;
     }
 

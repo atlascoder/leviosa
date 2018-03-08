@@ -1,9 +1,9 @@
 #include "controller.h"
 
 Controller::Controller(const QString& mac):
-    mMac(mac), mName("Controller 1"), mControllerAPI(new ControllerAPI)
+    mMac(mac), mName("Controller 1")//, mControllerAPI(new ControllerAPI)
 {
-    mControllerAPI->setMac(mMac);
+//    mControllerAPI->setMac(mMac);
 }
 
 QString Controller::locationUuid() const
@@ -34,28 +34,28 @@ QString Controller::mac() const
 void Controller::setMac(const QString &mac)
 {
     mMac = mac;
-    mControllerAPI->setMac(mac);
+//    mControllerAPI->setMac(mac);
 }
 
-QString Controller::ipAddress() const
-{
-    return mControllerAPI->ipAddress();
-}
+//QString Controller::ipAddress() const
+//{
+//    return mControllerAPI->ipAddress();
+//}
 
-void Controller::setIpAddress(const QString &ipAddress)
-{
-    mControllerAPI->setIpAddress(ipAddress);
-}
+//void Controller::setIpAddress(const QString &ipAddress)
+//{
+//    mControllerAPI->setIpAddress(ipAddress);
+//}
 
-bool Controller::onWlan() const
-{
-    return mControllerAPI->onWlan();
-}
+//bool Controller::onWlan() const
+//{
+//    return mControllerAPI->onWlan();
+//}
 
-void Controller::setOnWlan(bool isWlan)
-{
-    mControllerAPI->setOnWlan(isWlan);
-}
+//void Controller::setOnWlan(bool isWlan)
+//{
+//    mControllerAPI->setOnWlan(isWlan);
+//}
 
 QJsonObject Controller::toJson() const
 {

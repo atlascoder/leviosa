@@ -3,20 +3,23 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import com.atlascoder.EspTouch 1.0
 
-import "DefaultTheme.js" as DefTheme
-
 LeviosaPage {
     id: rootItem
 
-    enableMenuAction: true
+    enableMenuAction: false
 
-    title: "Initial Setup"
+    title: "Controller Setup"
     showLogo: false
+
+    property string locationUuid
 
     showStatusText: true
     statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"
 
     signal controllerAdded()
+    signal goBack()
+
+    onMenuClicked: goBack()
 
     EspTouch {
         id: esptouch
@@ -34,10 +37,6 @@ LeviosaPage {
 
     onMenuSelected: {
         esptouch.running = false;
-    }
-
-    onMenuClicked: {
-        drawer.open()
     }
 
     Connections {
@@ -319,7 +318,7 @@ LeviosaPage {
     Timer {
         id: espTouchTimeout
         repeat: false
-        interval: 30000
+        interval: 60000
         onTriggered: {
             rootItem.state = "timeout"
         }
@@ -334,85 +333,6 @@ LeviosaPage {
                 rootItem.state = "offline"
         }
     }
-
-    Drawer {
-        id: drawer
-        width:  0.66 * applicationWindow.width
-        height: applicationWindow.height
-        edge: Qt.LeftEdge
-        interactive: true
-
-        background: Rectangle {
-            color: DefTheme.secColorLight
-        }
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: parent.width / 20
-            spacing: 6
-
-            Text{
-                height: parent.width / 8
-                anchors.horizontalCenter: parent.horizontalCenter
-                verticalAlignment: Qt.AlignVCenter
-                text: currentUser.email
-                font.pixelSize: 16
-                color: DefTheme.secTextColor
-                font.bold: true
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                width: parent.width
-                text: "Open WebSite"
-                onClicked: {
-                    Qt.openUrlExternally("https://leviosashades.com") ;
-                }
-            }
-
-            Button {
-                width: parent.width
-                text: "Call to Support"
-                onClicked: {
-                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Sign Out"
-                font.bold: true
-                onClicked: {
-                    currentUser.signOut();
-                    drawer.close();
-                    drawer.interactive = false;
-                    openWelcomePage()
-                }
-            }
-        }
-
-        Text{
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: 10
-            text: "version: " + userData.version
-            font.pixelSize: 10
-            font.italic: true
-            color: "#a0000000"
-        }
-    }
-
 
     states: [
         State {
@@ -484,7 +404,7 @@ LeviosaPage {
             }
             StateChangeScript {
                 script: {
-                    userData.addFirstController(esptouch.hostMac, netMonitor.bssid)
+                    userData.addControllerToLocation(esptouch.hostMac, netMonitor.bssid)
                     controllerAdded()
                 }
             }

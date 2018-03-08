@@ -61,7 +61,7 @@ ApplicationWindow {
         id: emptyAccountPageLoader
         onLoaded: {
             item.onControllerAdded.connect(doLogin)
-            item.StackView.onRemoved.connect(function(){ emptyAccountPageLoader.source = ""; })
+            item.StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -199,22 +199,42 @@ ApplicationWindow {
     Loader {
         id: locationsPageLoader
         onLoaded: {
-            console.log("locations page loaded")
             item.onOpenLocation.connect(function(uuid, tzone, bssid){
-                openLocationPage(uuid, false)
-//                pager.push(locationPage, {"locationUuid": uuid, "tzone": tzone})
+                if(bssid === netMonitor.bssid && userData.isLocationEmpty(uuid))
+                    openEmptyLocationPage(uuid)
+                else
+                    openLocationPage(uuid, false)
             })
             item.onEditLocation.connect(openEditLocationPage)
             item.onAddClicked.connect(openNewLocationPage)
             item.StackView.onActivating.connect(item.init)
             item.StackView.onDeactivating.connect(item.pause)
+            item.StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openLocationsPage(){
-        if(locationsPageLoader.status != Loader.Ready)
-            locationsPageLoader.source = "LocationsPage.qml"
+        locationsPageLoader.source = "LocationsPage.qml"
         pager.replace(pager.currentItem, locationsPageLoader.item)
+    }
+
+    // EmptyLocationPage
+
+    Loader {
+        id: emptyLocationPageLoader
+        onLoaded: {
+            item.onGoBack.connect(pager.pop)
+            item.onControllerAdded.connect(doLogin)
+            item.StackView.onRemoved.connect(function(){
+                emptyLocationPageLoader.source = ""
+            })
+        }
+    }
+
+    function openEmptyLocationPage(uuid){
+        emptyLocationPageLoader.source = "EmptyLocationPage.qml"
+        emptyLocationPageLoader.item.locationUuid = uuid
+        pager.push(emptyLocationPageLoader.item)
     }
 
     // New location
@@ -238,12 +258,13 @@ ApplicationWindow {
         id: editLocationPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
+            item.onSetupController.connect(openEspTouchPage)
+            item.StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openEditLocationPage(uuid){
-        if(editLocationPageLoader.status != Loader.Ready)
-            editLocationPageLoader.source = "EditLocationPage.qml"
+        editLocationPageLoader.source = "EditLocationPage.qml"
         editLocationPageLoader.item.locationUuid = uuid
         pager.push(editLocationPageLoader.item)
     }
@@ -270,12 +291,16 @@ ApplicationWindow {
     Loader {
         id: locationPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
+            item.onGoBack.connect(pager.pop)
             item.onEditController.connect(openEditControllerPage)
             item.onEditGroup.connect(openEditShadeGroupPage)
             item.onAddGroup.connect(openNewShadeGroupPage)
             item.onSetupController.connect(openEspTouchPage)
-            item.StackView.onActivated.connect(item.init)
+            item.onEditLocation.connect(openEditLocationPage)
+            item.StackView.onActivated.connect(function(){
+                item.init()
+                item.fireRefresh()
+            })
             item.StackView.onDeactivating.connect(function(){
                 item.discovery.isRunning = false
             })
@@ -287,9 +312,15 @@ ApplicationWindow {
 
     function openLocationPage(uuid, single){
         locationPageLoader.source = "LocationPage.qml"
-        locationPageLoader.item.locationUuid = uuid
         locationPageLoader.item.single = single
-        pager.replace(pager.initialItem, locationPageLoader.item)
+        locationPageLoader.item.locationUuid = uuid
+        if(single){
+            userData.sync()
+            pager.replace(pager.initialItem, locationPageLoader.item)
+        }
+        else{
+            pager.push(locationPageLoader.item)
+        }
     }
 
     // New Shade group
@@ -298,12 +329,12 @@ ApplicationWindow {
         id: newShadeGroupPageLoader
         onLoaded: {
             item.onMenuClicked.connect(pager.pop)
+            item.StackView.onRemoved.connect(function(){ source = ""})
         }
     }
 
     function openNewShadeGroupPage(mac){
-        if(newShadeGroupPageLoader.status != Loader.Ready)
-            newShadeGroupPageLoader.source = "NewShadeGroupPage.qml"
+        newShadeGroupPageLoader.source = "NewShadeGroupPage.qml"
         newShadeGroupPageLoader.item.controllerMac = mac
         pager.push(newShadeGroupPageLoader.item)
     }
@@ -313,14 +344,14 @@ ApplicationWindow {
     Loader {
         id: editShadeGroupPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
+            item.onGoBack.connect(pager.pop)
             item.StackView.onActivated.connect(item.init)
+            item.StackView.onRemoved.connect(function(){ source = ""})
         }
     }
 
     function openEditShadeGroupPage(mac, channel, ip){
-        if(editShadeGroupPageLoader.status != Loader.Ready)
-            editShadeGroupPageLoader.source = "EditShadeGroupPage.qml"
+        editShadeGroupPageLoader.source = "EditShadeGroupPage.qml"
         editShadeGroupPageLoader.item.controllerMac = mac
         editShadeGroupPageLoader.item.selectedChannel = channel
         editShadeGroupPageLoader.item.controllerIp = ip
@@ -344,18 +375,20 @@ ApplicationWindow {
         pager.push(editControllerPageLoader.item)
     }
 
-    // Edit Controller
+    // Esptouch
 
     Loader {
         id: espTouchPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
+            item.onGoBack.connect(pager.pop)
+            item.onControllerAdded.connect(pager.pop)
+            item.StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openEspTouchPage(uuid){
-        if(espTouchPageLoader.status != Loader.Ready)
-            espTouchPageLoader.source = "EspTouchPage.qml"
+        espTouchPageLoader.source = "EspTouchPage.qml"
+        espTouchPageLoader.item.locationUuid = uuid
         pager.push(espTouchPageLoader.item)
     }
 

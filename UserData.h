@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QFuture>
 #include "core/databasemanager.h"
 #include "CurrentUser.h"
 #include "core/location.h"
@@ -10,6 +11,10 @@
 #include "core/shadegroup.h"
 #include "core/SyncableRecord.h"
 #include "aws/CognitoSyncAPI.h"
+#include "aws/ControllerThing.h"
+#include "core/ControllerHTTPClient.h"
+
+#define VERSION "0.1"
 
 class UserData : public QThread
 {
@@ -19,6 +24,7 @@ class UserData : public QThread
     Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncStateChanged)
     Q_PROPERTY(int locationsCount READ locationsCount NOTIFY locationsCountChanged)
     Q_PROPERTY(QString firstLocationUuid READ firstLocationUuid NOTIFY firstLocationUuidChanged)
+    Q_PROPERTY(QString version READ version NOTIFY versionChanged)
 
     void run() override;
 
@@ -61,7 +67,10 @@ public:
 
     Q_INVOKABLE void createDefaultLocation();
     Q_INVOKABLE void addFirstController(const QString& mac, const QString& bssid);
-
+    Q_INVOKABLE void addControllerToLocation(const QString& mac, const QString& bssid);
+    Q_INVOKABLE void setupController(const QString& mac, const QString& ip);
+    Q_INVOKABLE bool isLocationEmpty(const QString& uuid);
+    Q_INVOKABLE bool isBssidKnown(const QString& bssid);
     SyncState syncState() const { return mSyncState; }
 
     void updateLocationWithBssid(const QString& uuid, const QString& bssid);
@@ -72,6 +81,9 @@ public slots:
     void sync();
     void dataChanged();
 
+private slots:
+    void setupControllerSuccessful();
+    void setupControllerFailed(const QString &msg);
 signals:
     void dataUpdated();
 
@@ -81,10 +93,18 @@ signals:
     void emailChanged();
     void locationsCountChanged();
     void firstLocationUuidChanged();
+    void versionChanged();
+
+    void installKeysAndCert(const QString &ip, const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert);
+    void controllerSetupSuccessful();
+    void controllerSetupFailed(const QString& msg);
 private:
     SyncState mSyncState;
     bool mCancelled;
     std::unique_ptr<CognitoSyncAPI> mSyncer;
+    QFuture<void> mKeysAndCertResp;
+    ControllerHTTPClient *mControllerClient;
+
 
     // flag means that data were changed while sync processed, and resync is required
 
@@ -101,6 +121,10 @@ private:
     QString firstLocationUuid();
 
     QString email() const { return mUser.email(); }
+
+    QString version() const { return VERSION; }
+
+    void createThingKeys(const QString mac, const QString& ip);
 
 };
 

@@ -17,19 +17,19 @@ class Controller: public Shade, public Positioned, public Syncable
     QString mLocationUuid;
     QString mName;
     bool mMatchPrevious;
-    std::unique_ptr<ControllerAPI> mControllerAPI;
+//    std::unique_ptr<ControllerAPI> mControllerAPI;
 public:
-    Controller() : mControllerAPI(new ControllerAPI){
-    }
+    Controller() //: mControllerAPI(new ControllerAPI)
+    {}
     Controller(const Controller& c) :
         Positioned(c),
         Syncable(c),
         mMac(c.mMac),
         mLocationUuid(c.mLocationUuid),
-        mName(c.mName),
-        mControllerAPI(new ControllerAPI)
+        mName(c.mName)//,
+//        mControllerAPI(new ControllerAPI)
     {
-        setIpAddress(c.ipAddress());
+//        setIpAddress(c.ipAddress());
     }
     ~Controller(){}
 
@@ -44,11 +44,11 @@ public:
     QString name() const;
     void setName(const QString &name);
 
-    bool onWlan() const;
-    void setOnWlan(bool onWlan);
+//    bool onWlan() const;
+//    void setOnWlan(bool onWlan);
 
-    QString ipAddress() const;
-    void setIpAddress(const QString& ipAddress);
+//    QString ipAddress() const;
+//    void setIpAddress(const QString& ipAddress);
 
     QJsonObject toJson() const;
     void withJson(const QJsonObject& json);
@@ -56,7 +56,7 @@ public:
     bool matchPrevious() const { return mMatchPrevious; }
     void setMatchPrevious(bool isMatch) { mMatchPrevious = isMatch; }
 
-    ControllerAPI& api() const { return *mControllerAPI.get(); }
+//    ControllerAPI& api() const { return *mControllerAPI.get(); }
 
 };
 

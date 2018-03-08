@@ -39,7 +39,7 @@ class ControllerModel : public QAbstractListModel
 
     Q_PROPERTY(QString locationStatusText READ locationStatusText NOTIFY locationStatusChanged)
 
-    Q_PROPERTY(bool canDiscovery READ canDiscovery WRITE setCanDiscovery NOTIFY canDiscoveryChanged)
+    Q_PROPERTY(bool discovering READ discovering WRITE setDiscovering NOTIFY discoveringChanged)
 
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 
@@ -64,7 +64,7 @@ public:
 
     QModelIndex addController(const Controller& controller);
     Q_INVOKABLE QModelIndex findController(const QString& mac);
-    Q_INVOKABLE void addControllersFromList(const QString& uuid, const QString& list);
+//    Q_INVOKABLE void addControllersFromList(const QString& uuid, const QString& list);
     Q_INVOKABLE void addControllerWithMacAndIP(const QString& uuid, const QString &mac, const QString &ip);
     Q_INVOKABLE void updateControllerWithData(const QString& mac, const QString& name, int position);
     Q_INVOKABLE QString macByIndex(int idx) const;
@@ -88,6 +88,8 @@ public:
     Q_INVOKABLE QString ipByMac(const QString& mac);
 
     Q_INVOKABLE QString getFreeName();
+
+    Q_INVOKABLE void searchController(const QString& mac);
     QString getFreeName(std::vector<std::unique_ptr<Controller>>& newItems);
 
     QString locationUuid() const;
@@ -113,7 +115,7 @@ signals:
 
     void onWlanChanged();
 
-    void canDiscoveryChanged();
+    void discoveringChanged();
 
     void selectedControllerStatusChanged();
 
@@ -137,8 +139,10 @@ private:
     QString mCurrentBssid;
     QString mLocationBssid;
 
+    std::unique_ptr<std::map<QString, std::unique_ptr<ControllerAPI>>> mAPIs;
+
     bool mControllerTimeMismatch;
-    bool mCanDiscovery;
+    bool mDiscovering;
     bool mIsDataLoaded;
 
     QMutex mUpdatingMtx;
@@ -184,15 +188,17 @@ private:
     bool isCurrentLocation() const;
     bool isNewLocation() const;
 
-    bool canDiscovery() const { return mCanDiscovery; }
-    void setCanDiscovery(bool canDiscovery);
+    bool discovering() const { return mDiscovering; }
+    void setDiscovering(bool discovering);
 
     bool dataLoaded() const { return mIsDataLoaded; }
     void setDataLoaded(bool isLoaded);
 
-    void checkConfiguration(Controller* controller);
+    void checkConfiguration(ControllerAPI& controller);
 
     QString locationStatusText() const;
+
+    void setControllersAPI();
 
 };
 

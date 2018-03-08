@@ -13,6 +13,7 @@ LeviosaPage {
 
     enableMenuAction: false
     enableAddAction: false
+
     showLogo: false
 
     property string controllerMac
@@ -25,12 +26,19 @@ LeviosaPage {
 
     property bool processing : false
 
+    signal goBack()
+
+    onMenuClicked: {
+        pager.setCurrentIndex(0)
+        goBack()
+    }
+
     function init() {
-        shadesGroupsModel.controllerMac = rootItem.controllerMac;
-        shadesGroupsModel.selectedChannel = rootItem.selectedChannel;
-        showBefore.visible = shadesGroupsModel.count > 1;
-        showBefore.model = shadesGroupsModel.positionOrder;
-        showBefore.currentIndex = shadesGroupsModel.selectedGroupPosition;
+        shadesGroupsModel.controllerMac = rootItem.controllerMac
+        shadesGroupsModel.selectedChannel = rootItem.selectedChannel
+        showBefore.visible = shadesGroupsModel.count > 1
+        showBefore.model = shadesGroupsModel.positionOrder
+        showBefore.currentIndex = shadesGroupsModel.selectedGroupPosition
     }
 
     ShadesGroupsModel {

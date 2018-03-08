@@ -11,7 +11,7 @@ ControllerDiscovery::ControllerDiscovery(QObject* parent) :
     connect(&mZeroConf, &QZeroConf::serviceAdded, this, &ControllerDiscovery::serviceFound);
     connect(&mDiscoThread, &MDNSDiscoThread::discovered, this, &ControllerDiscovery::discovered);
     connect(&mTimer, &QTimer::timeout, this, &ControllerDiscovery::timedOut);
-    mTimer.setInterval(2500);
+    mTimer.setInterval(3000);
     mTimer.setSingleShot(true);
 }
 
