@@ -3,7 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
-import com.atlascoder.ShadesGroupsModel 1.0
+import com.atlascoder.ShadeGroupModel 1.0
 import com.atlascoder.Shade 1.0
 
 import "DefaultTheme.js" as DefTheme
@@ -20,7 +20,7 @@ Control {
     signal differentState()
 
     background: Rectangle {
-        radius: rootItem.height / 50
+        radius: 6
         color: DefTheme.mainColorLight
 
         border.color: "#00000000"
@@ -33,11 +33,11 @@ Control {
 
     signal edit()
 
-    signal doCommandShade(int channel, int command)
+    signal doCommandShade(int command)
 
-    function cmdShade(gid, cmd){
+    function cmdShade(cmd){
         differentState();
-        doCommandShade(gid, cmd);
+        doCommandShade(cmd);
     }
 
     property int channel
@@ -47,8 +47,6 @@ Control {
     property int shadeState
     property string closeAtText
     property string openAtText
-
-    property int margin : width / 30
 
     Rectangle {
         id: upButton
@@ -93,7 +91,7 @@ Control {
         Image {
             id: upIcon
             anchors.fill: parent
-            anchors.margins: rootItem.margin
+            anchors.margins: 7
             fillMode: Image.PreserveAspectFit
             source: "img/ic_up.png"
         }
@@ -102,6 +100,7 @@ Control {
             id: upCaption
             anchors.centerIn: parent
             text: "OPEN"
+            font.bold: true
             font.pointSize: parent.height/3
             visible: false
         }
@@ -158,6 +157,7 @@ Control {
             id: downCaption
             anchors.centerIn: parent
             text: "CLOSED"
+            font.bold: true
             font.pointSize: parent.height/3
             visible: false
         }
@@ -169,7 +169,6 @@ Control {
             anchors.leftMargin: 7
             anchors.rightMargin: 7
             anchors.fill: parent
-            anchors.margins: rootItem.margin
             fillMode: Image.PreserveAspectFit
             source: "img/ic_down.png"
         }
@@ -247,11 +246,12 @@ Control {
             id: titleText
             color: "#ffffff"
             anchors.fill: parent
-            anchors.leftMargin: rootItem.margin
-            anchors.rightMargin: rootItem.margin
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            anchors.bottomMargin: 5
             wrapMode: Text.NoWrap
             verticalAlignment: Text.AlignVCenter
-            font.pixelSize: parent.height * 0.33
+            font.pixelSize: parent.height * 0.4
             elide: Text.ElideRight
             font.bold: true
             horizontalAlignment: Text.AlignHCenter
@@ -302,14 +302,14 @@ Control {
 
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Up)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Open)
+                onClicked: cmdShade(Shade.Up)
+                onPressAndHold: cmdShade(Shade.Open)
             }
 
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Down)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Close)
+                onClicked: cmdShade(Shade.Down)
+                onPressAndHold: cmdShade(Shade.Close)
             }
 
             PropertyChanges {
@@ -326,6 +326,11 @@ Control {
             PropertyChanges {
                 target: downIcon
                 source: "img/ic_down.png"
+                visible: true
+            }
+            PropertyChanges {
+                target: downCaption
+                visible: false
             }
         },
         State {
@@ -333,26 +338,34 @@ Control {
             when: rootItem.shadeState === Shade.Closed
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Down)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Close)
+                onClicked: cmdShade(Shade.Down)
+                onPressAndHold: cmdShade(Shade.Close)
             }
 
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Up)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Open)
+                onClicked: cmdShade(Shade.Up)
+                onPressAndHold: cmdShade(Shade.Open)
             }
 
             PropertyChanges {
-                target: downCaption
+                target: ipIcon
+                source: "img/ic_open.png"
                 visible: true
-                text: "CLOSED"
             }
-
+            PropertyChanges {
+                target: upCaption
+                visible: false
+            }
             PropertyChanges {
                 target: downIcon
                 source: "img/ic_close.png"
                 visible: false
+            }
+            PropertyChanges {
+                target: downCaption
+                visible: true
+                text: "CLOSED"
             }
         },
         State {
@@ -367,19 +380,26 @@ Control {
 
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Down)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Close)
+                onClicked: cmdShade(Shade.Down)
+                onPressAndHold: cmdShade(Shade.Close)
             }
 
             PropertyChanges {
                 target: upIcon
                 visible: false
             }
-
             PropertyChanges {
                 target: upCaption
-                text: "Full OPEN"
+                text: "FULL OPEN"
                 visible: true
+            }
+            PropertyChanges {
+                target: downIcon
+                visible: true
+            }
+            PropertyChanges {
+                target: downCaption
+                visible: false
             }
         },
         State {
@@ -394,20 +414,28 @@ Control {
 
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Up)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Open)
-            }
-
-            PropertyChanges {
-                target: downCaption
-                text: "Full CLOSED"
-                visible: true
+                onClicked: cmdShade(Shade.Up)
+                onPressAndHold: cmdShade(Shade.Open)
             }
 
             PropertyChanges {
                 target: downIcon
                 visible: false
             }
+            PropertyChanges {
+                target: downCaption
+                text: "FULL CLOSED"
+                visible: true
+            }
+            PropertyChanges {
+                target: upIcon
+                visible: true
+            }
+            PropertyChanges {
+                target: downCaption
+                visible: false
+            }
+
         },
         State {
             name: "opening"
@@ -427,8 +455,8 @@ Control {
 
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Interim)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Interim)
+                onClicked: cmdShade(Shade.Interim)
+                onPressAndHold: cmdShade(Shade.Interim)
             }
             PropertyChanges {
                 target: openingAnimation
@@ -441,7 +469,7 @@ Control {
             PropertyChanges {
                 target: actionTimer
                 running: true
-                onTriggered: cmdShade(rootItem.channel, Shade.FullOpened)
+                onTriggered: cmdShade(Shade.FullOpened)
             }
             PropertyChanges {
                 target: upIcon
@@ -459,8 +487,8 @@ Control {
             }
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Interim)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Interim)
+                onClicked: cmdShade(Shade.Interim)
+                onPressAndHold: cmdShade(Shade.Interim)
             }
             PropertyChanges {
                 target: downTouchListener
@@ -478,7 +506,7 @@ Control {
             PropertyChanges {
                 target: actionTimer
                 running: true
-                onTriggered: cmdShade(rootItem.channel, Shade.FullClosed)
+                onTriggered: cmdShade(Shade.FullClosed)
             }
             PropertyChanges {
                 target: downIcon
@@ -509,8 +537,8 @@ Control {
 
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Interim)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Interim)
+                onClicked: cmdShade(Shade.Interim)
+                onPressAndHold: cmdShade(Shade.Interim)
             }
             PropertyChanges {
                 target: openingAnimation
@@ -527,7 +555,7 @@ Control {
             PropertyChanges {
                 target: actionTimer
                 running: true
-                onTriggered: cmdShade(rootItem.channel, Shade.Opened)
+                onTriggered: cmdShade(Shade.Opened)
             }
         },
         State {
@@ -548,8 +576,8 @@ Control {
 
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Interim)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Interim)
+                onClicked: cmdShade(Shade.Interim)
+                onPressAndHold: cmdShade(Shade.Interim)
             }
             PropertyChanges {
                 target: downTouchListener
@@ -571,7 +599,7 @@ Control {
             PropertyChanges {
                 target: actionTimer
                 running: true
-                onTriggered: cmdShade(rootItem.Channel, Shade.Closed)
+                onTriggered: cmdShade(Shade.Closed)
             }
         },
         State {
@@ -590,13 +618,13 @@ Control {
             }
             PropertyChanges {
                 target: downTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Down)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Close)
+                onClicked: cmdShade(Shade.Down)
+                onPressAndHold: cmdShade(Shade.Close)
             }
             PropertyChanges {
                 target: upTouchListener
-                onClicked: cmdShade(rootItem.channel, Shade.Up)
-                onPressAndHold: cmdShade(rootItem.channel, Shade.Open)
+                onClicked: cmdShade(Shade.Up)
+                onPressAndHold: cmdShade(Shade.Open)
             }
             StateChangeScript {
                 script: { openingAnimation.complete(); closingAnimation.complete(); }

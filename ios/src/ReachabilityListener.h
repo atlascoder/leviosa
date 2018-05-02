@@ -23,7 +23,7 @@ public:
 
     virtual void statusChanged(NetworkStatus n) = 0;
     std::string ssid() const;
-    std::string bssid() const;
+    std::string bssid_ios() const;
     std::string ipaddr() const;
     
     NetworkStatus status() const;

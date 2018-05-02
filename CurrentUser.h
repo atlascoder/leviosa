@@ -6,15 +6,11 @@
 #include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <QFuture>
-
-#include "aws/IdToken.h"
-#include "aws/AccessToken.h"
-#include "aws/RefreshToken.h"
-#include "core/databasemanager.h"
-#include "core/User.h"
-#include "aws/CredentialsRequest.h"
-#include "aws/AuthRequest.h"
 #include <memory>
+
+#include "core/DatabaseManager.h"
+#include "core/User.h"
+#include "aws/AuthRequest.h"
 
 class CurrentUser : public QObject
 {
@@ -42,19 +38,10 @@ public:
     enum AuthState { Anon, Registered, Confirmed, Authenticated, Expired };
     Q_ENUMS(AuthState)
 
-    void fillCredentials(Aws::Auth::AWSCredentials & awsCredentials);
-
-    // blocking credentials request
-    void requestCredentials();
-
     QString email() const { return mEmail; }
     void setEmail(const QString& email);
 
     bool isAuthenticated() const { return mAuthState == Authenticated; }
-
-    bool hasCredentials() const { return mHasCredentials; }
-
-    void refreshTokens();
 
     AuthState authState() const { return mAuthState; }
     void setAuthState(const AuthState authState);
@@ -117,8 +104,6 @@ public slots:
 
 signals:
     void authRequired();
-    void credentialsReady();
-    void credentialsRequestFailed(const QString& message);
 
     void signedUpConfirmed();
     void signedUpNotConfirmed();
@@ -148,11 +133,7 @@ signals:
     void lastMessageChanged();
 private:
     User mUser;
-    IdToken mIdToken;
-    AccessToken mAccessToken;
-    RefreshToken mRefreshToken;
     DatabaseManager& mDb;
-    Aws::CognitoIdentity::Model::Credentials mCredentials;
 
     QFuture<void> mAuthResult;
 
@@ -174,7 +155,6 @@ private:
     bool mFailed;
 
     std::unique_ptr<AuthRequest> mAuthRequest;
-    std::unique_ptr<CredentialsRequest> mCredentialsRequest;
 
     CurrentUser(QObject *parent = 0);
     virtual ~CurrentUser();

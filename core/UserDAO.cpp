@@ -16,12 +16,6 @@ void UserDAO::init() const
         query.exec(
                     "CREATE TABLE users (" \
                     "email TEXT PRIMARY KEY NOT NULL, " \
-                    "idToken TEXT, " \
-                    "idTokenExpiration INTEGER DEFAULT 0, " \
-                    "accessToken TEXT, " \
-                    "accessTokenExpiration INTEGER DEFAULT 0, " \
-                    "refreshToken TEXT, " \
-                    "refreshTokenExpiration INTEGER DEFAULT 0, " \
                     "locationsModified INTEGER DEFAULT 0, " \
                     "controllersModified INTEGER DEFAULT 0, " \
                     "shadeGroupsModified INTEGER DEFAULT 0, " \
@@ -31,7 +25,8 @@ void UserDAO::init() const
                     "locationsSynced INTEGER DEFAULT 0, " \
                     "controllersSynced INTEGER DEFAULT 0, " \
                     "shadeGroupsSynced INTEGER DEFAULT 0, " \
-                    "verified INTEGER DEFAULT 0" \
+                    "verified INTEGER DEFAULT 0, " \
+                    "identityId TEXT" \
                     ")"
                    );
     }
@@ -40,16 +35,10 @@ void UserDAO::init() const
 void UserDAO::createUser(User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("INSERT INTO users (email, idToken, idTokenExpiration, accessToken, accessTokenExpiration, refreshToken, refreshTokenExpiration, locationsModified, controllersModified, shadeGroupsModified, locationsSyncCount, controllersSyncCount, shadeGroupsSyncCount, locationsSynced, controllersSynced, shadeGroupsSynced, verified)" \
-                  " VALUES (:email, :idToken, :idTokenExpiration, :accessToken, :accessTokenExpiration, :refreshToken, :refreshTokenExpiration, :locationsModified, :controllersModified, :shadeGroupsModified, :locationsSyncCount, :controllersSyncCount, :shadeGroupsSyncCount, :locationsSynced, :controllersSynced, :shadeGroupsSynced, :verified)"
+    query.prepare("INSERT INTO users (email, locationsModified, controllersModified, shadeGroupsModified, locationsSyncCount, controllersSyncCount, shadeGroupsSyncCount, locationsSynced, controllersSynced, shadeGroupsSynced, verified)" \
+                  " VALUES (:email, :locationsModified, :controllersModified, :shadeGroupsModified, :locationsSyncCount, :controllersSyncCount, :shadeGroupsSyncCount, :locationsSynced, :controllersSynced, :shadeGroupsSynced, :verified)"
                   );
     query.bindValue(":email", user.email());
-    query.bindValue(":idToken", user.idToken());
-    query.bindValue(":idTokenExpiration", user.idTokenExpiration());
-    query.bindValue(":accessToken", user.accessToken());
-    query.bindValue(":accessTokenExpiration", user.accessTokenExpiration());
-    query.bindValue(":refreshToken", user.refreshToken());
-    query.bindValue(":refreshTokenExpiration", user.refreshTokenExpiration());
     query.bindValue(":locationsModified", user.locationsModified());
     query.bindValue(":controllersModified", user.controllersModified());
     query.bindValue(":shadeGroupsModified", user.shadeGroupsLastModified());
@@ -70,13 +59,7 @@ void UserDAO::createUser(User &user) const
 void UserDAO::updateUser(const User &user) const
 {
     QSqlQuery query(mDatabase);
-    query.prepare("UPDATE users SET idToken=:idToken, idTokenExpiration=:idTokenExpiration, accessToken=:accessToken, accessTokenExpiration=:accessTokenExpiration, refreshToken=:refreshToken, refreshTokenExpiration=:refreshTokenExpiration, locationsModified=:locationsModified, controllersModified=:controllersModified, shadeGroupsModified=:shadeGroupsModified, locationsSyncCount=:locationsSyncCount, controllersSyncCount=:controllersSyncCount, shadeGroupsSyncCount=:shadeGroupsSyncCount, locationsSynced=:locationsSynced, controllersSynced=:controllersSynced, shadeGroupsSynced=:shadeGroupsSynced, verified=:verified WHERE email=:email");
-    query.bindValue(":idToken", user.idToken());
-    query.bindValue(":idTokenExpiration", user.idTokenExpiration());
-    query.bindValue(":accessToken", user.idToken());
-    query.bindValue(":accessTokenExpiration", user.accessTokenExpiration());
-    query.bindValue(":refreshToken", user.idToken());
-    query.bindValue(":refreshTokenExpiration", user.refreshTokenExpiration());
+    query.prepare("UPDATE users SET locationsModified=:locationsModified, controllersModified=:controllersModified, shadeGroupsModified=:shadeGroupsModified, locationsSyncCount=:locationsSyncCount, controllersSyncCount=:controllersSyncCount, shadeGroupsSyncCount=:shadeGroupsSyncCount, locationsSynced=:locationsSynced, controllersSynced=:controllersSynced, shadeGroupsSynced=:shadeGroupsSynced, verified=:verified WHERE email=:email");
     query.bindValue(":locationsModified", user.locationsModified());
     query.bindValue(":controllersModified", user.controllersModified());
     query.bindValue(":shadeGroupsModified", user.shadeGroupsLastModified());
@@ -105,12 +88,6 @@ bool UserDAO::loadUser(User &user) const
     }
     else if(query.first()){
         user.setEmail(query.value("email").toString());
-        user.setIdToken(query.value("idToken").toString());
-        user.setIdTokenExpiration(query.value("idTokenExpiration").toInt());
-        user.setAccessToken(query.value("accessToken").toString());
-        user.setAccessTokenExpiration(query.value("accessTokenExpiration").toInt());
-        user.setRefreshToken(query.value("refreshToken").toString());
-        user.setRefreshTokenExpiration(query.value("refreshTokenExpiration").toInt());
         user.setLocationsModified(query.value("locationsModified").toInt());
         user.setControllersModified(query.value("controllersModified").toInt());
         user.setShadeGroupsModified(query.value("shadeGroupsModified").toInt());
@@ -172,4 +149,31 @@ void UserDAO::persistUserDataModified(const User& user) const
     else{
         qDebug() << "UserData modified persisting error: " << query.lastError().text() << " // SQL: " << query.lastQuery();
     }
+}
+
+void UserDAO::persistCognitoIdentityId(const QString &id) const
+{
+    QSqlQuery query(mDatabase);
+    query.prepare("UPDATE users SET identityId=:identityId");
+    query.bindValue(":identityId", id);
+    if (query.exec())
+        qDebug() << "Identity Id persisted";
+    else
+        qDebug() << "Identity Id persist failed " << query.lastError().text();
+}
+
+QString UserDAO::readCognitoIdentityId() const
+{
+    QString identityId;
+    QSqlQuery query(mDatabase);
+    if (query.exec("SELECT * FROM users")) {
+        if(query.first() && !query.isNull("identityId"))
+            identityId = query.value("identityId").toString();
+        else
+            qDebug() << "stored identity is null";
+     }
+    else
+        qDebug() << "Reading identity id failed: " << query.lastError();
+
+    return identityId;
 }

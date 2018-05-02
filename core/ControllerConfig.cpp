@@ -11,6 +11,28 @@
 
 using namespace std;
 
+ControllerConfig& ControllerConfig::operator=(const ControllerConfig &config)
+{
+    mScheduleLines->clear();
+    mIsValid = config.mIsValid;
+    mVersion = config.mVersion;
+    mMac = config.mMac;
+    mTimezone = config.mTimezone;
+    mTime = config.mTime;
+    mJsonized = config.mJsonized;
+    mScheduleJsonString = config.mScheduleJsonString;
+
+    for (unique_ptr<ScheduleLine>& line:*config.mScheduleLines) {
+        unique_ptr<ScheduleLine> l(new ScheduleLine);
+        l->channel = line->channel;
+        l->open_mod = line->open_mod;
+        l->close_mod = line->close_mod;
+        l->dayEU = line->dayEU;
+        mScheduleLines->push_back(move(l));
+    }
+    return *this;
+}
+
 int ControllerConfig::utcOffset(const QString& abbr)
 {
     if(abbr == "EST")   return -18000;
@@ -30,31 +52,17 @@ void ControllerConfig::parse(const QString &jsonized)
     if((error.error == QJsonParseError::NoError) && doc.isObject()){
         QJsonObject obj = doc.object();
 
-        if(obj.contains("version")) mVersion = obj.value("version").toString();
+        if(obj.contains("version"))
+            mVersion = obj.value("version").toString();
         else{
             qDebug() << "Controller config failed: version not found";
             return;
         };
 
-        if(obj.contains("mac_address")) mMac = obj.value("mac_address").toString();
+        if(obj.contains("mac_address"))
+            mMac = obj.value("mac_address").toString();
         else{
             qDebug() << "Controller config failed: mac_address not found";
-            return;
-        };
-
-//        if(obj.contains("rf_channels") && obj.value("rf_channels").isArray()) {
-//            QJsonArray arr = obj.value("rf_channels").toArray();
-//            for(auto c : arr)
-//                mRfChannels.append(c.toString());
-//        }
-//        else{
-//            qDebug() << "Controller config failed: rf_channels not found";
-//            return;
-//        };
-
-        if(obj.contains("timezone")) mTimezone = obj.value("timezone").toString();
-        else{
-            qDebug() << "Controller config failed: timezone not found";
             return;
         };
 
@@ -69,25 +77,52 @@ void ControllerConfig::parse(const QString &jsonized)
             return;
         };
 
-        mTime.setTimeZone(QTimeZone(utcOffset(mTimezone)));
+        if(obj.contains("schedule") && obj.value("schedule").isObject()){
+            QJsonObject s_obj = obj.value("schedule").toObject();
+            if (s_obj.contains("timeZone") && s_obj.value("timeZone").isString()) {
+                mTimezone = s_obj.value("timeZone").toString();
+            }
+            else return;
 
-        if(obj.contains("schedules") && obj.value("schedules").isArray()){
-            mScheduleJsonString = obj.value("schedules").toString();
-            mScheduleLines->clear();
-            QJsonArray arr = obj.value("schedules").toArray();
-            for(QJsonValue v : arr)
-                mScheduleLines->push_back(buildScheduleLine(v.toObject()));
+            if (s_obj.contains("schedule") && s_obj.value("schedule").isArray()) {
+                mScheduleLines->clear();
+                QJsonArray s_arr = s_obj.value("schedule").toArray();
+                for (int i = 0; i < s_arr.size(); i++) {
+                    if (s_arr.at(i).isArray()) {
+                        QJsonArray s_arr1 = s_arr.at(i).toArray();
+                        if (s_arr1.size() == 4) {
+                            unique_ptr<ScheduleLine> s(new ScheduleLine);
+                            if (s_arr1.at(0).isDouble()) {
+                                s->channel = s_arr1.at(0).toInt();
+                            }
+                            else return;
+                            if (s_arr1.at(1).isDouble()) {
+                                s->open_mod = s_arr1.at(1).toInt();
+                            }
+                            else return;
+                            if (s_arr1.at(2).isDouble()) {
+                                s->close_mod = s_arr1.at(2).toInt();
+                            }
+                            else return;
+                            if (s_arr1.at(3).isDouble()) {
+                                s->dayEU = s_arr1.at(3).toInt();
+                            }
+                            else return;
+                            mScheduleLines->push_back(move(s));
+                        }
+                        else return;
+                    }
+                    else return;
+                }
+            }
+            else return;
         }
-        else{
-            qDebug() << "Controller config failed: schedules not found";
-            return;
-        };
+        else return;
 
         mIsValid = true;
     }
-    else{
+    else
         qDebug() << "Controller config failed: JSON parsing error " << error.errorString();
-    }
 }
 
 unique_ptr<ScheduleLine> ControllerConfig::buildScheduleLine(const QJsonObject &obj) const

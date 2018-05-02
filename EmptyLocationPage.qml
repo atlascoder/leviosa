@@ -17,9 +17,6 @@ LeviosaPage {
     statusText: netMonitor.onWlan ? "via WiFi" : "via Internet"
 
     signal controllerAdded()
-    signal goBack()
-
-    onMenuClicked: goBack()
 
     EspTouch {
         id: esptouch
@@ -33,10 +30,6 @@ LeviosaPage {
         onHostFound: {
             rootItem.state = "found";
         }
-    }
-
-    onMenuSelected: {
-        esptouch.running = false;
     }
 
     Connections {
@@ -384,7 +377,39 @@ LeviosaPage {
             PropertyChanges {
                 target: esptouch
                 running: true
-                onHostFound:  rootItem.state = "found"
+                onHostFound:  rootItem.state = "registering"
+            }
+        },
+        State{
+            name: "registering"
+            PropertyChanges {
+                target: stackLayout
+                currentIndex: 1
+            }
+            PropertyChanges {
+                target: passwordInput
+                focus: false
+            }
+            PropertyChanges {
+                target: actionButton
+                text: "Stop"
+                visible: false
+                onClicked: rootItem.state = "prepare"
+            }
+            PropertyChanges {
+                target: espTouchTimeout
+                running: false
+            }
+            StateChangeScript {
+                script: {
+                    userData.setupControllerKeys(esptouch.hostMac, esptouch.hostIP)
+                    userData.onControllerSetupSuccessful.connect(function(){
+                        rootItem.state = "found"
+                    })
+                    userData.onControllerSetupFailed.connect(function(errmsg){
+                        rootItem.state = "timeout"
+                    })
+                }
             }
         },
         State {
@@ -404,7 +429,7 @@ LeviosaPage {
             }
             StateChangeScript {
                 script: {
-                    userData.addControllerToLocation(esptouch.hostMac, netMonitor.bssid)
+                    userData.setupController(esptouch.hostMac, netMonitor.bssid)
                     controllerAdded()
                 }
             }

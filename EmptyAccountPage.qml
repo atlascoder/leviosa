@@ -32,14 +32,6 @@ LeviosaPage {
         }
     }
 
-    onMenuSelected: {
-        esptouch.running = false;
-    }
-
-    onMenuClicked: {
-        drawer.open()
-    }
-
     Connections {
         target: qGuiApp
         onApplicationStateChanged: {
@@ -335,85 +327,6 @@ LeviosaPage {
         }
     }
 
-    Drawer {
-        id: drawer
-        width:  0.66 * applicationWindow.width
-        height: applicationWindow.height
-        edge: Qt.LeftEdge
-        interactive: true
-
-        background: Rectangle {
-            color: DefTheme.secColorLight
-        }
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: parent.width / 20
-            spacing: 6
-
-            Text{
-                height: parent.width / 8
-                anchors.horizontalCenter: parent.horizontalCenter
-                verticalAlignment: Qt.AlignVCenter
-                text: currentUser.email
-                font.pixelSize: 16
-                color: DefTheme.secTextColor
-                font.bold: true
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                width: parent.width
-                text: "Open WebSite"
-                onClicked: {
-                    Qt.openUrlExternally("https://leviosashades.com") ;
-                }
-            }
-
-            Button {
-                width: parent.width
-                text: "Call to Support"
-                onClicked: {
-                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Sign Out"
-                font.bold: true
-                onClicked: {
-                    currentUser.signOut();
-                    drawer.close();
-                    drawer.interactive = false;
-                    openWelcomePage()
-                }
-            }
-        }
-
-        Text{
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: 10
-            text: "version: " + userData.version
-            font.pixelSize: 10
-            font.italic: true
-            color: "#a0000000"
-        }
-    }
-
-
     states: [
         State {
             name: "prepare"
@@ -464,7 +377,39 @@ LeviosaPage {
             PropertyChanges {
                 target: esptouch
                 running: true
-                onHostFound:  rootItem.state = "found"
+                onHostFound: rootItem.state = "registering"
+            }
+        },
+        State{
+            name: "registering"
+            PropertyChanges {
+                target: stackLayout
+                currentIndex: 1
+            }
+            PropertyChanges {
+                target: passwordInput
+                focus: false
+            }
+            PropertyChanges {
+                target: actionButton
+                text: "Stop"
+                visible: false
+                onClicked: rootItem.state = "prepare"
+            }
+            PropertyChanges {
+                target: espTouchTimeout
+                running: false
+            }
+            StateChangeScript {
+                script: {
+                    userData.setupControllerKeys(esptouch.hostMac, esptouch.hostIP)
+                    userData.onControllerSetupSuccessful.connect(function(){
+                        rootItem.state = "found"
+                    })
+                    userData.onControllerSetupFailed.connect(function(errmsg){
+                        rootItem.state = "timeout"
+                    })
+                }
             }
         },
         State {
@@ -484,7 +429,7 @@ LeviosaPage {
             }
             StateChangeScript {
                 script: {
-                    userData.addFirstController(esptouch.hostMac, netMonitor.bssid)
+                    userData.setupController(esptouch.hostMac, netMonitor.bssid)
                     controllerAdded()
                 }
             }

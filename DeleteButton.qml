@@ -15,6 +15,7 @@ Button {
             text: "DELETE"
             font.bold: true
             color: DefTheme.mainTextColor
+            font.pixelSize: 15
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter

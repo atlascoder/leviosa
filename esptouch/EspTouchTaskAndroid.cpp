@@ -7,7 +7,7 @@
 EspTouchTaskAndroid::EspTouchTaskAndroid(QString &ssid, QString &bssid, QString &password, QObject *parent):
     QThread(), mSsid(ssid), mBssid(bssid), mPwd(password), mHostIp("0.0.0.0"), mHostMac("000000000000"), mSuccessful(false)
 {
-
+    Q_UNUSED(parent);
 }
 
 void EspTouchTaskAndroid::run(){

@@ -51,3 +51,10 @@ void ControllerHTTPClient::onPostKeysFinished()
     mMultipart->deleteLater();
     mMultipart = nullptr;
 }
+
+void ControllerHTTPClient::post(const QString &url)
+{
+    QByteArray postData;
+    cmdReply = mQnam->post(QNetworkRequest(QUrl::fromUserInput(url)), postData);
+    connect(cmdReply, &QNetworkReply::finished, this, &ControllerHTTPClient::finishedPost);
+}

@@ -10,22 +10,15 @@ WelcomeBrandPage {
 
     hintText: "Syncing with cloud.."
 
-    Component.onCompleted: {
-        userData.sync();
-    }
-
-    Connections {
-        target: userData
-        onSynced: {
-            hintText = "Data downloaded."
-            downloaded()
-        }
-    }
-
     BusyIndicator {
         visible: userData.isSyncing
         anchors.top: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
+    }
+
+    Component.onCompleted: {
+        userData.sync()
+        userData.onSynced.connect(downloaded)
     }
 
 }

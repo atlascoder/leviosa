@@ -11,7 +11,8 @@ Page {
     id: leviosaPage
     visible: true
 
-    signal menuClicked()
+    signal goBack()
+    signal showMenu()
     signal addClicked()
     signal titleLongPressed()
     signal menuSelected()
@@ -29,8 +30,11 @@ Page {
     header: TopBar {
         id: toolbar
         onMenuAction: {
-            menuSelected();
-            menuClicked();
+            menuSelected()
+            if (enableMenuAction)
+                showMenu()
+            else
+                goBack()
         }
         onAddAction: addClicked()
         title: leviosaPage.title

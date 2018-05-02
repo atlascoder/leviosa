@@ -9,9 +9,11 @@
 #include <QThread>
 #include <QFuture>
 #include <QByteArray>
-
+#include <queue>
 #include "ControllerConfig.h"
 #include "ControllerHTTPClient.h"
+
+using namespace std;
 
 class ControllerAPI : public QThread
 {
@@ -21,9 +23,7 @@ class ControllerAPI : public QThread
 
     QUrl url;
     QNetworkReply* mCommandReply;
-    QNetworkReply* mConfigReply;
     QNetworkReply* mScheduleReply;
-    QNetworkReply* mTZoneReply;
     QStringList mScheduleCommands;
     ControllerConfig mControllerConfig;
     QString mIpAddress;
@@ -31,6 +31,7 @@ class ControllerAPI : public QThread
     bool mIsSyncing;
 
     QString mMac;
+    QString mBssid;
 
     QNetworkAccessManager* mQnam;
 
@@ -45,7 +46,7 @@ public:
     ControllerAPI(QObject *parent = 0);
     virtual ~ControllerAPI();
 
-    enum ControllerState { Wan, Searching, NotFound, Configuring, ConfigFailed, Wlan };
+    enum ControllerState { Wan, Searching, NotFound, Wlan };
     Q_ENUMS(ControllerState)
 
     void setIpAddress(const QString& ipAddress);
@@ -53,9 +54,8 @@ public:
 
     void shadeCmd(char channel, int cmd);
 
-    void fetchConfig();
-    void pushConfig();
-    void setTimezone(const QString& timezone);
+    void setBssid(const QString& bssid);
+    QString bssid() const;
 
     void setConfig(const ControllerConfig& config);
     ControllerConfig& currentConfig();
@@ -63,22 +63,22 @@ public:
     ControllerState controllerState() const { return mControllerState; }
     void setControllerState(ControllerState state);
 
+    QString mac() const { return mMac; }
     void setMac(const QString& mac) { mMac = mac; }
-
-    void pushConfigAndWait();
 
     void pushKeysAndCert(const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
 
     bool onWlan() const { return mControllerState != Wan; }
+
+    void sendAwsCommand(const QString& command, int channel);
+
+    static QString commandCode2String(int command);
 
 signals:
     void ipAddressChanged();
 
     void commandSuccessful();
     void commandFailed();
-    void configFetched();
-    void configFailed();
-    void configPushed();
     void scheduleSet();
     void scheduleFailed();
     void keysWasSet();
@@ -90,18 +90,16 @@ signals:
     void controllerStateChanged(const QString& mac);
 
     void sendCloudCommand(const QString& mac, const QString& command, int channel);
-private slots:
-    void commandFinished(QNetworkReply *reply);
-    void configFetchFinished();
-    void configPushFinished();
-    void scheduleFinished();
-    void timezoneFinished();
-
-    void commandHTTPRequest(int channel, int command);
-    void commandAWSRequest(int channel, int command);
 
     void cloudCommandSent();
     void cloudCommandFailed();
+
+private slots:
+    void commandFinished(QNetworkReply *reply);
+    void scheduleFinished();
+
+    void commandHTTPRequest(int channel, int command);
+    void commandAWSRequest(int channel, int command);
 
     void onKeysAndCertSet();
     void onKeysAndCertSetFailed(const QString& msg);

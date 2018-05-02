@@ -38,7 +38,6 @@
         <file>img/move-down.svg</file>
         <file>img/move-up.svg</file>
         <file>AllShadesControl.qml</file>
-        <file>ControllerPage.qml</file>
         <file>img/schedule-p.svg</file>
         <file>AuthPage.qml</file>
         <file>WelcomePage.qml</file>
@@ -47,7 +46,7 @@
         <file>img/auth_btn_bg.svg</file>
         <file>DefaultTheme.js</file>
         <file>RegisterPage.qml</file>
-        <file>EspTouchPage.qml</file>
+        <file>SetupControllerPage.qml</file>
         <file>img/003-wifi.svg</file>
         <file>img/002-computer.svg</file>
         <file>img/001-computer-1.svg</file>
@@ -60,21 +59,15 @@
         <file>img/002-left-arrow.svg</file>
         <file>img/001-left-arrow-key.svg</file>
         <file>EditLocationPage.qml</file>
-        <file>EditShadeGroupPage.qml</file>
-        <file>EditControllerPage.qml</file>
+        <file>ShadeGroupPage.qml</file>
+        <file>EditZonePage.qml</file>
         <file>img/001-write.svg</file>
         <file>img/003-black-back-closed-envelope-shape.svg</file>
         <file>ActionButton.qml</file>
         <file>WeekDayCheckBox.qml</file>
-        <file>NewLocationPage.qml</file>
-        <file>NewShadeGroupPage.qml</file>
         <file>VerticalSpinner.qml</file>
-        <file>libs/aws-sdk-2.171.0.js</file>
-        <file>libs/aws-sdk.min.js</file>
-        <file>libs/aws-sdk.js</file>
         <file>TopBar.qml</file>
         <file>LeviosaPage.qml</file>
-        <file>Timezones.qml</file>
         <file>img/ic_open.png</file>
         <file>img/ic_close.png</file>
         <file>img/ic_down.png</file>
@@ -94,10 +87,15 @@
         <file>SmallButton.qml</file>
         <file>SyncPage.qml</file>
         <file>ResetPasswordPage.qml</file>
-        <file>EmptyAccountPage.qml</file>
         <file>img/password.png</file>
-        <file>EmptyLocationPage.qml</file>
         <file>DeleteButton.qml</file>
         <file>img/wifi.png</file>
+        <file>img/Untitled.png</file>
+        <file>img/leviosa-logo.png</file>
+        <file>img/logo-big.png</file>
+        <file>Splash.qml</file>
+        <file>Tests.qml</file>
+        <file>ZonePage.qml</file>
+        <file>ZoneControl.qml</file>
     </qresource>
 </RCC>

@@ -116,7 +116,8 @@ ios {
     # AWS
     AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/xcode/aws-cpp-sdk
     ASX = Release-iphoneos
-    LIBS += -L$$AWS-core/$$ASX -laws-cpp-sdk-core \
+    LIBS += \
+                -L$$AWS-core/$$ASX -laws-cpp-sdk-core \
                 -L$$AWS-iam/$$ASX -laws-cpp-sdk-iam \
                 -L$$AWS-access-management/$$ASX -laws-cpp-sdk-access-management \
                 -L$$AWS-cognito-identity/$$ASX -laws-cpp-sdk-cognito-identity \
@@ -141,14 +142,14 @@ macos {
     AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/host/aws-cpp-sdk
 
     LIBS += \
+                -L$$AWS-core -laws-cpp-sdk-core \
                 -L$$AWS-iam -laws-cpp-sdk-iam \
+                -L$$AWS-access-management -laws-cpp-sdk-access-management \
+                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
                 -L$$AWS-iot -laws-cpp-sdk-iot \
                 -L$$AWS-cognito-idp -laws-cpp-sdk-cognito-idp \
                 -L$$AWS-cognito-sync -laws-cpp-sdk-cognito-sync \
-                -L$$AWS-access-management -laws-cpp-sdk-access-management \
-                -L$$AWS-cognito-identity -laws-cpp-sdk-cognito-identity \
                 -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
-                -L$$AWS-core -laws-cpp-sdk-core \
                 -lcurl
 
     #import Crypto++ lib
@@ -175,39 +176,45 @@ SOURCES += \
     core/User.cpp \
     core/UserDAO.cpp \
     aws/CognitoSyncAPI.cpp \
-    aws/IdToken.cpp \
-    aws/Jwt.cpp \
-    aws/AccessToken.cpp \
-    aws/RefreshToken.cpp \
     aws/ClientConfig.cpp \
     CurrentUser.cpp \
-    aws/CredentialsRequest.cpp \
     aws/AuthRequest.cpp \
     UserData.cpp \
-    core/shadegroup.cpp \
-    core/BasicDAO.cpp \
-    core/shadegroupmodel.cpp \
-    networkmonitor.cpp \
-    core/controllerdiscovery.cpp \
-    core/controllermodel.cpp \
-    core/databasemanager.cpp \
-    core/locationmodel.cpp \
     core/mdnsdiscothread.cpp \
-    core/schedule.cpp \
-    core/shade.cpp \
-    core/positioned.cpp \
     main.cpp \
-    core/location.cpp \
-    core/controller.cpp \
-    core/SyncableRecord.tpp \
-    core/syncablerecord.cpp \
     core/ControllerConfig.cpp \
     core/ControllerAPI.cpp \
     aws/CognitoSyncCommand.cpp \
-    core/ControllersMgr.cpp \
-    core/ControllerCfg.cpp \
     aws/ControllerThing.cpp \
-    core/ControllerHTTPClient.cpp
+    core/ControllerHTTPClient.cpp \
+    core/ControllerScan.cpp \
+    aws/PersistentCredentialsProviderSQL.cpp \
+    core/CredentialsDAO.cpp \
+    aws/AwsApi.cpp \
+    aws/CognitoCredentialsProvider.cpp \
+    aws/IdToken.cpp \
+    aws/Jwt.cpp \
+    core/LocalCache.cpp \
+    core/LocalCache.tpp \
+    CognitoSyncTests.cpp \
+    core/CognitoSyncDAO.cpp \
+    core/Location.cpp \
+    core/Controller.cpp \
+    core/ShadeGroup.cpp \
+    core/ShadeGroupModel.cpp \
+    core/DatabaseManager.cpp \
+    core/LocationModel.cpp \
+    core/ControllerDiscovery.cpp \
+    core/Positioned.cpp \
+    core/Schedule.cpp \
+    core/Shade.cpp \
+    NetworkMonitor.cpp \
+    UserData.tpp \
+    core/ZoneModel.cpp \
+    core/ControllerConnectionsManager.cpp \
+    core/LocationsModel.cpp \
+    core/TimeZoneModel.cpp \
+    core/ControllerSSDP.cpp
 
 # own codebase
 HEADERS += \
@@ -216,41 +223,47 @@ HEADERS += \
     core/User.h \
     core/UserDAO.h \
     aws/CognitoSyncAPI.h \
-    aws/IdToken.h \
-    aws/Jwt.h \
-    aws/AccessToken.h \
-    aws/RefreshToken.h \
     aws/ClientConfig.h \
     CurrentUser.h \
-    aws/CredentialsRequest.h \
     aws/AuthRequest.h \
     UserData.h \
-    core/shadegroup.h \
-    core/BasicDAO.h \
-    core/shadegroupmodel.h \
-    networkmonitor.h \
-    core/controllerdiscovery.h \
-    core/controllermodel.h \
-    core/databasemanager.h \
-    core/locationmodel.h \
     core/mdnsdiscothread.h \
-    core/schedule.h \
-    core/shade.h \
-    core/positioned.h \
-    core/location.h \
-    core/controller.h \
-    core/SyncableRecord.h \
-    core/syncable.h \
+    core/Syncable.h \
     core/ControllerConfig.h \
-    core/scheduleline.h \
     NAM.h \
     core/ControllerHTTPClient.h \
     core/ControllerAPI.h \
     core/timeaux.h \
     aws/CognitoSyncCommand.h \
-    core/ControllersMgr.h \
-    core/ControllerCfg.h \
-    aws/ControllerThing.h
+    aws/ControllerThing.h \
+    core/ControllerScan.h \
+    aws/PersistentCredentialsProviderSQL.h \
+    core/CredentialsDAO.h \
+    aws/AwsApi.h \
+    aws/CognitoCredentialsProvider.h \
+    aws/IdToken.h \
+    aws/Jwt.h \
+    core/LocalCache.h \
+    CognitoSyncTests.h \
+    core/CognitoSyncDAO.h \
+    core/Jsonized.h \
+    core/Location.h \
+    core/Controller.h \
+    core/ShadeGroup.h \
+    core/ShadeGroupModel.h \
+    core/DatabaseManager.h \
+    core/LocationModel.h \
+    core/Positioned.h \
+    core/Schedule.h \
+    core/ScheduleLine.h \
+    core/Shade.h \
+    core/ControllerDiscovery.h \
+    NetworkMonitor.h \
+    core/ZoneModel.h \
+    core/ControllerConnectionsManager.h \
+    core/LocationsModel.h \
+    core/TimeZoneModel.h \
+    core/ControllerSSDP.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

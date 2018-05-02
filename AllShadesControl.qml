@@ -9,6 +9,7 @@ Rectangle {
     width: parent.width
     height: width / 5 > 120 ? 120 : width / 5
     color: DefTheme.mainColorLight
+    radius: 6
 
     property int shadeState : Shade.Interim
     property string connectionStateText : ""
@@ -18,6 +19,10 @@ Rectangle {
 
     border.width: 0
     border.color: "#00000000"
+
+    function reset(){
+        shadeState = Shade.Interim
+    }
 
 	layer.enabled: true
 	layer.effect: DropShadow {
@@ -41,6 +46,7 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.WordWrap
+            font.bold: true
             font.pixelSize: parent.width / 4
 		}
 
@@ -104,6 +110,7 @@ Rectangle {
             wrapMode: Text.WordWrap
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
+            font.bold: true
             font.pixelSize: parent.width / 4
 		}
 
@@ -154,7 +161,8 @@ Rectangle {
     Text {
         id: scheduleBar
         text: "ALL SHADES"
-        font.weight: Font.Bold
+        font.bold: true
+        color: DefTheme.mainTextColor
         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
         bottomPadding: 4
         topPadding: 4
@@ -249,7 +257,7 @@ Rectangle {
 
             PropertyChanges {
                 target: downText
-                text: "CLOSE"
+                text: "CLOSED"
                 visible: true
             }
 

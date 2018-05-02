@@ -23,14 +23,11 @@ signals:
     void setKeysFailed(const QString& msg);
 
 public slots:
-    void get(const QString& url) {
-        cmdReply = mQnam->get(QNetworkRequest(QUrl::fromUserInput(url)));
-        connect(cmdReply, &QNetworkReply::finished, this, &ControllerHTTPClient::finishedGet);
-    }
+    void post(const QString& url);
 
     void postKeysAndCert(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
 private slots:
-    void finishedGet() { if(cmdReply) emit requestFinished(cmdReply); }
+    void finishedPost() { if(cmdReply) emit requestFinished(cmdReply); }
     void onPostKeysFinished();
 public:
     ControllerHTTPClient(QObject *parent=nullptr);

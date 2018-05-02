@@ -5,7 +5,6 @@ import QtGraphicalEffects 1.0
 import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
-import "libs/aws-sdk.js" as AWS
 
 LeviosaPage {
     id: rootItem

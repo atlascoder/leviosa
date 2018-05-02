@@ -49,7 +49,7 @@ ToolBar {
                 fillMode: Image.PreserveAspectFit
                 source: enableMenuAction ? "img/004-bars.svg" : "img/002-left-arrow.svg"
                 anchors.fill: parent
-                anchors.margins: width / 4
+                anchors.margins: parent.height / 4
             }
             onClicked: menuAction()
         }
@@ -105,7 +105,7 @@ ToolBar {
                 fillMode: Image.PreserveAspectFit
                 source: "img/plus-white.svg"
                 anchors.fill: parent
-                anchors.margins: width / 4
+                anchors.margins: parent.height / 4
             }
             enabled: enableAddAction
             opacity: enableAddAction ? 1 : 0

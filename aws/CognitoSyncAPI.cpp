@@ -9,180 +9,204 @@
 #include <aws/core/utils/memory/AWSMemory.h>
 
 #include <QDebug>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QMutexLocker>
 
-#include "ClientConfig.h"
-#include "core/SyncableRecord.h"
 #include <memory>
 
-using namespace Aws::CognitoSync;
+#include "core/LocalCache.h"
+#include "aws/AwsApi.h"
+
+using namespace Aws;
+using namespace Aws::Auth;
 using namespace std;
 
-CognitoSyncAPI::CognitoSyncAPI() : mCancelled(false)
+void SyncCache(LocalCache<Syncable>& cache, const QString& uuid, const QString& jsonValue, long long syncCount, CognitoSync::Model::UpdateRecordsRequest& updateRemoteRequest)
 {
-    mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, ClientConfig::instance());
-}
-
-CognitoSyncAPI::~CognitoSyncAPI()
-{
-    cancelRequests();
-    Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
-}
-
-void CognitoSyncAPI::resetWithCredentials(const Aws::Auth::AWSCredentials &credentials)
-{
-    Aws::Delete<Aws::CognitoSync::CognitoSyncClient>(mClient);
-    mClient = Aws::New<Aws::CognitoSync::CognitoSyncClient>(nullptr, credentials, ClientConfig::instance());
-}
-
-void CognitoSyncAPI::cancelRequests()
-{
-    mCancelled = true;
-    mClient->DisableRequestProcessing();
-}
-
-void CognitoSyncAPI::sync(const Aws::Auth::AWSCredentials & credentials, const QString & datasetName, SyncableRecord<Location> & locations, SyncableRecord<Controller> & controllers, SyncableRecord<ShadeGroup> & shadeGroups)
-{
-    if(mCancelled) return;
-    resetWithCredentials(credentials);
-    Model::ListRecordsRequest req;
-    req.SetDatasetName(Aws::Utils::StringUtils::to_string(datasetName.toStdString()));
-    req.SetIdentityId(ClientConfig::instance().identityId);
-    req.SetIdentityPoolId(ClientConfig::instance().identityPool);
-    Model::UpdateRecordsRequest updateRequest;
-
-    bool locationsFound = false;
-    bool controllersFound = false;
-    bool shadeGroupsFound = false;
-
-    // receive remote data and mark updated by lastModifiedDate
-    if(mCancelled) return;
-    auto resp = mClient->ListRecords(req);
-    if(resp.IsSuccess()){
-        qDebug() << "SYNC ListRecords (" << resp.GetResult().GetCount() << ")";
-        const Aws::Vector<Model::Record> & records = resp.GetResult().GetRecords();
-        for(auto& record : records){
-            qDebug() << "SYNC Record [" << record.GetKey().c_str() << "][" << record.GetSyncCount() << "] => " << record.GetValue().c_str();
-            if("locations" == record.GetKey()){
-                syncRecord(locations, record, updateRequest);
-                locationsFound = true;
-            }
-            else if("controllers" == record.GetKey()){
-                syncRecord(controllers, record, updateRequest);
-                controllersFound = true;
-            }
-            else if("shadeGroups" == record.GetKey()){
-                syncRecord(shadeGroups, record, updateRequest);
-                shadeGroupsFound = true;
-            }
-        }
-    }
-    else{
-        qDebug() << "Error receiving Locations: " << resp.GetError().GetMessage().c_str();
+    // CognitoSync does return empty JSONs for deleted items
+    // Such items should be deleted in local cache
+    if (jsonValue.isEmpty() || jsonValue == "{}") {
+        // delete from local cache
+        cache.deleteItem(uuid, syncCount);
         return;
     }
 
-    if(!locationsFound){
-        Model::RecordPatch patch;
-        patch.SetOp(Model::Operation::replace);
-        patch.SetKey("locations");
-        patch.SetValue(Aws::Utils::StringUtils::to_string(locations.syncContent().toStdString()));
-        patch.SetSyncCount(0);
-        updateRequest.AddRecordPatches(patch);
-        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
-    }
-
-    if(!controllersFound){
-        Model::RecordPatch patch;
-        patch.SetOp(Model::Operation::replace);
-        patch.SetKey("controllers");
-        patch.SetValue(Aws::Utils::StringUtils::to_string(controllers.syncContent().toStdString()));
-        patch.SetSyncCount(0);
-        updateRequest.AddRecordPatches(patch);
-        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
-    }
-
-    if(!shadeGroupsFound){
-        Model::RecordPatch patch;
-        patch.SetOp(Model::Operation::replace);
-        patch.SetKey("shadeGroups");
-        patch.SetValue(Aws::Utils::StringUtils::to_string(shadeGroups.syncContent().toStdString()));
-        patch.SetSyncCount(0);
-        updateRequest.AddRecordPatches(patch);
-        qDebug() << "SYNC PUT [locations] => " << patch.GetValue().c_str();
-    }
-
-
-    if(updateRequest.GetRecordPatches().size() == 0) return;
-
-    updateRequest.SetIdentityId(ClientConfig::instance().identityId);
-    updateRequest.SetIdentityPoolId(ClientConfig::instance().identityPool);
-    updateRequest.SetDatasetName(Aws::Utils::StringUtils::to_string(datasetName.toStdString()));
-    updateRequest.SetSyncSessionToken(resp.GetResult().GetSyncSessionToken());
-
-    if(mCancelled) return;
-    auto updateResp = mClient->UpdateRecords(updateRequest);
-    if(updateResp.IsSuccess()){
-        const Aws::Vector<Model::Record> & records = updateResp.GetResult().GetRecords();
-        for(auto& record : records){
-            if("locations" == record.GetKey()){
-                locations.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                locations.setSyncCount(record.GetSyncCount());
-                locations.setSynced(true);
-                locations.setUpdated(true);
-            }
-            else if("controllers" == record.GetKey()){
-                controllers.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                controllers.setSyncCount(record.GetSyncCount());
-                controllers.setSynced(true);
-                controllers.setUpdated(true);
-            }
-            else if("shadeGroups" == record.GetKey()){
-                shadeGroups.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-                shadeGroups.setSyncCount(record.GetSyncCount());
-                shadeGroups.setSynced(true);
-                shadeGroups.setUpdated(true);
-            }
+    // Walk through local cache and collate items by SyncCount
+    // Remote cache is requesting with LastSyncCount and response contains unly updated records
+    // local SyncCount == -1 means that item is deleted in local cache and should be deleted in remote cache
+    // remote-SyncCount > local-SyncCount means that record was updated remotely and this change has precedence over local change
+    // SyncCount that equals in local and remote cache means that rremote record is not changed
+    // if local isSynced is false - local data was changed and requires to change in remote
+    Syncable* item;
+    if (cache.findByKey(uuid, &item)) {
+        if (item->syncCount() == -1) {
+            // delete from remote cache
+            CognitoSync::Model::RecordPatch patch;
+            patch.SetKey(uuid.toStdString());
+            patch.SetOp(CognitoSync::Model::Operation::remove);
+            patch.SetSyncCount(syncCount);
+            updateRemoteRequest.AddRecordPatches(patch);
+        }
+        else if (item->syncCount() != syncCount){
+            // update item in local cache, overwrite local change
+            cache.updateItem(uuid, jsonValue, syncCount);
+        }
+        else if (item->isChanged()) {
+            // update remote cache with local value
+            CognitoSync::Model::RecordPatch patch;
+            patch.SetKey(uuid.toStdString());
+            patch.SetOp(CognitoSync::Model::Operation::replace);
+            patch.SetSyncCount(syncCount);
+//            patch.SetValue(QJsonDocument(item->toJson()).toJson().toStdString());
+            updateRemoteRequest.AddRecordPatches(patch);
         }
     }
-    else{
-        qDebug() << "Update request failed: " << updateResp.GetError().GetMessage().c_str();
+    else {
+        // insert new item into local cache
+        cache.createItem(uuid, jsonValue, syncCount);
     }
 
 }
 
-template<class T>
-void CognitoSyncAPI::syncRecord(SyncableRecord<T> & syncable, const Model::Record & record, Model::UpdateRecordsRequest & update) const
+void CompleteUpdateRemoteRequest(LocalCache<Syncable>& record, CognitoSync::Model::UpdateRecordsRequest& updateRemoteRequest)
 {
-    if(syncable.syncCount() == record.GetSyncCount() && !syncable.synced()){
-        // local cache is fresher, do syncWithStale strategy
-        Model::RecordPatch patch;
-        patch.SetKey(record.GetKey());
-        patch.SetValue(Aws::Utils::StringUtils::to_string(syncable.syncWithStale(record.GetValue().c_str()).toStdString()));
-        patch.SetOp(Aws::CognitoSync::Model::Operation::replace);
-        patch.SetSyncCount(record.GetSyncCount());
-        update.AddRecordPatches(patch);
-        syncable.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-        qDebug() << "SYNC WITH STALE [" << record.GetKey().c_str() << "] " << \
-                    " SyncCount L~R: " << syncable.syncCount() << "~" << record.GetSyncCount();
+    for (auto& key : record.leftItemsKeys()) {
+        auto i = find_if(
+                    record.items().begin(),
+                    record.items().end(),
+                    [key](const unique_ptr<Syncable>& _i)->bool{ return key == _i->uuid(); }
+                );
+        if (i != record.items().end() && !i->get()->isDeleted()) {
+            // create
+            CognitoSync::Model::RecordPatch patch;
+            patch.SetSyncCount(0);
+            patch.SetKey(i->get()->uuid().toStdString());
+//            patch.SetValue(QJsonDocument(i->get()->toJson()).toJson(QJsonDocument::JsonFormat::Compact).toStdString());
+            patch.SetOp(CognitoSync::Model::Operation::replace);
+            updateRemoteRequest.AddRecordPatches(patch);
+        }
     }
-    else if(syncable.syncCount() != record.GetSyncCount()){
-        // remote cache is fresher, do syncWithFresher strategy
-        QString updString = syncable.syncWithFresher(record.GetValue().c_str());
-        Model::RecordPatch patch;
-        patch.SetKey(record.GetKey());
-        patch.SetOp(Aws::CognitoSync::Model::Operation::replace);
-        patch.SetSyncCount(record.GetSyncCount());
-        patch.SetValue(Aws::Utils::StringUtils::to_string(updString.toStdString()));
-        update.AddRecordPatches(patch);
-        syncable.setLastModified(record.GetLastModifiedDate().Millis() / 1000);
-        qDebug() << "SYNC WITH FRESHER [" << record.GetKey().c_str() << "] " << \
-                    " SyncCount L~R: " << syncable.syncCount() << "~" << record.GetSyncCount();
-        syncable.setSyncCount(record.GetSyncCount());
+}
+
+long long getLastSyncCount(const shared_ptr<vector<shared_ptr<Syncable>>>& items) {
+    if (items->empty())
+        return 0;
+    else
+        return max_element(
+                    items->begin(),
+                    items->end(),
+                    [](const shared_ptr<Syncable>& a, const shared_ptr<Syncable>& b)->bool{ return a->syncCount() < b->syncCount(); }
+                )->get()->syncCount();
+}
+
+
+void CognitoSyncAPI::syncData(const shared_ptr<vector<shared_ptr<Syncable>>>& cacheList)
+{
+    long long lastSyncCount = getLastSyncCount(cacheList);
+    qDebug() << "Sync started with cache, with syncCount " << lastSyncCount;
+    mIsSuccessful = false;
+    mIsUpdated = false;
+    std::shared_ptr<CognitoSync::CognitoSyncClient> client = AwsApi::instance().getClient<CognitoSync::CognitoSyncClient>();
+    if (client.get() == nullptr) return;
+    CognitoSync::Model::ListRecordsRequest req;
+    req.SetDatasetName("items");
+    req.SetIdentityId(AwsApi::instance().getIdentityId());
+    req.SetIdentityPoolId(ClientConfig::instance().identityPool);
+    req.SetLastSyncCount(lastSyncCount);
+
+    auto resp = client->ListRecords(req);
+    if (resp.IsSuccess()) {
+        // walk through remote cache looking for new, updated, deleted and should be deleted
+        for (auto& r : resp.GetResult().GetRecords()) {
+            if (strncmp(r.GetValue().c_str(), "{}", r.GetValue().size()) == 0) {
+                // deleted record
+                auto item = find_if(cacheList->begin(), cacheList->end(), [r](const shared_ptr<Syncable>& _item)->bool{ return r.GetKey()==_item->uuid().toStdString(); });
+                if (item != cacheList->end() && item->get()->syncCount() != r.GetSyncCount()) {
+                    // set deleted
+                    item->get()->setDeleted(true);
+                    item->get()->setValue("{}");
+                    item->get()->setSyncCount(r.GetSyncCount());
+                    item->get()->setChanged(false);
+                    mIsUpdated = true;
+                }
+                else {
+                    // create deleted record
+                    shared_ptr<Syncable> item(new Syncable(QString(r.GetKey().c_str())));
+                    item->setDeleted(true);
+                    item->setValue("{}");
+                    item->setSyncCount(r.GetSyncCount());
+                    cacheList->push_back(item);
+                }
+            }
+            else {
+                // contented record
+                auto item = find_if(cacheList->begin(), cacheList->end(), [r](const shared_ptr<Syncable>& _item)->bool{ return r.GetKey()==_item->uuid().toStdString(); });
+                if (item != cacheList->end() && item->get()->syncCount() != r.GetSyncCount()) {
+                    // update existing item
+                    item->get()->setValue(QString(r.GetValue().c_str()));
+                    item->get()->setSyncCount(r.GetSyncCount());
+                    item->get()->setChanged(false);
+                }
+                else {
+                    // create new item
+                    shared_ptr<Syncable> item(new Syncable(QString(r.GetKey().c_str())));
+                    item->setValue(QString(r.GetValue().c_str()));
+                    item->setSyncCount(r.GetSyncCount());
+                    cacheList->push_back(item);
+                }
+            }
+        }
+
+        CognitoSync::Model::UpdateRecordsRequest update_request;
+        update_request.SetDatasetName("items");
+        update_request.SetIdentityId(AwsApi::instance().getIdentityId());
+        update_request.SetIdentityPoolId(ClientConfig::instance().identityPool);
+        update_request.SetSyncSessionToken(resp.GetResult().GetSyncSessionToken());
+
+        // Complete remote cache updateing requests addnig new items from local cache
+        for (auto& c : *cacheList) {
+            if (c->isChanged()) {
+                CognitoSync::Model::RecordPatch patch;
+                patch.SetKey(c->uuid().toStdString());
+                patch.SetSyncCount(c->syncCount());
+                if (c->isDeleted()) {
+                    patch.SetOp(CognitoSync::Model::Operation::remove);
+                }
+                else {
+                    patch.SetOp(CognitoSync::Model::Operation::replace);
+                    patch.SetValue(c->value().toStdString());
+                }
+                update_request.AddRecordPatches(patch);
+            }
+        }
+
+        if (update_request.GetRecordPatches().empty()) {
+            mIsSuccessful = true;
+            mIsUpdated = lastSyncCount != getLastSyncCount(cacheList);
+            return;
+        }
+        CognitoSync::Model::UpdateRecordsOutcome update_response = client->UpdateRecords(update_request);
+        if (update_response.IsSuccess()) {
+            // update syncounts and persist
+            for (auto& r : update_response.GetResult().GetRecords()) {
+                QString uuid(r.GetKey().c_str());
+                auto i = find_if(cacheList->begin(), cacheList->end(), [&uuid](const shared_ptr<Syncable> _i)->bool{ return _i->uuid()==uuid; });
+                if (i != cacheList->end()) {
+                    i->get()->setChanged(false);
+                    i->get()->setSyncCount(r.GetSyncCount());
+                }
+            }
+            mIsUpdated = lastSyncCount != getLastSyncCount(cacheList);
+            mIsSuccessful = true;
+        }
+        else {
+            mLastMessage = update_response.GetError().GetMessage().c_str();
+            qDebug() << "Error while updating r-cache: " << mLastMessage;
+        }
     }
     else {
-        syncable.setUpdated(false);
-        syncable.setSynced(true);
-        qDebug() << "SYNC MATCH [" << record.GetKey().c_str() << "] => " << record.GetValue().c_str() << \
-                    " with syncCount: " << record.GetSyncCount();
+        mLastMessage = resp.GetError().GetMessage().c_str();
+        qDebug() << "Error while getting remote cache: " << mLastMessage;
     }
 }

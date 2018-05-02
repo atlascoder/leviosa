@@ -2,6 +2,7 @@
 #define USERDAO_H
 
 #include "User.h"
+
 class QSqlDatabase;
 
 class UserDAO
@@ -17,6 +18,9 @@ public:
     bool loadUser(User & user) const;
 
     void persistUserDataModified(const User& user) const;
+
+    void persistCognitoIdentityId(const QString& id) const;
+    QString readCognitoIdentityId() const;
 
 private:
     void createUser(User & user) const;

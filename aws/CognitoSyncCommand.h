@@ -3,31 +3,18 @@
 
 #include <QObject>
 #include <QString>
+#include <QMutex>
 
+#include <aws/identity-management/auth/PersistentCognitoIdentityProvider.h>
 #include <aws/cognito-sync/CognitoSyncClient.h>
+#include <aws/cognito-identity/CognitoIdentityClient.h>
 
-class CognitoSyncCommand : public QObject
+class CognitoSyncCommand
 {
-    Q_OBJECT
-
-    bool mCancelled;
-    Aws::CognitoSync::CognitoSyncClient* mClient;
+    bool mIsSuccessful;
 public:
-    CognitoSyncCommand(QObject *parent=0);
-    ~CognitoSyncCommand();
-
-    void cancelRequests();
-
-signals:
-    void commandSent();
-    void commandFailed();
-
-public slots:
     void sendCommand(const QString& controllerMac, const QString& command, int channel);
-
-private:
-    void resetWithCredentials(const Aws::Auth::AWSCredentials & credentials);
-
+    bool isSuccessful() const { return mIsSuccessful; }
 };
 
 #endif // COGNITOSYNCCOMMAND_H

@@ -1,21 +1,19 @@
-import QtQuick 2.6
+import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Dialogs 1.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import com.atlascoder.LocationsModel 1.0
+import com.atlascoder.TimeZoneModel 1.0
 
 import "DefaultTheme.js" as DefTheme
 
 LeviosaPage {
     id: rootItem
-	title: "Locations"
-    enableAddAction: false
+    title: "Locations"
 
-    property bool swiped : false
-
-    signal openLocation(string uuid, string tzone, string bssid)
+    signal openLocation(string uuid)
     signal editLocation(string uuid)
 
     showStatusText: true
@@ -24,68 +22,36 @@ LeviosaPage {
     showSubTitle: true
     subTitle: "Loading..."
 
-    Timezones {
+    TimeZoneModel {
         id: tzones
     }
 
-
     LocationsModel {
-        id: locationModel
-        currentBssid: netMonitor.bssid
-    }
-
-    function init(){
-        locationModel.updateModel();
-        if(netMonitor.connected){
-            userData.sync();
-        }
-        swiper.start();
-        drawer.interactive = true;
-    }
-
-    Timer {
-        id: swiper
-        interval: 500
-        repeat: false
-        onTriggered:{
-            if((locationModel.rowCount() === 1) && !swiped){
-                swiped = true;
-                openLocation(locationModel.uuidByIndex(0), locationModel.timezone, locationModel.bssidByIndex(0));
-            }
-        }
-    }
-
-    function pause(){
-        drawer.interactive = false
+        id: locationsModel
     }
 
 	GridView {
 		id: gridView
 		anchors.fill: parent
-		cellWidth: {
-			if (parent.width <= 240)
-				return parent.width
-			else{
-				var n = 1;
-				while(parent.width / n > 240){ n++; }
-				return Math.round(parent.width/n);
-			}
-		}
-		cellHeight: cellWidth
-        model: locationModel
+        anchors.margins: 6
+
+        cellWidth: height > width ? (width / 2) : (width / 3)
+        cellHeight: height > width ? (height / 3) : (height / 2)
+
+        model: locationsModel
 		delegate: Item {
 			id: locItem
-			width: gridView.cellWidth
-			height: gridView.cellHeight
+            width: gridView.cellWidth
+            height: gridView.cellHeight
 
             property bool isOnWlan : netMonitor.onWlan && netMonitor.bssid === model.bssid
 
 			Button {
 				id: itemRect
 				anchors.fill: parent
-				anchors.margins: 10
+                anchors.margins: 6
 				background: Rectangle {
-					radius: 4
+                    radius: 6
 					layer.enabled: true
 					layer.effect: DropShadow {
 						radius: itemRect.down ? 1 : 3
@@ -96,13 +62,11 @@ LeviosaPage {
 
 
                 Timer {
-                    interval: 500
+                    interval: 1000
                     repeat: true
-                    property string timezoneName : tzones.getSignature(utcOffset)
-                    property int tOff: utcOffset*1000
                     onTriggered: {
                         var d = new Date();
-                        timeline.text = timezoneName + " " + (new Date(d.getTime() + tOff + d.getTimezoneOffset()*60000).toLocaleTimeString("en-US"))
+                        timeline.text = timezone + " " + (new Date(d.getTime() + utcOffset*1000 + d.getTimezoneOffset()*60000)).toLocaleTimeString("en-US")
                     }
                     running: true
                 }
@@ -150,7 +114,7 @@ LeviosaPage {
                     }
 				}
 				onClicked: {
-                    openLocation(uuid, locationModel.timezone, bssid);
+                    openLocation(uuid);
 				}
 				onPressAndHold: {
                     if(rootItem.state === "Synced")
@@ -159,100 +123,6 @@ LeviosaPage {
 			}
 		}
 	}
-
-    PropertyAnimation {
-        id: syncing
-    }
-
-    onMenuClicked: drawer.open()
-
-    Drawer {
-        id: drawer
-        width:  0.66 * applicationWindow.width
-        height: applicationWindow.height
-        edge: Qt.LeftEdge
-        interactive: true
-
-        background: Rectangle {
-            color: DefTheme.secColorLight
-        }
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: parent.width / 20
-            spacing: 6
-
-            Text{
-                height: parent.width / 8
-                anchors.horizontalCenter: parent.horizontalCenter
-                verticalAlignment: Qt.AlignVCenter
-                text: currentUser.email
-                font.pixelSize: 16
-                color: DefTheme.secTextColor
-                font.bold: true
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                width: parent.width
-                text: "Add current location"
-                onClicked: {
-                    drawer.close()
-                    openNewLocationPage()
-                }
-                visible: netMonitor.onWlan && !userData.isBssidKnown(netMonitor.bssid)
-            }
-
-            Button {
-                width: parent.width
-                text: "Open WebSite"
-                onClicked: {
-                    Qt.openUrlExternally("https://leviosashades.com") ;
-                }
-            }
-
-            Button {
-                width: parent.width
-                text: "Call to Support"
-                onClicked: {
-                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 2
-                color: DefTheme.secColorDark
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Sign Out"
-                font.bold: true
-                onClicked: {
-                    currentUser.signOut();
-                    drawer.close();
-                    drawer.interactive = false;
-                    openWelcomePage()
-                }
-            }
-        }
-
-        Text{
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: 10
-            text: "version: " + userData.version
-            font.pixelSize: 10
-            font.italic: true
-            color: "#a0000000"
-        }
-    }
 
     states: [
         State {

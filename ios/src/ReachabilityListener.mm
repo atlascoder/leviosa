@@ -142,7 +142,7 @@ std::string ReachabilityDelegate::ssid() const
     return [listener ssid];
 }
 
-std::string ReachabilityDelegate::bssid() const
+std::string ReachabilityDelegate::bssid_ios() const
 {
     return [listener bssid];
 }

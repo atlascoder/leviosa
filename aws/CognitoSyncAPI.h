@@ -5,30 +5,36 @@
 #include <aws/cognito-identity/CognitoIdentityClient.h>
 #include <aws/cognito-sync/model/UpdateRecordsRequest.h>
 #include <aws/cognito-sync/model/Record.h>
+
+#include <memory>
+
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
+#include <QMutex>
 
-#include "core/SyncableRecord.h"
+#include "core/LocalCache.h"
 #include "ClientConfig.h"
 
-#include "core/location.h"
-#include "core/controller.h"
-#include "core/shadegroup.h"
+#include "core/Location.h"
+#include "core/Controller.h"
+#include "core/ShadeGroup.h"
+
+using namespace std;
 
 class CognitoSyncAPI
 {
-    bool mCancelled;
-    Aws::CognitoSync::CognitoSyncClient* mClient;
+    bool mIsSuccessful;
+    bool mIsUpdated;
+    QString mLastMessage;
 public:
-    CognitoSyncAPI();
-    ~CognitoSyncAPI();
-    void resetWithCredentials(const Aws::Auth::AWSCredentials & credentials);
     void cancelRequests();
-    void sync(const Aws::Auth::AWSCredentials & credentials, const QString & datasetName, SyncableRecord<Location> & locations, SyncableRecord<Controller> & controllers, SyncableRecord<ShadeGroup> & shadeGroups);
-private:
-    template<class T>
-    void syncRecord(SyncableRecord<T> & syncable, const Aws::CognitoSync::Model::Record & record, Aws::CognitoSync::Model::UpdateRecordsRequest & update) const;
+
+    void syncData(const shared_ptr<vector<shared_ptr<Syncable>>>& cacheList);
+
+    bool isSuccessful() const { return mIsSuccessful; }
+    bool isUpdated() const { return mIsUpdated; }
+    QString getLastMessage() const { return mLastMessage; }
 };
 
 #endif // COGNITOSYNCAPI_H

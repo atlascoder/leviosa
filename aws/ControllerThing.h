@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QByteArray>
 #include <aws/iot/IoTClient.h>
+#include <QMutex>
 
 class ControllerThing
 {
@@ -15,7 +16,12 @@ class ControllerThing
     bool mIsSuccessful;
     QString userId;
 
-    Aws::IoT::IoTClient* mClient;
+    QMutex mPrepareMutex;
+    QMutex mDestroyMutex;
+
+    std::shared_ptr<Aws::IoT::IoTClient> mClient;
+
+
 public:
     ControllerThing();
     ~ControllerThing();
@@ -27,7 +33,9 @@ public:
 
     void cancelRequests();
     void setupController(const QString& mac);
-    void resetWithCredentials(const Aws::Auth::AWSCredentials &credentials);
+private:
+    void buildClient();
+    void destroyClient();
 };
 
 #endif // CONTROLLERTHING_H

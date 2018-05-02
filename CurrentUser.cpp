@@ -2,10 +2,18 @@
 
 #include <QDateTime>
 #include <QMutexLocker>
-#include "aws/CredentialsRequest.h"
 #include <QtConcurrentRun>
 #include <QDebug>
-#include <UserData.h>
+#include <QList>
+
+#include <aws/identity-management/auth/PersistentCognitoIdentityProvider.h>
+#include <aws/cognito-identity/model/GetIdRequest.h>
+#include <aws/cognito-identity/model/GetIdResult.h>
+#include <aws/core/utils/memory/stl/AWSMap.h>
+#include <memory>
+
+#include "aws/AwsApi.h"
+#include "UserData.h"
 
 
 CurrentUser::CurrentUser(QObject *parent) :
@@ -13,8 +21,7 @@ CurrentUser::CurrentUser(QObject *parent) :
     mDb(DatabaseManager::instance()),
     mAuthState(Anon),
     mStopRequests(false),
-    mAuthRequest(new AuthRequest),
-    mCredentialsRequest(new CredentialsRequest)
+    mAuthRequest(new AuthRequest)
 {
     loadUser();
 }
@@ -30,10 +37,7 @@ void CurrentUser::loadUser()
     if(mDb.userDAO.loadUser(mUser)){
         setEmail(mUser.email());
         if(mUser.verified()){
-            if(mUser.refreshTokenExpiration() > QDateTime::currentSecsSinceEpoch() + 3600){
-                mIdToken.setRaw(mUser.idToken());
-                mAccessToken.setRaw(mUser.accessToken());
-                mRefreshToken.setRaw(mUser.refreshToken());
+            if(AwsApi::instance().HasLogins()){
                 setAuthState(Authenticated);
             }
             else{
@@ -55,7 +59,6 @@ void CurrentUser::stopRequests()
     if(mStopRequests) return;
     mStopRequests = true;
     mAuthRequest->cancelRequests();
-    mCredentialsRequest->cancelRequests();
     setBusy(false);
 }
 
@@ -63,44 +66,6 @@ CurrentUser& CurrentUser::instance()
 {
     static CurrentUser sInstance;
     return sInstance;
-}
-
-void CurrentUser::requestCredentials()
-{
-    setBusy(true);
-    if(mIdToken.expiration() < QDateTime::currentSecsSinceEpoch() - 60){
-        // need to refresh tokens firstly
-        refreshTokens();
-    }
-
-    // request credentials with idToken
-    mCredentialsRequest->setIdToken(mIdToken.raw());
-    if(mStopRequests) return;
-    mCredentialsRequest->requestId();
-    if(mCredentialsRequest->isSuccessful() && !mStopRequests){
-        mCredentialsRequest->requestCredentials();
-        if(mCredentialsRequest->isSuccessful()){
-            mCredentials = mCredentialsRequest->getCredentials();
-            mHasCredentials = true;
-            emit credentialsReady();
-        }
-        else{
-            mHasCredentials = false;
-            emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
-        }
-    }
-    else{
-        mHasCredentials = false;
-        emit credentialsRequestFailed(mCredentialsRequest->getLastMessage());
-    }
-    setBusy(false);
-}
-
-void CurrentUser::fillCredentials(Aws::Auth::AWSCredentials &awsCredentials)
-{
-    awsCredentials.SetAWSAccessKeyId(mCredentials.GetAccessKeyId());
-    awsCredentials.SetAWSSecretKey(mCredentials.GetSecretKey());
-    awsCredentials.SetSessionToken(mCredentials.GetSessionToken());
 }
 
 void CurrentUser::signUp()
@@ -250,18 +215,19 @@ void CurrentUser::authenticateUser()
     mAuthRequest->signIn(mEmail, mPassword);
     if(mAuthRequest->isSuccessful()){
         mUser.setEmail(mEmail);
-        mIdToken.setRaw(mAuthRequest->getIdToken());
-        mUser.setIdToken(mAuthRequest->getIdToken());
-        mAccessToken.setRaw(mAuthRequest->getAccessToken());
-        mUser.setAccessToken(mAuthRequest->getAccessToken());
-        mRefreshToken.setRaw(mAuthRequest->getRefreshToken());
-        mUser.setRefreshToken(mAuthRequest->getRefreshToken());
-        mUser.setRefreshTokenExpiration(mAuthRequest->getRefreshTokenExpiration());
         mUser.setLocationsModified(0);
         mUser.setControllersModified(0);
         mUser.setShadeGroupsModified(0);
         mUser.setVerified(true);
         mDb.userDAO.persistUser(mUser);
+
+        Aws::Map<Aws::String, Aws::Auth::LoginAccessTokens> logins;
+        Aws::Auth::LoginAccessTokens tok;
+        tok.accessToken = Aws::Utils::StringUtils::to_string(mAuthRequest->getIdToken().toStdString());
+        tok.longTermToken = Aws::Utils::StringUtils::to_string(mAuthRequest->getRefreshToken().toStdString());
+        tok.longTermTokenExpiry = mAuthRequest->getRefreshTokenExpiration();
+        logins[ClientConfig::instance().loginPoint] = tok;
+        AwsApi::instance().persistLogins(logins);
 
         setLastMessage("Authenticated");
         setAuthState(Authenticated);
@@ -282,6 +248,11 @@ void CurrentUser::logoutUser()
     if(mAuthRequest->isSuccessful()){
         mDb.clear();
         setLastMessage("Signed out.");
+        Aws::Auth::DefaultPersistentCognitoIdentityProvider prov(
+                    ClientConfig::instance().identityPool,
+                    ClientConfig::instance().accountId
+                );
+        prov.Logout();
         emit signedOut();
     }
     else {
@@ -326,22 +297,6 @@ void CurrentUser::setEmail(const QString &email)
     if(email == mEmail) return;
     mEmail = email;
     emit emailChanged();
-}
-
-void CurrentUser::refreshTokens(){
-    if(mStopRequests) return;
-    setBusy(true);
-    if(mAuthRequest->refreshTokens(mUser.email(), mUser.refreshToken(), mUser.refreshTokenExpiration())){
-        mIdToken.setRaw(mAuthRequest->getIdToken());
-        mAccessToken.setRaw(mAuthRequest->getAccessToken());
-        setLastMessage("Tokens were refreshed");
-        setAuthState(Authenticated);
-    }
-    else{
-        setErrorMessage(mAuthRequest->getLastMessage());
-        setAuthState(Confirmed);
-    }
-    setBusy(false);
 }
 
 void CurrentUser::persistUserDataModified()

@@ -20,6 +20,16 @@ ApplicationWindow {
 	signal espTouchStart
 	signal espTouchFinish
 
+    Connections {
+        target: qGuiApp
+        onApplicationStateChanged: {
+            console.log("Application state: " + state);
+            if(state === 4 /*Qt::ApplicationActive*/){
+                controllerAPIs.check()
+            }
+        }
+    }
+
     // Welcome
 
     Loader {
@@ -44,7 +54,7 @@ ApplicationWindow {
             item.onDownloaded.connect(function(){
                 doLogin();
             })
-            item.StackView.onRemoved.connect(function(){
+            StackView.onRemoved.connect(function(){
                 syncPageLoader.source = ""
             })
         }
@@ -61,13 +71,14 @@ ApplicationWindow {
         id: emptyAccountPageLoader
         onLoaded: {
             item.onControllerAdded.connect(doLogin)
-            item.StackView.onRemoved.connect(function(){ source = "" })
+            item.onShowMenu.connect(openDrawer)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openEmptyAccountPage(){
-        emptyAccountPageLoader.source = "EmptyAccountPage.qml"
-        pager.replace(pager.initialItem, emptyAccountPageLoader.item)
+        emptyAccountPageLoader.source = "SetupControllerPage.qml"
+        pager.push(emptyAccountPageLoader.item)
     }
 
     // SignIn
@@ -115,7 +126,7 @@ ApplicationWindow {
             item.onRegister.connect(openRegPage)
             item.onSignIn.connect(openAuthPage)
             item.onSignedIn.connect(openSyncPage)
-            item.StackView.onRemoved.connect(function(){
+            StackView.onRemoved.connect(function(){
                 verifyPageLoader.source = ""
             })
         }
@@ -179,14 +190,34 @@ ApplicationWindow {
 
     // doLogin function
 
+    Loader {
+        id: cognitoTestPageLoader
+    }
+
+    function openCognitoTestPage(){
+        cognitoTestPageLoader.source = "Tests.qml"
+        pager.replace(pager.currentItem, cognitoTestPageLoader.item)
+    }
+
     function doLogin() {
         if(currentUser.isAuthenticated){
-            if(userData.locationsCount > 1)
-                openLocationsPage()
-            else if(userData.locationsCount === 1)
-                openLocationPage(userData.firstLocationUuid, true)
-            else
+            var n = userData.locationsCount
+            if (n > 0) {
+                if (pager.depth == 0) openLocationsPage();
+                if (n === 1 && (pager.depth >= 1 && pager.currentItem != locationPageLoader.item)) {
+                    pager.clear()
+                    openLocationsPage()
+                    openLocationPage(userData.firstLocationUuid)
+                }
+                else if (n > 1 && pager.depth >= 1 && pager.currentItem != locationsPageLoader.item){
+                    pager.clear()
+                    openLocationsPage()
+                }
+            }
+            else {
+                pager.clear()
                 openEmptyAccountPage()
+            }
         }
         else if(currentUser.requireConfirmation)
             openVerifyPage()
@@ -199,42 +230,17 @@ ApplicationWindow {
     Loader {
         id: locationsPageLoader
         onLoaded: {
-            item.onOpenLocation.connect(function(uuid, tzone, bssid){
-                if(bssid === netMonitor.bssid && userData.isLocationEmpty(uuid))
-                    openEmptyLocationPage(uuid)
-                else
-                    openLocationPage(uuid, false)
-            })
+            item.onOpenLocation.connect(openLocationPage)
             item.onEditLocation.connect(openEditLocationPage)
             item.onAddClicked.connect(openNewLocationPage)
-            item.StackView.onActivating.connect(item.init)
-            item.StackView.onDeactivating.connect(item.pause)
-            item.StackView.onRemoved.connect(function(){ source = "" })
+            item.onShowMenu.connect(openDrawer)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openLocationsPage(){
         locationsPageLoader.source = "LocationsPage.qml"
-        pager.replace(pager.currentItem, locationsPageLoader.item)
-    }
-
-    // EmptyLocationPage
-
-    Loader {
-        id: emptyLocationPageLoader
-        onLoaded: {
-            item.onGoBack.connect(pager.pop)
-            item.onControllerAdded.connect(doLogin)
-            item.StackView.onRemoved.connect(function(){
-                emptyLocationPageLoader.source = ""
-            })
-        }
-    }
-
-    function openEmptyLocationPage(uuid){
-        emptyLocationPageLoader.source = "EmptyLocationPage.qml"
-        emptyLocationPageLoader.item.locationUuid = uuid
-        pager.push(emptyLocationPageLoader.item)
+        pager.push(locationsPageLoader.item)
     }
 
     // New location
@@ -242,13 +248,18 @@ ApplicationWindow {
     Loader {
         id: newLocationPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
+            item.onGoBack(pager.pop)
+            item.onLocationChanged.connect(pager.pop)
+            item.onLocationDeleted.connect(pager.pop)
+            item.onLocationCreated.connect(openLocationPage)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
-    function openNewLocationPage(){
+    function openNewLocationPage(bssid){
         if(newLocationPageLoader.status != Loader.Ready)
-            newLocationPageLoader.source = "NewLocationPage.qml"
+            newLocationPageLoader.source = "EditLocationPage.qml"
+        newLocationPageLoader.item.bssid = bssid
         pager.push(newLocationPageLoader.item)
     }
 
@@ -257,33 +268,18 @@ ApplicationWindow {
     Loader {
         id: editLocationPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
-            item.onSetupController.connect(openEspTouchPage)
-            item.StackView.onRemoved.connect(function(){ source = "" })
+            item.onGoBack.connect(pager.pop)
+            item.onLocationChanged.connect(pager.pop)
+            item.onLocationDeleted.connect(doLogin)
+            item.onLocationCreated.connect(openLocationPage)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openEditLocationPage(uuid){
         editLocationPageLoader.source = "EditLocationPage.qml"
-        editLocationPageLoader.item.locationUuid = uuid
+        editLocationPageLoader.item.uuid = uuid
         pager.push(editLocationPageLoader.item)
-    }
-
-    // open Controls
-
-    Loader {
-        id: controlsPageLoader
-        onLoaded: {
-            item.StackView.onRemoved.connect(function(){
-                verifyPageLoader.source = ""
-            })
-        }
-    }
-
-    function openControlsPage(){
-        if(controlsPageLoader.status != Loader.Ready)
-            controlsPageLoader.source = "ControlsPage.qml"
-        pager.replace(pager.currentItem, controlsPageLoader.item)
     }
 
     // Location
@@ -292,34 +288,57 @@ ApplicationWindow {
         id: locationPageLoader
         onLoaded: {
             item.onGoBack.connect(pager.pop)
-            item.onEditController.connect(openEditControllerPage)
-            item.onEditGroup.connect(openEditShadeGroupPage)
-            item.onAddGroup.connect(openNewShadeGroupPage)
-            item.onSetupController.connect(openEspTouchPage)
+            item.onShowMenu.connect(openDrawer)
+            item.onOpenZone.connect(openZonePage)
+            item.onEditZone.connect(openEditZonePage)
             item.onEditLocation.connect(openEditLocationPage)
-            item.StackView.onActivated.connect(function(){
-                item.init()
+            StackView.onActivated.connect(function(){
                 item.fireRefresh()
             })
-            item.StackView.onDeactivating.connect(function(){
-                item.discovery.isRunning = false
-            })
-            item.StackView.onRemoved.connect(function(){
-                locationPageLoader.source = ""
+            StackView.onRemoved.connect(function(){
+                source = ""
             })
         }
     }
 
-    function openLocationPage(uuid, single){
-        locationPageLoader.source = "LocationPage.qml"
-        locationPageLoader.item.single = single
-        locationPageLoader.item.locationUuid = uuid
-        if(single){
-            userData.sync()
-            pager.replace(pager.initialItem, locationPageLoader.item)
+    function openLocationPage(uuid){
+        var n = userData.controllersCountForLocation(uuid);
+        if (n === 1) {
+            zonePageLoader.source = "ZonePage.qml"
+            zonePageLoader.item.uuid = userData.firstControllerInLocation(uuid)
+            pager.push(zonePageLoader.item)
         }
-        else{
-            pager.push(locationPageLoader.item)
+        else {
+            locationPageLoader.source = "LocationPage.qml"
+            locationPageLoader.item.uuid = uuid
+            pager.push(locationPageLoader)
+        }
+    }
+
+    // Zone (controller) page
+
+    Loader {
+        id: zonePageLoader
+        onLoaded: {
+            item.onGoBack.connect(pager.pop)
+            item.onShowMenu.connect(openDrawer)
+            item.onAddLocation.connect(openNewLocationPage)
+            item.onEditLocation.connect(openEditLocationPage)
+            item.onEditGroup.connect(openEditShadeGroupPage)
+            item.onAddGroup.connect(openNewShadeGroupPage)
+            StackView.onActivated.connect(item.reload)
+            StackView.onRemoved.connect(function(){ source = "" })
+        }
+    }
+
+    function openZonePage(uuid) {
+        zonePageLoader.source = "ZonePage.qml"
+        zonePageLoader.item.uuid = uuid
+        if (zonePageLoader.item.single) {
+            pager.replace(pager.initialItem, zonePageLoader.item)
+        }
+        else {
+            pager.push(zonePageLoader.item)
         }
     }
 
@@ -328,13 +347,13 @@ ApplicationWindow {
     Loader {
         id: newShadeGroupPageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
-            item.StackView.onRemoved.connect(function(){ source = ""})
+            item.onGoBack.connect(pager.pop)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openNewShadeGroupPage(mac){
-        newShadeGroupPageLoader.source = "NewShadeGroupPage.qml"
+        newShadeGroupPageLoader.source = "ShadeGroupPage.qml"
         newShadeGroupPageLoader.item.controllerMac = mac
         pager.push(newShadeGroupPageLoader.item)
     }
@@ -345,51 +364,48 @@ ApplicationWindow {
         id: editShadeGroupPageLoader
         onLoaded: {
             item.onGoBack.connect(pager.pop)
-            item.StackView.onActivated.connect(item.init)
-            item.StackView.onRemoved.connect(function(){ source = ""})
+            StackView.onRemoved.connect(function(){ source = ""})
         }
     }
 
-    function openEditShadeGroupPage(mac, channel, ip){
-        editShadeGroupPageLoader.source = "EditShadeGroupPage.qml"
-        editShadeGroupPageLoader.item.controllerMac = mac
-        editShadeGroupPageLoader.item.selectedChannel = channel
-        editShadeGroupPageLoader.item.controllerIp = ip
+    function openEditShadeGroupPage(uuid){
+        editShadeGroupPageLoader.source = "ShadeGroupPage.qml"
+        editShadeGroupPageLoader.item.uuid = uuid
         pager.push(editShadeGroupPageLoader.item)
     }
 
     // Edit Controller
 
     Loader {
-        id: editControllerPageLoader
+        id: editZonePageLoader
         onLoaded: {
-            item.onMenuClicked.connect(pager.pop)
+            item.onGoBack.connect(pager.pop)
+            item.onZoneDeleted.connect(doLogin)
         }
     }
 
-    function openEditControllerPage(mac, uuid){
-        if(editControllerPageLoader.status != Loader.Ready)
-            editControllerPageLoader.source = "EditControllerPage.qml"
-        editControllerPageLoader.item.locationUuid = uuid
-        editControllerPageLoader.item.controllerMac = mac
-        pager.push(editControllerPageLoader.item)
+    function openEditZonePage(uuid){
+        if(editZonePageLoader.status != Loader.Ready)
+            editZonePageLoader.source = "EditZonePage.qml"
+        editZonePageLoader.item.uuid = uuid
+        pager.push(editZonePageLoader.item)
     }
 
     // Esptouch
 
     Loader {
-        id: espTouchPageLoader
+        id: setupControllerPageLoader
         onLoaded: {
             item.onGoBack.connect(pager.pop)
-            item.onControllerAdded.connect(pager.pop)
-            item.StackView.onRemoved.connect(function(){ source = "" })
+            item.onControllerAdded.connect(doLogin)
+            StackView.onRemoved.connect(function(){ source = "" })
         }
     }
 
-    function openEspTouchPage(uuid){
-        espTouchPageLoader.source = "EspTouchPage.qml"
-        espTouchPageLoader.item.locationUuid = uuid
-        pager.push(espTouchPageLoader.item)
+    function openSetupControllerPage(){
+        setupControllerPageLoader.source = "SetupControllerPage.qml"
+        setupControllerPageLoader.item.enableMenuAction = false
+        pager.push(setupControllerPageLoader.item)
     }
 
     StackView {
@@ -400,7 +416,7 @@ ApplicationWindow {
     Component.onCompleted: doLogin()
 
 	onClosing: {
-		if (Qt.platform.os == "android" && pager.depth > 1) {
+        if (Qt.platform.os == "android" && pager.depth > 1 && !pager.currentItem.enableMenuAction) {
 			close.accepted = false;
 			pager.pop();
 		}
@@ -462,4 +478,116 @@ ApplicationWindow {
 
     }
 
+    function openDrawer() {
+        if (!drawer.interactive) drawer.interactive = true
+        drawer.open()
+    }
+
+    function closeDrawer() {
+        drawer.close()
+    }
+
+    function enableDrawer() {
+        drawer.interactive = true
+    }
+
+    function disableDrawer() {
+        drawer.close()
+        drawer.interactive = false
+    }
+
+    Drawer {
+        id: drawer
+        width:  0.66 * applicationWindow.width
+        height: applicationWindow.height
+        edge: Qt.LeftEdge
+
+        background: Rectangle {
+            color: DefTheme.secColorLight
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: parent.width / 20
+            spacing: 6
+
+            Text{
+                height: parent.width / 8
+                anchors.horizontalCenter: parent.horizontalCenter
+                verticalAlignment: Qt.AlignVCenter
+                text: currentUser.email
+                font.pixelSize: 16
+                color: DefTheme.secTextColor
+                font.bold: true
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+                visible: netMonitor.onWlan
+            }
+
+            Button {
+                width: parent.width
+                text: "Setup Controller"
+                onClicked: {
+                    closeDrawer()
+                    openSetupControllerPage()
+                }
+                visible: netMonitor.onWlan
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                width: parent.width
+                text: "Open WebSite"
+                onClicked: {
+                    closeDrawer()
+                    Qt.openUrlExternally("https://leviosashades.com") ;
+                }
+            }
+
+            Button {
+                width: parent.width
+                text: "Call to Support"
+                onClicked: {
+                    closeDrawer()
+                    Qt.openUrlExternally("tel:%1".arg("+19802061260")) ;
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 2
+                color: DefTheme.secColorDark
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Sign Out"
+                font.bold: true
+                onClicked: {
+                    currentUser.signOut();
+                    disableDrawer()
+                    openWelcomePage()
+                }
+            }
+        }
+
+        Text{
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: 6
+            text: "version: " + userData.version
+            font.pixelSize: 8
+            font.italic: true
+            color: "#a0000000"
+        }
+    }
 }

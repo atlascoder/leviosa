@@ -6,7 +6,9 @@
 #include <QJsonObject>
 #include <memory>
 #include <vector>
-#include "scheduleline.h"
+#include "ScheduleLine.h"
+
+using namespace std;
 
 class ControllerConfig
 {
@@ -17,15 +19,16 @@ class ControllerConfig
     QStringList mRfChannels;
     QString mTimezone;
     QDateTime mTime;
-    std::unique_ptr<std::vector<std::unique_ptr<ScheduleLine>>> mScheduleLines;
+    unique_ptr<vector<unique_ptr<ScheduleLine>>> mScheduleLines;
 
    QString mScheduleJsonString;
 public:
     ControllerConfig() : mScheduleLines(new std::vector<std::unique_ptr<ScheduleLine>>) {}
+    ControllerConfig& operator=(const ControllerConfig&);
 
     void parse(const QString& jsonized);
-    std::unique_ptr<ScheduleLine> buildScheduleLine(const QJsonObject& obj) const;
-    std::vector<std::unique_ptr<ScheduleLine>>& scheduleLines() { return *mScheduleLines.get(); }
+    unique_ptr<ScheduleLine> buildScheduleLine(const QJsonObject& obj) const;
+    vector<unique_ptr<ScheduleLine>>& scheduleLines() { return *mScheduleLines.get(); }
 
     QString mac() const {return mMac; }
 

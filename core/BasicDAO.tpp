@@ -1,14 +1,14 @@
 #include "BasicDAO.h"
-#include "location.h"
-#include "controller.h"
-#include "shadegroup.h"
+#include "Location.h"
+#include "Controller.h"
+#include "ShadeGroup.h"
 
 #include <QSqlError>
 #include <QDebug>
 
 
 // User location concretization
-#include "core/location.h"
+#include "core/Location.h"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ void BasicDAO<T>::init() const
 {
     if(!mDatabase.tables().contains(tableName())){
         QSqlQuery query(mDatabase);
-        query.exec(QString("CREATE TABLE ").append(tableName()).append(fieldsSQLDecl()));
+        query.exec("CREATE TABLE " + tableName() + fieldsSQLDecl());
         if(query.lastError().isValid())
             qDebug() << "DAO Table " << tableName() << " not created: " << query.lastError().text();
         else
@@ -31,14 +31,20 @@ void BasicDAO<T>::init() const
 }
 
 template<class T>
-unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::items() const
+unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::items(bool excludeDeleted) const
 {
     QSqlQuery query(mDatabase);
-    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" ORDER BY position ASC");
+    
+    QString selectSQL("SELECT * FROM " + tableName());
+    if (excludeDeleted)  selectSQL += " WHERE deleted IS 0";
+    selectSQL += " ORDER BY position ASC";
+    
     query.exec(selectSQL);
     if(query.lastError().isValid())
         QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
+
     unique_ptr<vector<unique_ptr<T>>> list(new vector<unique_ptr<T>>());
+
     while(query.next()){
         unique_ptr<T> loc = buildItem(query);
         list->push_back(move(loc));
@@ -50,7 +56,7 @@ template<class T>
 void BasicDAO<T>::loadItems(std::vector<std::unique_ptr<T>>& receiver) const
 {
     QSqlQuery query(mDatabase);
-    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" ORDER BY position ASC");
+    QString selectSQL = "SELECT * FROM " + tableName() + " WHERE deleted IS 0 ORDER BY position ASC";
     query.exec(selectSQL);
     if(query.lastError().isValid())
         QTextStream(stdout) << "error: " << query.lastError().text() << " // SQL: " << selectSQL;
@@ -94,22 +100,10 @@ void BasicDAO<T>::clear(bool notify) const
 }
 
 template<class T>
-int BasicDAO<T>::lastModified() const
-{
-    QSqlQuery query(mDatabase);
-    query.exec(QString("SELECT MAX(lastModified) AS latestModified FROM ").append(tableName()));
-
-    if(query.first())
-        return query.value("latestModified").toInt();
-    else
-        return 0;
-}
-
-template<class T>
 unique_ptr<vector<unique_ptr<T>>> BasicDAO<T>::filtered(const QString& field, const QVariant & filter) const
 {
     QSqlQuery query(mDatabase);
-    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" WHERE ").append(field).append("=:filter ORDER BY position ASC");
+    QString selectSQL("SELECT * FROM " + tableName() + " WHERE " + field + "=:filter AND deleted IS 0 ORDER BY position ASC");
     query.prepare(selectSQL);
     query.bindValue(":filter", filter);
     query.exec();
@@ -127,7 +121,7 @@ template<class T>
 void BasicDAO<T>::loadFiltered(std::vector<std::unique_ptr<T> > &receiver, const QString &field, const QVariant &filter) const
 {
     QSqlQuery query(mDatabase);
-    QString selectSQL = QString("SELECT * FROM ").append(tableName()).append(" WHERE ").append(field).append("=:filter ORDER BY position ASC");
+    QString selectSQL("SELECT * FROM " + tableName() + " WHERE " + field + "=:filter WHERE deleted IS 0 ORDER BY position ASC");
     query.prepare(selectSQL);
     query.bindValue(":filter", filter);
     query.exec();
@@ -140,12 +134,12 @@ void BasicDAO<T>::loadFiltered(std::vector<std::unique_ptr<T> > &receiver, const
 }
 
 template<class T>
-bool BasicDAO<T>::isSynced() const
+bool BasicDAO<T>::isChanged() const
 {
     QSqlQuery query(mDatabase);
-    QString sql = QString("SELECT COUNT(*) AS notSynced FROM ").append(tableName()).append(" WHERE isSynced=0");
+    QString sql("SELECT COUNT(*) AS changedCount FROM " + tableName() + " WHERE changed IS NOT 0 AND deleted IS 0");
     if(query.exec(sql) && query.first()){
-        return !query.value("notSynced").toBool();
+        return query.value("changedCount").toInt() > 0;
     }
     else{
         qDebug() << "isSynced failed: " << query.lastError().text() << " // SQL: " << query.lastQuery();

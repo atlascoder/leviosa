@@ -3,11 +3,9 @@
 
 #include <QString>
 #include <QByteArray>
-#include <aws/cognito-identity/CognitoIdentityClient.h>
-#include <aws/cognito-idp/CognitoIdentityProviderClient.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include "RefreshToken.h"
-
+#include <aws/cognito-idp/CognitoIdentityProviderClient.h>
+#include <memory>
 
 class AuthRequest
 {
@@ -29,7 +27,7 @@ class AuthRequest
 
     bool mCancelled;
 
-    Aws::CognitoIdentityProvider::CognitoIdentityProviderClient* mClient;
+    std::shared_ptr<Aws::CognitoIdentityProvider::CognitoIdentityProviderClient> mClient;
 
 public:
     AuthRequest();
@@ -50,12 +48,13 @@ public:
     QString getLastMessage() const { return mLastMessage; }
     int getRefreshTokenExpiration() const { return mRefreshTokenExpiration; }
 
-    bool refreshTokens(const QString& email, const QString&  refreshToken, int refreshTokenExpiration);
-
     bool userConfirmed() const {return mConfirmed; }
 
     void cancelRequests();
 private:
+
+    void buildClient();
+    void destroyClient();
 
     QByteArray authenticateUser(const QString &userId, const QString & password, const QString &saltString, const QString &srp_b, const QString &secret_block, const QString &formattedTimestamp);
     QByteArray getPasswordAuthenticationKey(const QString &userId, const QString &password, const QByteArray &A, const QByteArray &B, const QString &salt);
