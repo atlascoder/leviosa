@@ -26,13 +26,15 @@ LeviosaPage {
     showStatusText: true
     statusText: netMonitor.onWlan && netMonitor.bssid === locationModel.bssid ? "Current location" : "via Internet"
     showSubTitle: true
-    subTitle: locationModel.timezoneName
+    subTitle: locationModel.timezone
 
     function fireRefresh() {
         console.log("Refresh location")
         allShadesControl.reset()
         controllerAPIs.check()
     }
+
+    StackView.onActivated: fireRefresh()
 
     Connections {
         target: qGuiApp

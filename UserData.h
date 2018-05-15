@@ -57,6 +57,9 @@ public:
 
     int locationUtcOffset(const QString& uuid);
 
+    QString controllerUuid(const QString& mac) const;
+    QString controllerTimezone(const QString& uuid) const;
+
     shared_ptr<Location> locationOfGroup(const QString& groupUuid) const;
     shared_ptr<Location> locationOfController(const QString& controllerUuid) const;
     shared_ptr<Controller> controllerOfGroup(const QString& groupUuid) const;
@@ -85,7 +88,7 @@ public:
 
     Q_INVOKABLE void setupController(const QString& mac, const QString& bssid);
 
-    Q_INVOKABLE void setupControllerKeys(const QString& mac, const QString& ip);
+    Q_INVOKABLE void setupControllerKeys(const QString& mac, const QString& ip, const QString& bssid);
     Q_INVOKABLE bool isLocationEmpty(const QString& uuid);
     Q_INVOKABLE bool isBssidKnown(const QString& bssid);
     Q_INVOKABLE QString controllerMac(const QString& uuid) const;
@@ -116,7 +119,7 @@ signals:
     void firstLocationUuidChanged();
     void versionChanged();
 
-    void installKeysAndCert(const QString &ip, const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert);
+    void installKeysAndCert(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert, const int controllerId, const QByteArray& schedule);
     void controllerSetupSuccessful();
     void controllerSetupFailed(const QString& msg);
 private:
@@ -144,7 +147,7 @@ private:
 
     QString version() const { return VERSION; }
 
-    void createThingKeys(const QString mac, const QString& ip);
+    void createThingKeys(const QString mac, const QString& ip, const QString& bssid);
 
 };
 #include "UserData.tpp"

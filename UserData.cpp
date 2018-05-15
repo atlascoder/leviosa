@@ -57,16 +57,17 @@ void sortOrdered(const shared_ptr<vector<shared_ptr<T>>>& items){
 
 QString sanitizeMac(const QString& mac)
 {
+    QString cmac;
     if (mac.length()>12) {
-        QString cmac;
         for (auto c : mac) {
             if (c==":") continue;
             cmac += c;
         }
-        return cmac.toUpper();
     }
-    else
-        return mac.toUpper();
+    else{
+        cmac = mac;
+    }
+    return cmac.toUpper();
 }
 
 void UserData::loadItems()
@@ -139,7 +140,6 @@ void UserData::run()
     if (mSyncer->isSuccessful()) {
         // update all syncCounts and reset isChanged
         mDb.cognitoSyncDAO.persistSynced(items);
-        loadItems();
         setState(Clean);
     }
     else
@@ -173,8 +173,11 @@ void UserData::setState(SyncState state)
     if(state == mSyncState) return;
     mSyncState = state;
     if(mSyncState == SyncState::Clean) {
+        if (mSyncer->isUpdated()) {
+            loadItems();
+            emit dataUpdated();
+        }
         emit synced();
-        if (mSyncer->isUpdated()) emit dataUpdated();
     }
     emit syncStateChanged();
 }
@@ -220,12 +223,33 @@ QString UserData::controllerMac(const QString& uuid) const
         return i->get()->mac();
 }
 
+QString UserData::controllerUuid(const QString& mac) const
+{
+    auto i = find_if(mControllers->begin(), mControllers->end(), [&mac](const shared_ptr<Controller>& _i)->bool{ return _i->mac() == mac; });
+    if (i == mControllers->end())
+        return "";
+    else
+        return i->get()->uuid();
+}
+
+QString UserData::controllerTimezone(const QString& uuid) const
+{
+    auto i = find_if(mControllers->begin(), mControllers->end(), [&uuid](const shared_ptr<Controller>& _i)->bool{ return _i->uuid() == uuid; });
+    if (i == mControllers->end())
+        return "";
+    else {
+        QString locationUuid = i->get()->uuid();
+        auto l = find_if(mLocations->begin(), mLocations->end(), [&locationUuid](const shared_ptr<Location>& _l)->bool{ return _l->uuid() == locationUuid; });
+        return l == mLocations->end() ? TimeZoneModel::defaultTimezone() : l->get()->timezone();
+    }
+}
+
 shared_ptr<vector<shared_ptr<ShadeGroup>>> UserData::shadeGroupsForController(const QString& mac) const
 {
     QString cmac = sanitizeMac(mac);
     shared_ptr<vector<shared_ptr<ShadeGroup>>> groups(new vector<shared_ptr<ShadeGroup>>);
     for (auto& g : *mShadeGroups) {
-        if (g->controllerMac() == cmac) {
+        if (g->controllerMac() == mac) {
             groups->push_back(g);
         }
     }
@@ -261,10 +285,7 @@ shared_ptr<vector<shared_ptr<ShadeGroup>>> UserData::shadeGroups() const
 void UserData::createDefaultLocation()
 {
     shared_ptr<Location> l;
-    QDateTime local(QDateTime::currentDateTime());
-    QDateTime utc(local.toUTC());
-    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
-    l->setUtcOffset(dt.secsTo(local));
+    l->setTimezone(TimeZoneModel::defaultTimezone());
     l->setPosition(0);
     mLocations->push_back(l);
     persistChanges(mLocations);
@@ -292,21 +313,11 @@ QString UserData::locationBssid(const QString &uuid)
         return l->get()->bssid();
 }
 
-int UserData::locationUtcOffset(const QString &uuid)
-{
-    auto l = find_if(mLocations->begin(), mLocations->end(), [uuid](const shared_ptr<Location>& _l)->bool{ return uuid == _l->uuid(); });
-    if(l == mLocations->end())
-        return 0;
-    else
-        return l->get()->utcOffset();
-}
-
 void UserData::clear()
 {
     mLocations->clear();
     mControllers->clear();
     mShadeGroups->clear();
-    mDb.cognitoSyncDAO.clear();
 }
 
 int UserData::locationsCount()
@@ -358,10 +369,11 @@ void UserData::addFirstController(const QString &mac, const QString &bssid)
     shared_ptr<Location> l(new Location);
     l->setName("My Home");
     l->setBssid(bssid);
-    QDateTime local(QDateTime::currentDateTime());
-    QDateTime utc(local.toUTC());
-    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
-    l->setUtcOffset(dt.secsTo(local));
+//    QDateTime local(QDateTime::currentDateTime());
+//    QDateTime utc(local.toUTC());
+//    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
+    l->setTimezone(TimeZoneModel::defaultTimezone());
+//    l->setUtcOffset(dt.secsTo(local));
     l->setPosition(0);
     mLocations->push_back(l);
 
@@ -395,7 +407,7 @@ bool UserData::isBssidKnown(const QString &bssid)
     return l != mLocations->end();
 }
 
-void UserData::setupControllerKeys(const QString &mac, const QString& ip)
+void UserData::setupControllerKeys(const QString &mac, const QString& ip, const QString& bssid)
 {
     QString cmac = sanitizeMac(mac);
     mKeysAndCertResp.cancel();
@@ -404,15 +416,15 @@ void UserData::setupControllerKeys(const QString &mac, const QString& ip)
         mControllerClient = nullptr;
     }
     mControllerClient = new ControllerHTTPClient;
-    connect(this, &UserData::installKeysAndCert, mControllerClient, &ControllerHTTPClient::postKeysAndCert);
+    connect(this, &UserData::installKeysAndCert, mControllerClient, &ControllerHTTPClient::postSetup);
     connect(mControllerClient, &ControllerHTTPClient::keysWasSet, this, &UserData::setupControllerSuccessful);
     connect(mControllerClient, &ControllerHTTPClient::setKeysFailed, this, &UserData::setupControllerFailed);
     if(mKeysAndCertResp.isCanceled() || mKeysAndCertResp.isFinished()){
-        mKeysAndCertResp = QtConcurrent::run(this, &UserData::createThingKeys, cmac, ip);
+        mKeysAndCertResp = QtConcurrent::run(this, &UserData::createThingKeys, cmac, ip, bssid);
     }
 }
 
-void UserData::createThingKeys(const QString mac, const QString& ip)
+void UserData::createThingKeys(const QString mac, const QString& ip, const QString& bssid)
 {
     ControllerThing *thing = new ControllerThing;
     if(!mCancelled){
@@ -420,13 +432,29 @@ void UserData::createThingKeys(const QString mac, const QString& ip)
             delete thing;
             return;
         }
-        if(mCancelled) {
-            delete thing;
-            return;
-        }
         thing->setupController(mac);
-        if(thing->isSuccessful())
-            emit installKeysAndCert(ip, thing->pubKey(), thing->priKey(), thing->cert());
+        QString cmac = sanitizeMac(mac);
+        if(thing->isSuccessful()) {
+            int controller_id = 1;
+            ControllerSchedule cs;
+            auto loc = find_if(mLocations->begin(), mLocations->end(), [&bssid](const shared_ptr<Location>& _l)->bool{ return _l->bssid() == bssid; });
+            if (loc == mLocations->end())
+                cs.timezone = TimeZoneModel::defaultTimezone();
+            else
+                cs.timezone = loc->get()->timezone();
+
+            auto c = find_if(mControllers->begin(), mControllers->end(), [&cmac](const shared_ptr<Controller>& _c)->bool{ return _c->mac() == cmac; });
+            if (c == mControllers->end()){
+                while (find_if(mControllers->begin(), mControllers->end(), [&controller_id](const shared_ptr<Controller>& _c)->bool{ return _c->id() == controller_id; }) != mControllers->end()) {
+                    controller_id++;
+                }
+            }
+            else {
+                controller_id = c->get()->id();
+            }
+            sleep(5);
+            emit installKeysAndCert(ip, thing->pubKey(), thing->priKey(), thing->cert(), controller_id, cs.json().toLatin1());
+        }
         else
             emit setupControllerFailed("Setup controller failed");
     }
@@ -516,8 +544,8 @@ void UserData::setupController(const QString &mac, const QString &bssid)
         // create location with bssid
         shared_ptr<Location> new_location(new Location);
         new_location->setBssid(bssid);
-        new_location->setPosition(mLocations->size());
-        new_location->setUtcOffset(TimeZoneModel::defaultUtcOffset());
+        new_location->setPosition(static_cast<int>(mLocations->size()));
+        new_location->setTimezone(TimeZoneModel::defaultTimezone());
         new_location->setName(defaultLocationName());
         mLocations->push_back(new_location);
         location_uuid = new_location->uuid();
@@ -532,8 +560,13 @@ void UserData::setupController(const QString &mac, const QString &bssid)
         shared_ptr<Controller> new_controller(new Controller);
         new_controller->setLocationUuid(location_uuid);
         auto controllers = controllersForLocation(location_uuid);
-        new_controller->setPosition(controllers->size());
+        new_controller->setPosition(static_cast<int>(controllers->size()));
         new_controller->setMac(cmac);
+        int controller_id = 1;
+        while (find_if(mControllers->begin(), mControllers->end(), [&controller_id](const shared_ptr<Controller>& _c)->bool{ return _c->id() == controller_id; }) != mControllers->end()) {
+            controller_id++;
+        }
+        new_controller->setId(controller_id);
         int n = 1;
         QString controller_name;
         do {
@@ -563,7 +596,7 @@ QString UserData::defaultLocationName() const
     int n = 1;
     QString name;
     do {
-        name = QString("Location ").append(QString::number(n));
+        name = QString("Location ").append(QString::number(n++));
     } while (find_if(mLocations->begin(), mLocations->end(), [&name](const shared_ptr<Location>& _l)->bool{ return _l->name() == name; }) != mLocations->end());
 
     return name;

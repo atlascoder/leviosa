@@ -214,7 +214,8 @@ SOURCES += \
     core/ControllerConnectionsManager.cpp \
     core/LocationsModel.cpp \
     core/TimeZoneModel.cpp \
-    core/ControllerSSDP.cpp
+    core/ControllerSSDP.cpp \
+    core/ControllerSchedule.cpp
 
 # own codebase
 HEADERS += \
@@ -255,7 +256,6 @@ HEADERS += \
     core/LocationModel.h \
     core/Positioned.h \
     core/Schedule.h \
-    core/ScheduleLine.h \
     core/Shade.h \
     core/ControllerDiscovery.h \
     NetworkMonitor.h \
@@ -263,7 +263,8 @@ HEADERS += \
     core/ControllerConnectionsManager.h \
     core/LocationsModel.h \
     core/TimeZoneModel.h \
-    core/ControllerSSDP.h
+    core/ControllerSSDP.h \
+    core/ControllerSchedule.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

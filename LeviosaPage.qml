@@ -17,6 +17,10 @@ Page {
     signal titleLongPressed()
     signal menuSelected()
 
+    signal onRemoved()
+
+    StackView.onRemoved: onRemoved()
+
     property bool enableMenuAction : true
     property bool enableAddAction : false
     property bool showLogo : true

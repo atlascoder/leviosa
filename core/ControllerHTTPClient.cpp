@@ -3,7 +3,7 @@
 ControllerHTTPClient::ControllerHTTPClient(QObject *parent):
     QObject(parent),
     cmdReply(nullptr),
-    mKeysReply(nullptr),
+    mSetupReply(nullptr),
     mMultipart(nullptr)
 {
     mQnam = new QNetworkAccessManager;
@@ -11,12 +11,12 @@ ControllerHTTPClient::ControllerHTTPClient(QObject *parent):
 
 ControllerHTTPClient::~ControllerHTTPClient()
 {
-    if(mKeysReply) mKeysReply->deleteLater();
+    if(mSetupReply) mSetupReply->deleteLater();
     if(mMultipart) mMultipart->deleteLater();
     mQnam->deleteLater();
 }
 
-void ControllerHTTPClient::postKeysAndCert(const QString &ip, const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert)
+void ControllerHTTPClient::postSetup(const QString &ip, const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert, const int controllerId, const QByteArray& schedule)
 {
     if(mMultipart) mMultipart->deleteLater();
     mMultipart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
@@ -36,25 +36,32 @@ void ControllerHTTPClient::postKeysAndCert(const QString &ip, const QByteArray &
     certPart.setBody(cert);
     mMultipart->append(certPart);
 
-    mKeysReply = mQnam->post(QNetworkRequest(QUrl::fromUserInput(QString("http://").append(ip).append("/keys"))), mMultipart);
-    connect(mKeysReply, &QNetworkReply::finished, this, &ControllerHTTPClient::onPostKeysFinished);
+    QNetworkRequest req = QNetworkRequest(QUrl::fromUserInput(QString("http://").append(ip).append("/setup")));
+    req.setRawHeader("com.leviosashades.controllerId", QString::number(controllerId).toLatin1());
+    req.setRawHeader("com.leviosashades.schedule", schedule);
+
+    mSetupReply = mQnam->post(req, mMultipart);
+    connect(mSetupReply, &QNetworkReply::finished, this, &ControllerHTTPClient::onPostKeysFinished);
 }
 
 void ControllerHTTPClient::onPostKeysFinished()
 {
-    if(mKeysReply->error() == QNetworkReply::NoError)
+    if(mSetupReply->error() == QNetworkReply::NoError) {
+        qDebug() << "Keys was set";
         emit keysWasSet();
-    else
-        emit setKeysFailed(mKeysReply->errorString());
-    mKeysReply->deleteLater();
-    mKeysReply = nullptr;
+    }
+    else {
+        qDebug() << "Keys setting error: " << mSetupReply->errorString();
+        emit setKeysFailed(mSetupReply->errorString());
+    }
+    mSetupReply->deleteLater();
+    mSetupReply = nullptr;
     mMultipart->deleteLater();
     mMultipart = nullptr;
 }
 
-void ControllerHTTPClient::post(const QString &url)
+void ControllerHTTPClient::post(const QString &url, const QByteArray& data)
 {
-    QByteArray postData;
-    cmdReply = mQnam->post(QNetworkRequest(QUrl::fromUserInput(url)), postData);
+    cmdReply = mQnam->post(QNetworkRequest(QUrl::fromUserInput(url)), data);
     connect(cmdReply, &QNetworkReply::finished, this, &ControllerHTTPClient::finishedPost);
 }

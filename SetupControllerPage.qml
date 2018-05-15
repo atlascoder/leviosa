@@ -440,7 +440,7 @@ LeviosaPage {
             }
             StateChangeScript {
                 script: {
-                    userData.setupControllerKeys(esptouch.hostMac, esptouch.hostIP)
+                    userData.setupControllerKeys(esptouch.hostMac, esptouch.hostIP, netMonitor.bssid)
                     userData.onControllerSetupSuccessful.connect(function(){
                         rootItem.state = "found"
                     })

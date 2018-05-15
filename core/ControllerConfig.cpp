@@ -13,23 +13,12 @@ using namespace std;
 
 ControllerConfig& ControllerConfig::operator=(const ControllerConfig &config)
 {
-    mScheduleLines->clear();
     mIsValid = config.mIsValid;
     mVersion = config.mVersion;
     mMac = config.mMac;
-    mTimezone = config.mTimezone;
     mTime = config.mTime;
+    mControllerSchedule = config.mControllerSchedule;
     mJsonized = config.mJsonized;
-    mScheduleJsonString = config.mScheduleJsonString;
-
-    for (unique_ptr<ScheduleLine>& line:*config.mScheduleLines) {
-        unique_ptr<ScheduleLine> l(new ScheduleLine);
-        l->channel = line->channel;
-        l->open_mod = line->open_mod;
-        l->close_mod = line->close_mod;
-        l->dayEU = line->dayEU;
-        mScheduleLines->push_back(move(l));
-    }
     return *this;
 }
 
@@ -78,44 +67,7 @@ void ControllerConfig::parse(const QString &jsonized)
         };
 
         if(obj.contains("schedule") && obj.value("schedule").isObject()){
-            QJsonObject s_obj = obj.value("schedule").toObject();
-            if (s_obj.contains("timeZone") && s_obj.value("timeZone").isString()) {
-                mTimezone = s_obj.value("timeZone").toString();
-            }
-            else return;
-
-            if (s_obj.contains("schedule") && s_obj.value("schedule").isArray()) {
-                mScheduleLines->clear();
-                QJsonArray s_arr = s_obj.value("schedule").toArray();
-                for (int i = 0; i < s_arr.size(); i++) {
-                    if (s_arr.at(i).isArray()) {
-                        QJsonArray s_arr1 = s_arr.at(i).toArray();
-                        if (s_arr1.size() == 4) {
-                            unique_ptr<ScheduleLine> s(new ScheduleLine);
-                            if (s_arr1.at(0).isDouble()) {
-                                s->channel = s_arr1.at(0).toInt();
-                            }
-                            else return;
-                            if (s_arr1.at(1).isDouble()) {
-                                s->open_mod = s_arr1.at(1).toInt();
-                            }
-                            else return;
-                            if (s_arr1.at(2).isDouble()) {
-                                s->close_mod = s_arr1.at(2).toInt();
-                            }
-                            else return;
-                            if (s_arr1.at(3).isDouble()) {
-                                s->dayEU = s_arr1.at(3).toInt();
-                            }
-                            else return;
-                            mScheduleLines->push_back(move(s));
-                        }
-                        else return;
-                    }
-                    else return;
-                }
-            }
-            else return;
+            mControllerSchedule->parseJson(obj.value("schedule").toObject());
         }
         else return;
 
@@ -125,42 +77,28 @@ void ControllerConfig::parse(const QString &jsonized)
         qDebug() << "Controller config failed: JSON parsing error " << error.errorString();
 }
 
-unique_ptr<ScheduleLine> ControllerConfig::buildScheduleLine(const QJsonObject &obj) const
+char ControllerConfig::days(int group) const
 {
-    unique_ptr<ScheduleLine> l(new ScheduleLine);
-    if(obj.contains("sch_wday")) l->dayEU = obj.value("sch_wday").toInt();
-    if(obj.contains("sch_hour")) l->hour =obj.value("sch_hour").toInt();
-    if(obj.contains("sch_minute")) l->minute = obj.value("sch_minute").toInt();
-    if(obj.contains("sch_command")) l->command = obj.value("sch_command").toString();
-    if(obj.contains("sch_channel")) l->channel = obj.value("sch_channel").toInt();
-    return l;
+    if (group >= 0 && group < ControllerSchedule::GROUPS_COUNT)
+        return daysEUtoUS(mControllerSchedule->schedules[group].days());
+    else
+        return 0;
 }
 
-char ControllerConfig::days(int channel) const
+int ControllerConfig::openAt(int group) const
 {
-    vector<unique_ptr<ScheduleLine>>::iterator l = find_if(mScheduleLines->begin(), mScheduleLines->end(), [channel](const unique_ptr<ScheduleLine>& l)->bool{ return channel==l->channel; });
-    if(l!=mScheduleLines->end()){
-        return daysEUtoUS(l->get()->dayEU);
-    }
-    return 0;
+    if (group >= 0 && group < ControllerSchedule::GROUPS_COUNT)
+        return mControllerSchedule->schedules[group].openAt();
+    else
+        return 0;
 }
 
-int ControllerConfig::openAt(int channel) const
+int ControllerConfig::closeAt(int group) const
 {
-    vector<unique_ptr<ScheduleLine>>::iterator l = find_if(mScheduleLines->begin(), mScheduleLines->end(), [channel](const unique_ptr<ScheduleLine>& l)->bool{ return (channel==l->channel) && ("up"==l->command); });
-    if(l != mScheduleLines->end()){
-        return l->get()->hour*60 + l->get()->minute;
-    }
-    return 0;
-}
-
-int ControllerConfig::closeAt(int channel) const
-{
-    vector<unique_ptr<ScheduleLine>>::iterator l = find_if(mScheduleLines->begin(), mScheduleLines->end(), [channel](const unique_ptr<ScheduleLine>& l)->bool{ return (channel==l->channel) && ("down"==l->command); });
-    if(l != mScheduleLines->end()){
-        return l->get()->hour*60 + l->get()->minute;
-    }
-    return 0;
+    if (group >= 0 && group < ControllerSchedule::GROUPS_COUNT)
+        return mControllerSchedule->schedules[group].closeAt();
+    else
+        return 0;
 }
 
 char ControllerConfig::daysEUtoUS(char eu)
@@ -175,25 +113,15 @@ char ControllerConfig::daysUStoEU(char us)
     else return us >> 1;
 }
 
-void ControllerConfig::addSchedule(int channel, int dayUS, int openAt, int closeAt)
+void ControllerConfig::setGroupSchedule(int group, int dayUS, int openAt, int closeAt)
 {
-    unique_ptr<ScheduleLine> l(new ScheduleLine);
-    l->channel = channel;
-    l->dayEU = daysUStoEU(dayUS);
-    l->hour = openAt / 60;
-    l->minute = openAt % 60;
-    l->command = "up";
-    mScheduleLines->push_back(move(l));
-    l.reset(new ScheduleLine);
-    l->channel = channel;
-    l->dayEU = daysUStoEU(dayUS);
-    l->hour = closeAt / 60;
-    l->minute = closeAt % 60;
-    l->command = "down";
-    mScheduleLines->push_back(move(l));
+    if (group < 0 || group >= ControllerSchedule::GROUPS_COUNT) return;
+    mControllerSchedule->schedules[group].setOpenAt(openAt);
+    mControllerSchedule->schedules[group].setCloseAt(closeAt);
+    mControllerSchedule->schedules[group].setDays(daysUStoEU(dayUS));
 }
 
-void ControllerConfig::clearSchedule()
+void ControllerConfig::cleanSchedule()
 {
-    mScheduleLines->clear();
+    mControllerSchedule->clean();
 }

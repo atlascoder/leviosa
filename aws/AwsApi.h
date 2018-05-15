@@ -31,6 +31,8 @@ public:
         return sInstance;
     }
 
+    void reset();
+
     void stopRequests();
 
     void recycleClient(const shared_ptr<Client::AWSClient>& client);

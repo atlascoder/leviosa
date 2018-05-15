@@ -94,7 +94,6 @@
         <file>img/leviosa-logo.png</file>
         <file>img/logo-big.png</file>
         <file>Splash.qml</file>
-        <file>Tests.qml</file>
         <file>ZonePage.qml</file>
         <file>ZoneControl.qml</file>
     </qresource>

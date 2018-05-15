@@ -9,6 +9,10 @@ Page {
     property alias hintText : hintMessageText.text
     property alias hintColor: hintMessageText.color
 
+    signal onRemoved()
+
+    StackView.onRemoved: onRemoved()
+
     background: Rectangle {
         anchors.fill: parent
         color: DefTheme.mainColorBg

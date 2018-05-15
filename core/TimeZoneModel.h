@@ -10,42 +10,36 @@ class TimeZoneModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(int utcOffset READ utcOffset NOTIFY selectedChanged)
-    Q_PROPERTY(int currentOffset READ currentOffset WRITE setCurrentOffset NOTIFY selectedChanged)
+    Q_PROPERTY(QString currentTimezone READ currentTimezone WRITE setCurrentTimezone NOTIFY currentTimezoneChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedChanged)
-    Q_PROPERTY(QString signature READ signature NOTIFY selectedChanged)
+    Q_PROPERTY(QString timezone READ timezone NOTIFY selectedChanged)
 public:
     TimeZoneModel(QObject *parent = nullptr);
 
     enum Roles {
-        UtcOffsetRole = Qt::UserRole + 1,
-        SignatureRole
+        NameRole = Qt::UserRole + 1
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    static int defaultUtcOffset();
-    static QString signatureByOffset(const int utcOffset);
+    static QString defaultTimezone();
 signals:
     void selectedChanged();
-
+    void currentTimezoneChanged();
 private:
 
-    int mCurrentOffset;
+    QString mCurrentTimezone;
     int mSelectedIndex;
-    bool mUSZone;
 
-    int currentOffset() const;
-    void setCurrentOffset(const int currentOffset);
+    QString currentTimezone() const;
+    void setCurrentTimezone(const QString& currentOffset);
 
     int selectedIndex() const;
     void setSelectedIndex(const int index);
 
-    QString signature() const;
-
-    int utcOffset() const;
+    QString timezone() const;
 
     QString signatureByIndex(const int index) const;
 };

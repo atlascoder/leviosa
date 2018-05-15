@@ -20,8 +20,8 @@ class LocationModel : public QAbstractListModel
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString bssid READ bssid WRITE setBssid NOTIFY bssidChanged)
     Q_PROPERTY(int position READ position WRITE setPosition NOTIFY positionChanged)
-    Q_PROPERTY(int utcOffset READ utcOffset WRITE setUtcOffset NOTIFY utcOffsetChanged)
-    Q_PROPERTY(QString timezoneName READ timezoneName NOTIFY utcOffsetChanged)
+//    Q_PROPERTY(int utcOffset READ utcOffset WRITE setUtcOffset NOTIFY utcOffsetChanged)
+    Q_PROPERTY(QString timezone READ timezone WRITE setTimezone NOTIFY timezoneChanged)
     Q_PROPERTY(QStringList positionOrder READ getPositionOrder NOTIFY zonesChanged)
     Q_PROPERTY(bool isNew READ isNew NOTIFY isNewChanged)
     Q_PROPERTY(bool single READ single NOTIFY zonesChanged)
@@ -58,10 +58,11 @@ public:
     int position() const;
     void setPosition(int position);
 
-    int utcOffset() const;
-    void setUtcOffset(int utcOffset);
+//    int utcOffset() const;
+//    void setUtcOffset(int utcOffset);
 
-    QString timezoneName() const;
+    QString timezone() const;
+    void setTimezone(const QString& timezone);
 
     bool single() const;
 
@@ -74,7 +75,8 @@ signals:
     void nameChanged();
     void bssidChanged();
     void positionChanged();
-    void utcOffsetChanged();
+//    void utcOffsetChanged();
+    void timezoneChanged();
     void currentBssidChanged();
     void isNewChanged();
     void zonesChanged();

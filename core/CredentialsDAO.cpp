@@ -69,5 +69,8 @@ QList<UserLogin> CredentialsDAO::readLogins() const
 void CredentialsDAO::clear() const
 {
     QSqlQuery query;
-    query.exec("DELETE FROM credentials");
+    if (query.exec("DELETE FROM credentials"))
+        qDebug() << "Table `credentials` cleared";
+    else
+        qDebug() << "Table `credentials` not cleared";
 }

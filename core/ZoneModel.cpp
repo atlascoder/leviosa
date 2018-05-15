@@ -49,12 +49,12 @@ void ZoneModel::deleteZone()
         }
         p++;
     }
-    UserData::instance().persistChanges(mNeighbours, false);
     auto groups = UserData::instance().shadeGroupsForController(mController->mac());
     for (auto& g : *groups) {
         g->setDeleted(true);
         g->setChanged(true);
     }
+    UserData::instance().persistChanges(mNeighbours, false);
     UserData::instance().persistChanges(groups);
 }
 
@@ -91,6 +91,7 @@ void ZoneModel::reloadShadeGroups()
     endResetModel();
     emit shadeGroupsChanged();
     emit nameChanged();
+    emit controllerStatusChanged();
 }
 
 int ZoneModel::rowCount(const QModelIndex &parent) const
@@ -345,12 +346,12 @@ QStringList ZoneModel::positionOrder() const
     return order;
 }
 
-QString ZoneModel::timezoneName() const
+QString ZoneModel::timezone() const
 {
     auto location = UserData::instance().location(mController->locationUuid());
     if (location.get() != nullptr)
-        return TimeZoneModel::signatureByOffset(location->utcOffset());
+        return location->timezone();
     else
-        return TimeZoneModel::signatureByOffset(TimeZoneModel::defaultUtcOffset());
+        return TimeZoneModel::defaultTimezone();
 
 }

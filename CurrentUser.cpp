@@ -125,11 +125,10 @@ void CurrentUser::signOut()
 
 void CurrentUser::clearUser()
 {
-    mDb.userDAO.clear();
+    mDb.clear();
     UserData::instance().clear();
     clearPasswords();
     setEmail("");
-    mUser.clear();
 }
 
 void CurrentUser::clearPasswords()
@@ -245,8 +244,8 @@ void CurrentUser::logoutUser()
 {
     setBusy(true);
     mAuthRequest->signOut();
+    AwsApi::instance().reset();
     if(mAuthRequest->isSuccessful()){
-        mDb.clear();
         setLastMessage("Signed out.");
         Aws::Auth::DefaultPersistentCognitoIdentityProvider prov(
                     ClientConfig::instance().identityPool,

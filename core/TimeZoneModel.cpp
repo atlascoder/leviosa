@@ -1,66 +1,69 @@
 #include "TimeZoneModel.h"
 
-#include <QDateTime>
+#include <QTimeZone>
+#include <QDebug>
 
-inline bool isUSZone(const int offset) {
-    int offset_hour = offset / 3600;
-    return (offset % 3600 == 0) && (offset_hour >= -10) && (offset_hour <= -5);
+static QString US_ZONES[] = {"EST", "CST", "MST", "PST", "AKST", "HAST"};
+
+inline int usZoneIndex(const QString& timezone) {
+    int i = 0;
+    while (i < 6) {
+        if (US_ZONES[i] == timezone)
+            return i;
+        else
+            i++;
+    }
+    return -1;
 }
 
 
 TimeZoneModel::TimeZoneModel(QObject *parent):
-    QAbstractListModel(parent)
+    QAbstractListModel(parent),
+    mCurrentTimezone(defaultTimezone())
 {
-    mCurrentOffset = defaultUtcOffset();
-    mSelectedIndex = isUSZone(mCurrentOffset) ? 5 - mCurrentOffset/3600 : 6;
+    int idx = usZoneIndex(mCurrentTimezone);
+    mSelectedIndex = idx == -1 ? 6 : idx;
 }
 
 int TimeZoneModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return isUSZone(mCurrentOffset) ? 6 : 7;
+    return usZoneIndex(mCurrentTimezone) == -1 ? 7 : 6;
 }
 
 QVariant TimeZoneModel::data(const QModelIndex &index, int role) const
 {
     int row = index.row();
-    if (row >= 0 && row < rowCount()) {
-        switch (role) {
-        case Roles::UtcOffsetRole:
-            return row == 6 ? mCurrentOffset : -(5 + row)*3600;
-        case Roles::SignatureRole:
-            return signatureByIndex(row);
-        }
+    switch (role) {
+    case Roles::NameRole:
+        return signatureByIndex(row);
+    default:
+        return QVariant();
     }
-    return QVariant();
 }
 
 QHash<int, QByteArray> TimeZoneModel::roleNames() const
 {
     QHash<int, QByteArray> hash;
-    hash[Roles::UtcOffsetRole] = "utcOffset";
-    hash[Roles::SignatureRole] = "signature";
+    hash[Roles::NameRole] = "name";
     return hash;
 }
 
-int TimeZoneModel::currentOffset() const
+QString TimeZoneModel::currentTimezone() const
 {
-    return mCurrentOffset;
+    return mCurrentTimezone;
 }
 
-void TimeZoneModel::setCurrentOffset(const int currentOffset)
+void TimeZoneModel::setCurrentTimezone(const QString &currentTimezone)
 {
-    if (currentOffset == mCurrentOffset) return;
-    mCurrentOffset = currentOffset;
-    mSelectedIndex = isUSZone(mCurrentOffset) ? -5 - mCurrentOffset/3600 : 6;
+    if (mCurrentTimezone == currentTimezone) return;
     beginResetModel();
+    mCurrentTimezone = currentTimezone;
+    int idx = usZoneIndex(mCurrentTimezone);
+    mSelectedIndex = idx == -1 ? 6 : idx;
     endResetModel();
+    emit currentTimezoneChanged();
     emit selectedChanged();
-}
-
-int TimeZoneModel::utcOffset() const
-{
-    return mSelectedIndex == 6 ? mCurrentOffset : -(mSelectedIndex + 5)*3600;
 }
 
 int TimeZoneModel::selectedIndex() const
@@ -70,71 +73,30 @@ int TimeZoneModel::selectedIndex() const
 
 void TimeZoneModel::setSelectedIndex(const int index)
 {
-    if (index == selectedIndex()) return;
+    if (index == mSelectedIndex) return;
     mSelectedIndex = index;
     emit selectedChanged();
 }
 
-QString TimeZoneModel::signature() const
+QString TimeZoneModel::signatureByIndex(const int index) const
+{
+    QString result;
+
+    if (index >=0 && index < 6)
+        result = US_ZONES[index];
+    else
+        result = mCurrentTimezone;
+
+    qDebug() << "Timezone [" << index <<"] => " << result;
+    return result;
+}
+
+QString TimeZoneModel::timezone() const
 {
     return signatureByIndex(mSelectedIndex);
 }
 
-QString TimeZoneModel::signatureByIndex(const int index) const
+QString TimeZoneModel::defaultTimezone()
 {
-    switch (index) {
-    case 0:
-        return "EST";
-    case 1:
-        return "CST";
-    case 2:
-        return "MST";
-    case 3:
-        return "PST";
-    case 4:
-        return "AKST";
-    case 5:
-        return "HAST";
-    default:
-        if(mCurrentOffset == 0)
-            return "UTC";
-        else if(mCurrentOffset > 0)
-            return "UTC+" + QString::number(mCurrentOffset/3600);
-        else
-            return "UTC" + QString::number(mCurrentOffset/3600);
-    }
-}
-
-int TimeZoneModel::defaultUtcOffset()
-{
-    QDateTime local(QDateTime::currentDateTime());
-    QDateTime utc(local.toUTC());
-    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
-    return dt.secsTo(local);
-}
-
-QString TimeZoneModel::signatureByOffset(const int utcOffset)
-{
-    int offset_hours = utcOffset / 3600;
-    switch (offset_hours) {
-    case -5:
-        return "EST";
-    case -6:
-        return "CST";
-    case -7:
-        return "MST";
-    case -8:
-        return "PST";
-    case -9:
-        return "AKST";
-    case -10:
-        return "HAST";
-    default:
-        if(offset_hours == 0)
-            return "UTC";
-        else if(offset_hours > 0)
-            return "UTC+" + QString::number(offset_hours);
-        else
-            return "UTC" + QString::number(offset_hours);
-    }
+    return QTimeZone::systemTimeZone().id();
 }

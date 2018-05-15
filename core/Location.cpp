@@ -3,7 +3,7 @@
 #include <QJsonObject>
 
 Location::Location():
-    Syncable(), mName("My Home"), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+    Syncable(), mName("My Home"), mTimezone("EST"), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
 {
     setUuid(QUuid::createUuid().toString());
 }
@@ -35,15 +35,25 @@ void Location::setName(const QString &name)
     mName = name;
 }
 
-int Location::utcOffset() const
+QString Location::timezone() const
 {
-    return mUtcOffset;
+    return mTimezone;
 }
 
-void Location::setUtcOffset(int offset)
+void Location::setTimezone(const QString &tzone)
 {
-    mUtcOffset = offset;
+    mTimezone = tzone;
 }
+
+//int Location::utcOffset() const
+//{
+//    return mUtcOffset;
+//}
+
+//void Location::setUtcOffset(int offset)
+//{
+//    mUtcOffset = offset;
+//}
 
 bool Location::isOnWlan() const
 {
@@ -70,7 +80,8 @@ QJsonObject Location::toJson() const
     QJsonObject json;
     json.insert("name", mName);
     json.insert("bssid", mBssid);
-    json.insert("utcOffset", QJsonValue(mUtcOffset));
+    json.insert("timezone", mTimezone);
+//    json.insert("utcOffset", QJsonValue(mUtcOffset));
     json.insert("position", QJsonValue(position()));
     json.insert("item_type", "location");
     return json;
@@ -84,9 +95,12 @@ void Location::withJson(const QJsonObject & json)
     if(!json.contains("bssid")) return;
     mBssid = json.value("bssid").toString();
 
-    if(!json.contains("utcOffset")) return;
-    mUtcOffset = json.value("utcOffset").toInt();
+//    if(!json.contains("utcOffset")) return;
+//    mUtcOffset = json.value("utcOffset").toInt();
 
     if(!json.contains("position")) return;
     setPosition(json.value("position").toInt());
+
+    if (!json.contains("timezone")) return;
+    mTimezone = json.value("timezone").toString();
 }

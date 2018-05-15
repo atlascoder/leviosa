@@ -58,12 +58,12 @@ Control {
 
         Text {
             anchors.top: parent.top
-            anchors.topMargin: rootItem.margin
+            anchors.topMargin: 3
             anchors.left: parent.left
-            anchors.leftMargin: rootItem.margin
-            width: parent.height / 4
-            text: " " + rootItem.openAtText
-            horizontalAlignment: Text.AlignLeft
+            anchors.leftMargin: 6
+            text: rootItem.openAtText
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
             visible: rootItem.days != 0
             font.pixelSize: parent.height / 5
         }
@@ -124,12 +124,13 @@ Control {
 
         Text {
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: rootItem.margin
+            anchors.bottomMargin: 3
             anchors.right: parent.right
-            anchors.rightMargin: rootItem.margin
-            width: parent.height / 4
-            text: rootItem.closeAtText + " "
-            horizontalAlignment: Text.AlignRight
+            anchors.rightMargin: 6
+            font.bold: true
+            text: rootItem.closeAtText
+            verticalAlignment: Text.AlignBottom
+            horizontalAlignment: Text.AlignHCenter
             visible: rootItem.days != 0
             font.pixelSize: parent.height / 5
         }
@@ -349,7 +350,7 @@ Control {
             }
 
             PropertyChanges {
-                target: ipIcon
+                target: upIcon
                 source: "img/ic_open.png"
                 visible: true
             }
@@ -432,7 +433,7 @@ Control {
                 visible: true
             }
             PropertyChanges {
-                target: downCaption
+                target: upCaption
                 visible: false
             }
 
@@ -474,6 +475,7 @@ Control {
             PropertyChanges {
                 target: upIcon
                 source: "img/ic_open.png"
+                visible: true
             }
         },
         State {
@@ -511,6 +513,7 @@ Control {
             PropertyChanges {
                 target: downIcon
                 source: "img/ic_close.png"
+                visible: true
             }
         },
         State {

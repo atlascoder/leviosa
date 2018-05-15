@@ -109,7 +109,10 @@ bool UserDAO::loadUser(User &user) const
 void UserDAO::clear() const
 {
     QSqlQuery query(mDatabase);
-    query.exec("DELETE FROM users");
+    if (query.exec("DELETE FROM users"))
+        qDebug() << "Table `users` cleared";
+    else
+        qDebug() << "Table `users` was not cleared due error: " << query.lastError().text();
 }
 
 void UserDAO::persistUser(User &user) const

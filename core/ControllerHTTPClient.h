@@ -13,7 +13,7 @@ class ControllerHTTPClient : public QObject
 
     QNetworkAccessManager* mQnam;
     QNetworkReply* cmdReply;
-    QNetworkReply* mKeysReply;
+    QNetworkReply* mSetupReply;
     QHttpMultiPart* mMultipart;
 signals:
     void requestFinished(QNetworkReply* reply);
@@ -23,9 +23,9 @@ signals:
     void setKeysFailed(const QString& msg);
 
 public slots:
-    void post(const QString& url);
+    void post(const QString& url, const QByteArray& data);
 
-    void postKeysAndCert(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
+    void postSetup(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert, const int controllerId, const QByteArray& schedule);
 private slots:
     void finishedPost() { if(cmdReply) emit requestFinished(cmdReply); }
     void onPostKeysFinished();

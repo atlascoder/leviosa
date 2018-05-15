@@ -14,7 +14,7 @@ LeviosaPage {
     property alias uuid : locationModel.uuid
     property alias bssid : locationModel.bssid
 
-    property int utcOffset
+    property string timezone
 
     signal locationChanged()
     signal locationDeleted()
@@ -27,7 +27,7 @@ LeviosaPage {
 
     LocationModel {
         id: locationModel
-        onUuidChanged: timezoneModel.currentOffset = utcOffset
+        onUuidChanged: timezoneModel.currentTimezone = locationModel.timezone
     }
 
     TimeZoneModel {
@@ -66,7 +66,7 @@ LeviosaPage {
             width: parent.width
             height: 40
             model: timezoneModel
-            textRole: "signature"
+            textRole: "name"
             currentIndex: timezoneModel.selectedIndex
             onCurrentIndexChanged: timezoneModel.selectedIndex = currentIndex
             contentItem: Text {
@@ -156,7 +156,7 @@ LeviosaPage {
             onClicked: {
                 locationModel.name = locationName.text
                 locationModel.position = showBefore.currentIndex
-                locationModel.utcOffset = timezoneModel.utcOffset
+                locationModel.timezone = timezoneModel.timezone
                 locationModel.saveChanges()
                 if (locationModel.isNew)
                     locationCreated(locationModel.uuid)

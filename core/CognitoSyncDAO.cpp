@@ -32,10 +32,7 @@ void CognitoSyncDAO::init() const
 void CognitoSyncDAO::clear() const
 {
     QSqlQuery query(mDatabase);
-    if (query.exec(
-                "DELETE FROM " \
-                TABLE_NAME
-                )
+    if (query.exec("DELETE FROM "  TABLE_NAME)
     )
         qDebug() << "Table " << TABLE_NAME << " cleared";
     else
@@ -167,10 +164,10 @@ void CognitoSyncDAO::persistItems(const shared_ptr<vector<shared_ptr<Syncable>>>
             mDatabase.rollback();
         }
         else if (mDatabase.commit()) {
-            qDebug() << "Data persisted in transaction mode";
+            qDebug() << "Data persisted to table `" << TABLE_NAME << "` in transaction mode";
         }
         else {
-            qDebug() << "Data not persisted with transaction due error: " << mDatabase.lastError().text();
+            qDebug() << "Data not persisted to table `" << TABLE_NAME << "` with transaction due error: " << mDatabase.lastError().text();
         }
     }
 }
@@ -235,10 +232,10 @@ void CognitoSyncDAO::persistSynced(const shared_ptr<vector<shared_ptr<Syncable>>
             mDatabase.rollback();
         }
         else if (mDatabase.commit()) {
-            qDebug() << "Data persisted in transaction mode";
+            qDebug() << "Data persisted to table `" << TABLE_NAME << "` in transaction mode";
         }
         else {
-            qDebug() << "Transaction commit failed due error: " << mDatabase.lastError().text();
+            qDebug() << "Transaction commit to table `" << TABLE_NAME << "` failed due error: " << mDatabase.lastError().text();
         }
     }
 

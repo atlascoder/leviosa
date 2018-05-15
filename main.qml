@@ -37,13 +37,13 @@ ApplicationWindow {
         onLoaded: {
             item.onAuthenticate.connect(openAuthPage)
             item.onRegister.connect(openRegPage)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.initialItem, item)
         }
     }
 
     function openWelcomePage(){
-        if(welcomePageLoader.status != Loader.Ready)
-            welcomePageLoader.source = "WelcomePage.qml"
-        pager.replace(pager.initialItem, welcomePageLoader.item)
+        welcomePageLoader.source = "WelcomePage.qml"
     }
 
     // FirstLogin
@@ -51,18 +51,14 @@ ApplicationWindow {
     Loader {
         id: syncPageLoader
         onLoaded: {
-            item.onDownloaded.connect(function(){
-                doLogin();
-            })
-            StackView.onRemoved.connect(function(){
-                syncPageLoader.source = ""
-            })
+            item.onDownloaded.connect(doLogin)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.initialItem, item)
         }
     }
 
     function openSyncPage(){
         syncPageLoader.source = "SyncPage.qml"
-        pager.replace(pager.initialItem, syncPageLoader.item)
     }
 
     // EmptyAccount
@@ -72,13 +68,13 @@ ApplicationWindow {
         onLoaded: {
             item.onControllerAdded.connect(doLogin)
             item.onShowMenu.connect(openDrawer)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = "" })
+            pager.push(item)
         }
     }
 
     function openEmptyAccountPage(){
         emptyAccountPageLoader.source = "SetupControllerPage.qml"
-        pager.push(emptyAccountPageLoader.item)
     }
 
     // SignIn
@@ -89,14 +85,13 @@ ApplicationWindow {
             item.onRegister.connect(openRegPage)
             item.onSignedIn.connect(openSyncPage)
             item.onRestore.connect(openRestorePage)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.currentItem, item)
         }
     }
 
     function openAuthPage(){
-        if(authPageLoader.status == Loader.Ready)
-            authPageLoader.source = ""
         authPageLoader.source = "AuthPage.qml"
-        pager.replace(pager.currentItem, authPageLoader.item)
     }
 
     // SignUp
@@ -108,14 +103,13 @@ ApplicationWindow {
             item.onRestore.connect(openRestorePage)
             item.onVerificate.connect(openVerifyPage)
             item.onFirstLogin.connect(doLogin)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.currentItem, item)
         }
     }
 
     function openRegPage(){
-        if(regPageLoader.status == Loader.Ready)
-            regPageLoader.source = ""
         regPageLoader.source = "RegisterPage.qml"
-        pager.replace(pager.currentItem, regPageLoader.item)
     }
 
     // Verify
@@ -126,15 +120,13 @@ ApplicationWindow {
             item.onRegister.connect(openRegPage)
             item.onSignIn.connect(openAuthPage)
             item.onSignedIn.connect(openSyncPage)
-            StackView.onRemoved.connect(function(){
-                verifyPageLoader.source = ""
-            })
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.currentItem, item)
         }
     }
 
     function openVerifyPage(){
         verifyPageLoader.source = "VerifyPage.qml"
-        pager.replace(pager.currentItem, verifyPageLoader.item)
     }
 
     // Restore password
@@ -145,13 +137,13 @@ ApplicationWindow {
             item.onSignIn.connect(openAuthPage)
             item.onRegister.connect(openRegPage)
             item.onResetPassword.connect(openResetPasswordPage)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.currentItem, item)
         }
     }
 
     function openRestorePage(){
-        if(restorePageLoader.status != Loader.Ready)
-            restorePageLoader.source = "RestorePage.qml"
-        pager.replace(pager.currentItem, restorePageLoader.item)
+        restorePageLoader.source = "RestorePage.qml"
     }
 
     // Reset password
@@ -162,13 +154,13 @@ ApplicationWindow {
             item.onSignIn.connect(openAuthPage)
             item.onSignedIn.connect(doLogin)
             item.onSignUp.connect(openRegPage)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.replace(pager.currentItem, item)
         }
     }
 
     function openResetPasswordPage(){
-        if(resetPasswordPageLoader.status != Loader.Ready)
-            resetPasswordPageLoader.source = "ResetPasswordPage.qml"
-        pager.replace(pager.currentItem, resetPasswordPageLoader.item)
+        resetPasswordPageLoader.source = "ResetPasswordPage.qml"
     }
 
     // Change password
@@ -179,39 +171,35 @@ ApplicationWindow {
             item.onCancel.connect(pager.pop)
             item.onRestore.connect(openRestorePage)
             item.onMenuClicked.connect(pager.pop)
+            item.onRemoved.connect(function(){ source = "" })
+            pager.push(item)
         }
     }
 
     function openChangePasswordPage(){
-        if(changePasswordPageLoader.status != Loader.Ready)
-            changePasswordPageLoader.source = "ChangePwdPage.qml"
-        pager.push(changePasswordPageLoader.item)
+        changePasswordPageLoader.source = "ChangePwdPage.qml"
     }
 
     // doLogin function
-
-    Loader {
-        id: cognitoTestPageLoader
-    }
-
-    function openCognitoTestPage(){
-        cognitoTestPageLoader.source = "Tests.qml"
-        pager.replace(pager.currentItem, cognitoTestPageLoader.item)
-    }
 
     function doLogin() {
         if(currentUser.isAuthenticated){
             var n = userData.locationsCount
             if (n > 0) {
-                if (pager.depth == 0) openLocationsPage();
-                if (n === 1 && (pager.depth >= 1 && pager.currentItem != locationPageLoader.item)) {
+                if (n === 1 && (pager.currentItem == null || pager.currentItem != locationPageLoader.item)) {
+                    console.log("Opening single location")
                     pager.clear()
                     openLocationsPage()
                     openLocationPage(userData.firstLocationUuid)
                 }
-                else if (n > 1 && pager.depth >= 1 && pager.currentItem != locationsPageLoader.item){
+                else if (n > 1 && (pager.currentItem == null || pager.currentItem != locationsPageLoader.item)) {
+                    console.log("Opening locations")
                     pager.clear()
                     openLocationsPage()
+                    console.log("StackView depth " + pager.depth + ", w/h: " + pager.width + "/" + pager.height)
+                }
+                else {
+                    console.log("Nothing to change - already opened! Current item = " + pager.currentItem)
                 }
             }
             else {
@@ -234,13 +222,13 @@ ApplicationWindow {
             item.onEditLocation.connect(openEditLocationPage)
             item.onAddClicked.connect(openNewLocationPage)
             item.onShowMenu.connect(openDrawer)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = ""; })
+            pager.push(item)
         }
     }
 
     function openLocationsPage(){
         locationsPageLoader.source = "LocationsPage.qml"
-        pager.push(locationsPageLoader.item)
     }
 
     // New location
@@ -252,13 +240,12 @@ ApplicationWindow {
             item.onLocationChanged.connect(pager.pop)
             item.onLocationDeleted.connect(pager.pop)
             item.onLocationCreated.connect(openLocationPage)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openNewLocationPage(bssid){
-        if(newLocationPageLoader.status != Loader.Ready)
-            newLocationPageLoader.source = "EditLocationPage.qml"
+        newLocationPageLoader.source = "EditLocationPage.qml"
         newLocationPageLoader.item.bssid = bssid
         pager.push(newLocationPageLoader.item)
     }
@@ -272,7 +259,7 @@ ApplicationWindow {
             item.onLocationChanged.connect(pager.pop)
             item.onLocationDeleted.connect(doLogin)
             item.onLocationCreated.connect(openLocationPage)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -292,12 +279,7 @@ ApplicationWindow {
             item.onOpenZone.connect(openZonePage)
             item.onEditZone.connect(openEditZonePage)
             item.onEditLocation.connect(openEditLocationPage)
-            StackView.onActivated.connect(function(){
-                item.fireRefresh()
-            })
-            StackView.onRemoved.connect(function(){
-                source = ""
-            })
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -306,12 +288,17 @@ ApplicationWindow {
         if (n === 1) {
             zonePageLoader.source = "ZonePage.qml"
             zonePageLoader.item.uuid = userData.firstControllerInLocation(uuid)
-            pager.push(zonePageLoader.item)
+            if (zonePageLoader.item.single) {
+                pager.replace(pager.initialItem, zonePageLoader.item)
+            }
+            else {
+                pager.push(zonePageLoader.item)
+            }
         }
         else {
             locationPageLoader.source = "LocationPage.qml"
             locationPageLoader.item.uuid = uuid
-            pager.push(locationPageLoader)
+            pager.push(locationPageLoader.item)
         }
     }
 
@@ -326,8 +313,7 @@ ApplicationWindow {
             item.onEditLocation.connect(openEditLocationPage)
             item.onEditGroup.connect(openEditShadeGroupPage)
             item.onAddGroup.connect(openNewShadeGroupPage)
-            StackView.onActivated.connect(item.reload)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -348,7 +334,7 @@ ApplicationWindow {
         id: newShadeGroupPageLoader
         onLoaded: {
             item.onGoBack.connect(pager.pop)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -364,7 +350,7 @@ ApplicationWindow {
         id: editShadeGroupPageLoader
         onLoaded: {
             item.onGoBack.connect(pager.pop)
-            StackView.onRemoved.connect(function(){ source = ""})
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
@@ -381,12 +367,12 @@ ApplicationWindow {
         onLoaded: {
             item.onGoBack.connect(pager.pop)
             item.onZoneDeleted.connect(doLogin)
+            item.onRemoved.connect(function(){ source = "" })
         }
     }
 
     function openEditZonePage(uuid){
-        if(editZonePageLoader.status != Loader.Ready)
-            editZonePageLoader.source = "EditZonePage.qml"
+        editZonePageLoader.source = "EditZonePage.qml"
         editZonePageLoader.item.uuid = uuid
         pager.push(editZonePageLoader.item)
     }
@@ -398,14 +384,14 @@ ApplicationWindow {
         onLoaded: {
             item.onGoBack.connect(pager.pop)
             item.onControllerAdded.connect(doLogin)
-            StackView.onRemoved.connect(function(){ source = "" })
+            item.enableMenuAction = false
+            item.onRemoved.connect(function(){ source = "" })
+            pager.push(item)
         }
     }
 
     function openSetupControllerPage(){
         setupControllerPageLoader.source = "SetupControllerPage.qml"
-        setupControllerPageLoader.item.enableMenuAction = false
-        pager.push(setupControllerPageLoader.item)
     }
 
     StackView {

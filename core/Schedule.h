@@ -36,7 +36,9 @@ public:
 
     bool scheduledForDay(WeekDay weekDay) const;
     void setScheduledForDay(WeekDay weekDay);
-    void clearScheduledForDay(WeekDay weekDay);
+    void cleanScheduledForDay(WeekDay weekDay);
+
+    void clean();
 
 protected:
     char mDaysMask;

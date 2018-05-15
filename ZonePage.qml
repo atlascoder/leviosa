@@ -30,13 +30,16 @@ LeviosaPage {
     showStatusText: true
 
     showSubTitle: true
-    subTitle: zoneModel.timezoneName
+    subTitle: zoneModel.timezone
 
     function reload() {
         zoneModel.reloadShadeGroups()
         controllerAPIs.check()
         userData.sync()
     }
+
+    StackView.onActivated: reload()
+
 
     ZoneModel {
         id: zoneModel

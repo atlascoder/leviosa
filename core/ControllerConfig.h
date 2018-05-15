@@ -6,7 +6,8 @@
 #include <QJsonObject>
 #include <memory>
 #include <vector>
-#include "ScheduleLine.h"
+
+#include "ControllerSchedule.h"
 
 using namespace std;
 
@@ -17,18 +18,16 @@ class ControllerConfig
     QString mVersion;
     QString mMac;
     QStringList mRfChannels;
-    QString mTimezone;
     QDateTime mTime;
-    unique_ptr<vector<unique_ptr<ScheduleLine>>> mScheduleLines;
+    shared_ptr<ControllerSchedule> mControllerSchedule;
 
-   QString mScheduleJsonString;
 public:
-    ControllerConfig() : mScheduleLines(new std::vector<std::unique_ptr<ScheduleLine>>) {}
+    ControllerConfig() : mControllerSchedule(new ControllerSchedule) {}
     ControllerConfig& operator=(const ControllerConfig&);
 
     void parse(const QString& jsonized);
-    unique_ptr<ScheduleLine> buildScheduleLine(const QJsonObject& obj) const;
-    vector<unique_ptr<ScheduleLine>>& scheduleLines() { return *mScheduleLines.get(); }
+    shared_ptr<ControllerSchedule> schedule() const { return mControllerSchedule; }
+
 
     QString mac() const {return mMac; }
 
@@ -40,17 +39,13 @@ public:
 
     int closeAt(int channel) const;
 
-    void addSchedule(int channel, int day, int openAt, int closeAt);
+    void setGroupSchedule(int channel, int day, int openAt, int closeAt);
 
-    void clearSchedule();
+    void cleanSchedule();
 
-    QString timezone() const { return mTimezone; }
-    void setTimezone(const QString& timezone) { mTimezone = timezone; }
+    QString timezone() const { return mControllerSchedule->timezone; }
+    void setTimezone(const QString& timezone) { mControllerSchedule->timezone = timezone; }
     QDateTime dateTime() const { return mTime; }
-
-    QString scheduleJsonString() const { return mScheduleJsonString; }
-
-    int scheduledChannels() const { return mScheduleLines->size() / 2; }
 
     static int utcOffset(const QString& abbr);
     static char daysUStoEU(char usDays);

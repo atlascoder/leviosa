@@ -5,6 +5,16 @@ using namespace std;
 
 AwsApi::AwsApi(): mClients(new vector<shared_ptr<Client::AWSClient>>), mCancelled(false)
 {
+    reset();
+}
+
+AwsApi::~AwsApi()
+{
+    stopRequests();
+}
+
+void AwsApi::reset()
+{
     mPersistentCredentialsProvider = MakeShared<PersistentCredentialsProviderSQLite>(
                 nullptr,
                 AWS_IDENTITY_POOL,
@@ -24,11 +34,6 @@ AwsApi::AwsApi(): mClients(new vector<shared_ptr<Client::AWSClient>>), mCancelle
                 mIdentityClient,
                 mIdpClient
             );
-}
-
-AwsApi::~AwsApi()
-{
-    stopRequests();
 }
 
 void AwsApi::stopRequests()

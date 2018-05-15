@@ -41,11 +41,8 @@ void ControllerAPI::run(){
 
     ControllerHTTPClient* client = new ControllerHTTPClient;
 
-    connect(this, &ControllerAPI::httpGet, client, &ControllerHTTPClient::post);
-    connect(this, &ControllerAPI::postKeysAndCertificate, client, &ControllerHTTPClient::postKeysAndCert);
+    connect(this, &ControllerAPI::httpPost, client, &ControllerHTTPClient::post);
     connect(client, &ControllerHTTPClient::requestFinished, this, &ControllerAPI::commandFinished);
-    connect(client, &ControllerHTTPClient::keysWasSet, this, &ControllerAPI::onKeysAndCertSet);
-    connect(client, &ControllerHTTPClient::setKeysFailed, this, &ControllerAPI::onKeysAndCertSetFailed);
 
     exec();
     client->deleteLater();
@@ -116,7 +113,8 @@ void ControllerAPI::commandFinished(QNetworkReply *reply)
 void ControllerAPI::httpCommand(const QString &url)
 {
     qDebug() << "WLAN CMD: " << url;
-    emit httpGet(url);
+    QByteArray data;
+    emit httpPost(url, data);
 }
 
 void ControllerAPI::sendSchedule()
@@ -156,7 +154,7 @@ ControllerConfig& ControllerAPI::currentConfig()
 void ControllerAPI::setControllerState(ControllerState state)
 {
     qDebug() << "Set controller state [" << mMac << "] : " << mControllerState << " => " << state;
-//    if(mControllerState == state) return;
+    if(mControllerState == state) return;
     mControllerState = state;
     emit controllerStateChanged(mMac);
 }
@@ -207,28 +205,14 @@ void ControllerAPI::sendAwsCommand(const QString& command, int channel)
     }
 }
 
-void ControllerAPI::pushKeysAndCert(const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert)
+void ControllerAPI::updateSchedule(const QString &scheduleJson)
 {
-    mPubKey = pubKey;
-    mPriKey = priKey;
-    mCert = cert;
-    emit postKeysAndCertificate(mIpAddress, mPubKey, mPriKey, mCert);
-}
-
-void ControllerAPI::onKeysAndCertSet()
-{
-    emit keysWasSet();
-    mPubKey.clear();
-    mPriKey.clear();
-    mCert.clear();
-}
-
-void ControllerAPI::onKeysAndCertSetFailed(const QString &msg)
-{
-    emit setKeysFailed(msg);
-    mPubKey.clear();
-    mPriKey.clear();
-    mCert.clear();
+    // Schedule will be always apdated via Amazon cloud, but we also update the schedule via HTTP to be faster
+    if(mControllerState == Wlan) {
+        const QString url = "http://" + mIpAddress + "/schedule";
+        const QByteArray data = scheduleJson.toLatin1();
+        emit httpPost(url, data);
+    }
 }
 
 void ControllerAPI::setBssid(const QString &bssid)

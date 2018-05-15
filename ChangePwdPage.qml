@@ -2,7 +2,6 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
-import com.atlascoder.UserLogin 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -18,8 +17,8 @@ LeviosaPage {
     signal cancel()
     signal restore()
 
-    UserLogin {
-        id: currentUser
+    Connections {
+        target: currentUser
         email: "change@password.my"
         password: passwordInput.text
         password2: passwordConfirmInput.text
@@ -286,7 +285,7 @@ LeviosaPage {
         },
         State {
             name: "Failed"
-            when: currentUser.authState == UserLogin.Failed
+            when: currentUser.authState === UserLogin.Failed
             PropertyChanges {
                 target: signUpButton
                 enabled: false

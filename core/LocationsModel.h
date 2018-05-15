@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QVariant>
 #include <QHash>
+#include <QTimer>
+
 #include "Location.h"
 #include "Controller.h"
 
@@ -14,6 +16,7 @@ class LocationsModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(bool single READ single NOTIFY singleChanged)
+    Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
 
 public:
     LocationsModel(QObject* parent = 0);
@@ -21,10 +24,10 @@ public:
     enum Roles {
         UuidRole = Qt::UserRole + 1,
         NameRole,
-        UtcOffsetRole,
         TimeZoneRole,
         PositionRole,
-        BssidRole
+        BssidRole,
+        LocationTime
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -36,15 +39,26 @@ public:
 
 signals:
     void modelUpdated();
-
     void singleChanged();
+    void activeChanged();
 
 public slots:
     void reloadData();
+
+private slots:
+
+    void onTimer();
 private:
+    bool mIsActive;
+    QTimer* mTimer;
+
+    bool active() const;
+    void setActive(bool isActive);
 
     bool isIndexValid(const QModelIndex& index) const;
     shared_ptr<vector<shared_ptr<Location>>> mLocations;
+
+    void updateTime();
 
 };
 

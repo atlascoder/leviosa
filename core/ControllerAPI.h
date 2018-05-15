@@ -68,11 +68,13 @@ public:
 
     void pushKeysAndCert(const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
 
-    bool onWlan() const { return mControllerState != Wan; }
+    bool onWlan() const { return mControllerState == Wlan; }
 
     void sendAwsCommand(const QString& command, int channel);
 
     static QString commandCode2String(int command);
+
+    void updateSchedule(const QString& scheduleJson);
 
 signals:
     void ipAddressChanged();
@@ -81,12 +83,9 @@ signals:
     void commandFailed();
     void scheduleSet();
     void scheduleFailed();
-    void keysWasSet();
-    void setKeysFailed(const QString& msg);
 
-    void postKeysAndCertificate(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert);
     void sendCommand(int channel, int command);
-    void httpGet(const QString& url);
+    void httpPost(const QString& url, const QByteArray& data);
     void controllerStateChanged(const QString& mac);
 
     void sendCloudCommand(const QString& mac, const QString& command, int channel);
@@ -101,8 +100,6 @@ private slots:
     void commandHTTPRequest(int channel, int command);
     void commandAWSRequest(int channel, int command);
 
-    void onKeysAndCertSet();
-    void onKeysAndCertSetFailed(const QString& msg);
 private:
     ControllerState mControllerState;
 

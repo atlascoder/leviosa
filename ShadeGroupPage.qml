@@ -70,13 +70,15 @@ LeviosaPage {
             anchors.margins: 12
             height: 40
             onClicked: {
-                if(sunday.checked) shadeGroupModel.days = 1
-                if(monday.checked) shadeGroupModel.days |= 1<<1
-                if(tuesday.checked) shadeGroupModel.days |= 1<<2
-                if(wednesday.checked) shadeGroupModel.days |= 1<<3
-                if(thursday.checked) shadeGroupModel.days |= 1<<4
-                if(friday.checked) shadeGroupModel.days |= 1<<5
-                if(saturday.checked) shadeGroupModel.days |= 1<<6
+                var days = 0
+                if(sunday.checked) days |= 1
+                if(monday.checked) days |= 1<<1
+                if(tuesday.checked) days |= 1<<2
+                if(wednesday.checked) days |= 1<<3
+                if(thursday.checked) days |= 1<<4
+                if(friday.checked) days |= 1<<5
+                if(saturday.checked) days |= 1<<6
+                shadeGroupModel.days = days;
                 shadeGroupModel.name = groupName.text
                 shadeGroupModel.openAtUS = openTimePM.checked ? openSlider.value : -openSlider.value
                 shadeGroupModel.closeAtUS = closeTimePM.checked ? closeSlider.value : -closeSlider.value

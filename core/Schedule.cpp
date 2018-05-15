@@ -1,7 +1,11 @@
 #include "Schedule.h"
 
+#define DEFAULT_OPEN_AT     480
+#define DEFAULT_CLOSE_AT    1140
+#define DEFAULT_DAYS_MASK   0
+
 Schedule::Schedule():
-    mDaysMask(0), mOpenAt(8*60), mCloseAt(19*60)
+    mDaysMask(DEFAULT_DAYS_MASK), mOpenAt(DEFAULT_OPEN_AT), mCloseAt(DEFAULT_CLOSE_AT)
 {
 
 }
@@ -66,9 +70,16 @@ void Schedule::setScheduledForDay(WeekDay weekDay)
     mDaysMask |= (1 << static_cast<int>(weekDay));
 }
 
-void Schedule::clearScheduledForDay(WeekDay weekDay)
+void Schedule::cleanScheduledForDay(WeekDay weekDay)
 {
     mDaysMask ^= (1 << static_cast<int>(weekDay));
+}
+
+void Schedule::clean()
+{
+    mDaysMask = DEFAULT_OPEN_AT;
+    mOpenAt = DEFAULT_OPEN_AT;
+    mCloseAt = DEFAULT_CLOSE_AT;
 }
 
 QString Schedule::openAtText() const
@@ -76,9 +87,9 @@ QString Schedule::openAtText() const
     QString str;
     float t = openAtUS();
     if(t < 0)
-        str.sprintf("%d:%02d %s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
+        str.sprintf("%d:%02d\n%s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
     else
-        str.sprintf("%d:%02d %s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
+        str.sprintf("%d:%02d\n%s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
     return str;
 }
 
@@ -87,9 +98,9 @@ QString Schedule::closeAtText() const
     QString str;
     float t = closeAtUS();
     if(t < 0)
-        str.sprintf("%d:%02d %s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
+        str.sprintf("%d:%02d\n%s", -static_cast<int>(t), static_cast<int>(-t*60) % 60, "AM");
     else
-        str.sprintf("%d:%02d %s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
+        str.sprintf("%d:%02d\n%s", static_cast<int>(t), static_cast<int>(t*60) % 60, "PM");
     return str;
 }
 

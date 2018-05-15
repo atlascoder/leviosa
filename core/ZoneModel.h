@@ -24,7 +24,7 @@ class ZoneModel : public QAbstractListModel
     Q_PROPERTY(QString locationUuid READ locationUuid NOTIFY controllerChanged)
     Q_PROPERTY(QString locationBssid READ locationBssid NOTIFY controllerChanged)
     Q_PROPERTY(QString controllerMac READ controllerMac NOTIFY controllerChanged)
-    Q_PROPERTY(QString timezoneName READ timezoneName NOTIFY controllerChanged)
+    Q_PROPERTY(QString timezone READ timezone NOTIFY controllerChanged)
     Q_PROPERTY(QString controllerStatus READ controllerStatus NOTIFY controllerStatusChanged)
     Q_PROPERTY(bool single READ single NOTIFY controllerChanged)
     Q_PROPERTY(int count READ rowCount NOTIFY shadeGroupsChanged)
@@ -90,7 +90,7 @@ private:
     QString title() const;
     QString locationUuid() const;
     QString locationBssid() const;
-    QString timezoneName() const;
+    QString timezone() const;
     QString controllerMac() const;
     QString controllerStatus() const;
     bool single() const;

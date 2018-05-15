@@ -16,16 +16,18 @@ class Controller: public Shade, public Positioned, public Syncable
     QString mMac;
     QString mLocationUuid;
     QString mName;
+    int mId;
     bool mMatchPrevious;
 public:
-    Controller(): mMac("0000000000"), mLocationUuid(""), mName("A Zone"), mMatchPrevious(false) {}
+    Controller(): mMac("0000000000"), mLocationUuid(""), mName("A Zone"), mId(1), mMatchPrevious(false) {}
 
     Controller(const Controller& c) :
         Positioned(c),
         Syncable(c),
         mMac(c.mMac),
         mLocationUuid(c.mLocationUuid),
-        mName(c.mName)
+        mName(c.mName),
+        mId(c.mId)
     { }
 
     Controller(const QString& uuid);
@@ -38,6 +40,9 @@ public:
 
     QString name() const;
     void setName(const QString &name);
+
+    int id() const;
+    void setId(int id);
 
     virtual QJsonObject toJson() const;
     virtual void withJson(const QJsonObject& json);

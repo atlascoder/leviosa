@@ -61,7 +61,6 @@ void LocationModel::deleteLocation()
         }
         p++;
     }
-    UserData::instance().persistChanges(mNeighbours, false);
     auto controllers = UserData::instance().controllersForLocation(mLocation->uuid());
     for (auto& c : *controllers) {
         c->setDeleted(true);
@@ -73,7 +72,8 @@ void LocationModel::deleteLocation()
         }
         UserData::instance().persistChanges(groups, false);
     }
-    UserData::instance().persistChanges(controllers);
+    UserData::instance().persistChanges(controllers,false);
+    UserData::instance().persistChanges(mNeighbours);
 }
 
 void LocationModel::reloadData()
@@ -82,7 +82,7 @@ void LocationModel::reloadData()
     mControllers = UserData::instance().controllersForLocation(mLocation->uuid());
     endResetModel();
     emit nameChanged();
-    emit utcOffsetChanged();
+    emit timezoneChanged();
     emit zonesChanged();
     emit positionChanged();
 }
@@ -179,7 +179,6 @@ void LocationModel::setUuid(const QString &uuid)
     emit nameChanged();
     emit bssidChanged();
     emit positionChanged();
-    emit utcOffsetChanged();
     reloadData();
 }
 
@@ -219,16 +218,28 @@ void LocationModel::setPosition(int position)
     emit positionChanged();
 }
 
-int LocationModel::utcOffset() const
+//int LocationModel::utcOffset() const
+//{
+//    return mLocation->utcOffset();
+//}
+
+//void LocationModel::setUtcOffset(int utcOffset)
+//{
+//    if (utcOffset == mLocation->utcOffset()) return;
+//    mLocation->setUtcOffset(utcOffset);
+//    emit utcOffsetChanged();
+//}
+
+QString LocationModel::timezone() const
 {
-    return mLocation->utcOffset();
+    return mLocation->timezone();
 }
 
-void LocationModel::setUtcOffset(int utcOffset)
+void LocationModel::setTimezone(const QString& timezone)
 {
-    if (utcOffset == mLocation->utcOffset()) return;
-    mLocation->setUtcOffset(utcOffset);
-    emit utcOffsetChanged();
+    if (timezone == mLocation->timezone()) return;
+    mLocation->setTimezone(timezone);
+    emit timezoneChanged();
 }
 
 QStringList LocationModel::getPositionOrder() const
@@ -311,7 +322,7 @@ void LocationModel::commandAwsLocation(const int command)
     commander->sendCommand(mLocation->uuid(), cmd, 0);
 }
 
-QString LocationModel::timezoneName() const
-{
-    return TimeZoneModel::signatureByOffset(mLocation->utcOffset());
-}
+//QString LocationModel::timezoneName() const
+//{
+//    return TimeZoneModel::signatureByOffset(mLocation->utcOffset());
+//}

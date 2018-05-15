@@ -1,7 +1,7 @@
 #include "Controller.h"
 
 Controller::Controller(const QString& uuid):
-    Syncable(uuid), mName("Zone 1")
+    Syncable(uuid), mName("Zone 1"), mId(1)
 {
 
 }
@@ -26,6 +26,16 @@ void Controller::setName(const QString &name)
     mName = name;
 }
 
+int Controller::id() const
+{
+    return mId;
+}
+
+void Controller::setId(int id)
+{
+    mId = id;
+}
+
 QString Controller::mac() const
 {
     return mMac;
@@ -44,6 +54,7 @@ QJsonObject Controller::toJson() const
     json.insert("name", mName);
     json.insert("position", QJsonValue(position()));
     json.insert("item_type", "controller");
+    json.insert("id", mId);
     return json;
 }
 
@@ -60,4 +71,7 @@ void Controller::withJson(const QJsonObject & json)
 
     if(!json.contains("position")) return;
     setPosition(json.value("position").toInt());
+
+    if(json.contains("id")) return;
+    mId = json.value("id").toInt();
 }

@@ -20,22 +20,58 @@ void ShadeGroupModel::saveChanges()
 {
     int pos = mShadeGroup->position();
     mShadeGroup->setChanged(true);
+    bool saveAll = mForAll;
+    ControllerSchedule schedule;
+
+    int p = 0;    
+
+    if (mForAll) {
+        while (p < (int)mNeighbours->size()) {
+            mNeighbours->at(p)->setDays(mShadeGroup->days());
+            mNeighbours->at(p)->setOpenAt(mShadeGroup->openAt());
+            mNeighbours->at(p)->setCloseAt(mShadeGroup->closeAt());
+            mNeighbours->at(p)->setChanged(true);
+            p++;
+        }
+    }
+
+    p = 0;
+    while (p < (int)mNeighbours->size()) {
+        Schedule* s = &schedule.schedules[(int)mNeighbours->at(p)->channel() - 1];
+        s->setDays(mNeighbours->at(p)->days());
+        s->setOpenAt(mNeighbours->at(p)->openAt());
+        s->setCloseAt(mNeighbours->at(p)->closeAt());
+        p++;
+    }
+
     if (mOldPosition != pos) {
         auto curr = find_if(mNeighbours->begin(), mNeighbours->end(), [this](const shared_ptr<ShadeGroup>& _g)->bool{ return _g->uuid() == this->mShadeGroup->uuid();});
         if (curr != mNeighbours->end())
             mNeighbours->erase(curr);
         mNeighbours->insert(mNeighbours->begin() + pos, mShadeGroup);
-        int p = 0;
+        p = 0;
         while (p < (int)mNeighbours->size()) {
             mNeighbours->at(p)->setPosition(p);
             mNeighbours->at(p)->setChanged(true);
             p++;
         }
+        saveAll = true;
+    }
+
+    QString controllerUuid = UserData::instance().controllerUuid(mShadeGroup->controllerMac());
+    {
+        shared_ptr<ControllerAPI> api = ControllerConnectionsManager::instance().controllerAPI(controllerUuid);
+
+        schedule.timezone = UserData::instance().controllerTimezone(controllerUuid);
+        QString schedule_json = schedule.json();
+        api->updateSchedule(schedule_json);
+    }
+
+    if (saveAll)
         UserData::instance().persistChanges(mNeighbours);
-    }
-    else {
+    else
         UserData::instance().persistChanged(mShadeGroup);
-    }
+
 }
 
 void ShadeGroupModel::deleteGroup()
