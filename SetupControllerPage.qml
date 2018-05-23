@@ -335,10 +335,10 @@ LeviosaPage {
 
     ActionButton {
         id: actionButton
-        anchors.top: stackLayout.bottom
+        anchors.bottomMargin: height / 2
+        anchors.bottom: parent.bottom
         anchors.left: stackLayout.left
         anchors.right: stackLayout.right
-        anchors.topMargin: 16
     }
 
     Timer {
@@ -452,7 +452,7 @@ LeviosaPage {
 
             PropertyChanges {
                 target: text1
-                text: "Controller Dicovered.\nConfiguring Controller...\n\nA few more moments.."
+                text: "Controller Discovered.\nConfiguring Controller...\n\nA few more moments.."
             }
         },
         State {

@@ -98,5 +98,7 @@ QString TimeZoneModel::timezone() const
 
 QString TimeZoneModel::defaultTimezone()
 {
-    return QTimeZone::systemTimeZone().id();
+    QDateTime t = QDateTime::currentDateTime();
+    t.setDate(QDate(2000,1,1));
+    return t.timeZoneAbbreviation();
 }

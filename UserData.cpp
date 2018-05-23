@@ -236,9 +236,9 @@ QString UserData::controllerTimezone(const QString& uuid) const
 {
     auto i = find_if(mControllers->begin(), mControllers->end(), [&uuid](const shared_ptr<Controller>& _i)->bool{ return _i->uuid() == uuid; });
     if (i == mControllers->end())
-        return "";
+        return TimeZoneModel::defaultTimezone();
     else {
-        QString locationUuid = i->get()->uuid();
+        QString locationUuid = i->get()->locationUuid();
         auto l = find_if(mLocations->begin(), mLocations->end(), [&locationUuid](const shared_ptr<Location>& _l)->bool{ return _l->uuid() == locationUuid; });
         return l == mLocations->end() ? TimeZoneModel::defaultTimezone() : l->get()->timezone();
     }
@@ -369,11 +369,7 @@ void UserData::addFirstController(const QString &mac, const QString &bssid)
     shared_ptr<Location> l(new Location);
     l->setName("My Home");
     l->setBssid(bssid);
-//    QDateTime local(QDateTime::currentDateTime());
-//    QDateTime utc(local.toUTC());
-//    QDateTime dt(utc.date(), utc.time(), Qt::LocalTime);
     l->setTimezone(TimeZoneModel::defaultTimezone());
-//    l->setUtcOffset(dt.secsTo(local));
     l->setPosition(0);
     mLocations->push_back(l);
 

@@ -516,6 +516,23 @@ ApplicationWindow {
 
             Button {
                 width: parent.width
+                text: "Edit Location"
+                onClicked: {
+                    closeDrawer()
+                    if (pager.currentItem != null) {
+                        if (pager.currentItem == zonePageLoader.item)
+                            openEditLocationPage(pager.currentItem.locationUuid)
+                        else
+                            openEditLocationPage(pager.currentItem.uuid)
+                    }
+                }
+                visible: pager.currentItem != null
+                         && (pager.currentItem == zonePageLoader.item
+                             || pager.currentItem == locationPageLoader.item)
+            }
+
+            Button {
+                width: parent.width
                 text: "Setup Controller"
                 onClicked: {
                     closeDrawer()

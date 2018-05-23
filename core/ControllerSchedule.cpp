@@ -19,7 +19,7 @@ ControllerSchedule& ControllerSchedule::operator=(const ControllerSchedule& othe
             this->schedules[i].setDays(other.schedules[i].days());
         }
     }
-    else return *this;
+    return *this;
 }
 
 void ControllerSchedule::clean()

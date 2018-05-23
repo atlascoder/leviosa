@@ -6,8 +6,8 @@
 #include <aws/core/client/DefaultRetryStrategy.h>
 
 #define AWS_ACCOUNT_ID "922040780541"
-#define AWS_POOL_NAME "yUCD5B4i3"
-#define AWS_CLIENT_ID "7pnqfuge1eqk612hn5jq4r9dta"
+#define AWS_POOL_NAME "y40XQdASz"
+#define AWS_CLIENT_ID "2hgvpdva1dfa07s4e6k4i4n888"
 #define AWS_REGION "us-east-2"
 #define AWS_IDENTITY_POOL "us-east-2:7b20c740-8cb4-4c12-b736-8920e967b102"
 

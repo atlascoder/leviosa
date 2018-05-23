@@ -51,9 +51,25 @@ LeviosaPage {
         }
     }
 
+    AllShadesControl {
+        id: allShadesControl
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 12
+        z:1
+        onCmdShade: function(shade_state){
+            locationsModel.commandShades(shade_state);
+        }
+    }
+
 	GridView {
 		id: gridView
-		anchors.fill: parent
+//        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: allShadesControl.top
         anchors.margins: 6
 
         cellWidth: height > width ? (width / 2) : (width / 3)
@@ -82,17 +98,6 @@ LeviosaPage {
                     color: DefTheme.mainColorLight
                 }
 
-
-//                Timer {
-//                    interval: 1000
-//                    repeat: true
-//                    onTriggered: {
-//                        var d = new Date();
-//                        timeline.text = timezone + " " + (new Date(d.getTime() + utcOffset*1000 + d.getTimezoneOffset()*60000)).toLocaleTimeString("en-US")
-//                    }
-//                    running: true
-//                }
-
                 Text {
                     id: timeline
                     width: parent.width
@@ -100,8 +105,9 @@ LeviosaPage {
                     anchors.margins: height / 3
                     horizontalAlignment: Qt.AlignHCenter
                     color: DefTheme.mainTextColor
-                    font.pixelSize: width / 10
+                    font.pixelSize: parent.height / 10
                     text: locationTime
+                    elide: Text.ElideRight
                 }
 
                 Text {
@@ -111,7 +117,7 @@ LeviosaPage {
                     anchors.margins: 4
                     horizontalAlignment: Qt.AlignHCenter
                     text: name
-                    font.pixelSize: parent.height / 8
+                    font.pixelSize: parent.height / 7
                     color: DefTheme.mainTextColor
                     elide: Text.ElideRight
                 }
@@ -120,7 +126,7 @@ LeviosaPage {
                     anchors.right: parent.right
                     anchors.top: timeline.bottom
                     anchors.bottom: nameLine.top
-                    anchors.margins: parent.width / 8
+                    anchors.margins: parent.width / 12
                     Image {
                         id: icon
                         anchors.fill: parent

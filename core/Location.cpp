@@ -3,13 +3,13 @@
 #include <QJsonObject>
 
 Location::Location():
-    Syncable(), mName("My Home"), mTimezone("EST"), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+    Syncable(), mName("My Home"), mTimezone("EST"), mIsOnWlan(false), mIsOnline(false)
 {
     setUuid(QUuid::createUuid().toString());
 }
 
 Location::Location(const QString & uuidStr):
-    Syncable(uuidStr), mName(""), mUtcOffset(0), mIsOnWlan(false), mIsOnline(false)
+    Syncable(uuidStr), mName(""), mIsOnWlan(false), mIsOnline(false)
 {
     setUuid(uuidStr);
 }
@@ -45,16 +45,6 @@ void Location::setTimezone(const QString &tzone)
     mTimezone = tzone;
 }
 
-//int Location::utcOffset() const
-//{
-//    return mUtcOffset;
-//}
-
-//void Location::setUtcOffset(int offset)
-//{
-//    mUtcOffset = offset;
-//}
-
 bool Location::isOnWlan() const
 {
     return mIsOnWlan;
@@ -81,7 +71,6 @@ QJsonObject Location::toJson() const
     json.insert("name", mName);
     json.insert("bssid", mBssid);
     json.insert("timezone", mTimezone);
-//    json.insert("utcOffset", QJsonValue(mUtcOffset));
     json.insert("position", QJsonValue(position()));
     json.insert("item_type", "location");
     return json;
@@ -94,9 +83,6 @@ void Location::withJson(const QJsonObject & json)
 
     if(!json.contains("bssid")) return;
     mBssid = json.value("bssid").toString();
-
-//    if(!json.contains("utcOffset")) return;
-//    mUtcOffset = json.value("utcOffset").toInt();
 
     if(!json.contains("position")) return;
     setPosition(json.value("position").toInt());

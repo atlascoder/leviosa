@@ -8,6 +8,7 @@
 #include <QPointer>
 
 #ifdef Q_OS_IOS
+#include <QTimer>
 #include "ios/src/ReachabilityListener.h"
 #endif
 
@@ -19,10 +20,9 @@ class NetworkMonitor : public QObject
     Q_OBJECT
     Q_PROPERTY(bool connected READ isConnected NOTIFY connectionStateChanged)
     Q_PROPERTY(QString ssid READ getSsid NOTIFY ssidChanged)
-    Q_PROPERTY(QString bssid READ getBssid NOTIFY bssidChanged)
+    Q_PROPERTY(QString bssid READ bssid NOTIFY bssidChanged)
     Q_PROPERTY(QString wlanIp READ getWlanIp NOTIFY wlanIpChanged)
-
-    Q_PROPERTY(bool onWlan READ isOnWlan WRITE setOnWlan NOTIFY connectionStateChanged)
+    Q_PROPERTY(bool onWlan READ isOnWlan NOTIFY connectionStateChanged)
 
 signals:
     void currentStateChanged(const QString &state);
@@ -35,9 +35,14 @@ signals:
     void connectionStateChanged();
 public slots:
     void netChanged(const QNetworkConfiguration &conf);
+    void onApplicationStateChanged(const Qt::ApplicationState state);
 
 private slots:
     void setIsOnline(bool online);
+#ifdef Q_OS_IOS
+    void checkBssid();
+#endif
+
 public:
 
     static NetworkMonitor& instance();
@@ -48,7 +53,7 @@ public:
     bool isConnected() const { return mConnectionState != Disconnected; }
 
     QString getSsid() const;
-    QString getBssid() const;
+    QString bssid() const;
     QString getWlanIp() const;
 
     bool isOnWlan() const { return mConnectionState == Wifi; }
@@ -57,24 +62,22 @@ private:
     QNetworkConfigurationManager mgr;
     QString m_state;
     QPointer<QNetworkSession> session;
-
     ConnectionState mConnectionState;
-
     QString mLastBssid;
 
+#ifdef Q_OS_IOS
+    QTimer mTimer;
+#endif
     NetworkMonitor(QObject *parent = 0);
 
 #ifdef Q_OS_IOS
     void statusChanged(utility::NetworkStatus n) override;
 #endif
 
-    QString bssid() const;
+    QString getBssid() const;
 
     ConnectionState connectionState() const { return mConnectionState; }
     void setConnectionState(ConnectionState connectionState);
-
-    // stub for manual testing
-    void setOnWlan(bool onWlan);
 
 };
 

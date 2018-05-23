@@ -38,9 +38,16 @@ void ShadeGroupModel::saveChanges()
     p = 0;
     while (p < (int)mNeighbours->size()) {
         Schedule* s = &schedule.schedules[(int)mNeighbours->at(p)->channel() - 1];
-        s->setDays(mNeighbours->at(p)->days());
-        s->setOpenAt(mNeighbours->at(p)->openAt());
-        s->setCloseAt(mNeighbours->at(p)->closeAt());
+        if (mNeighbours->at(p)->channel() == mShadeGroup->channel()) {
+            s->setDays(mShadeGroup->days());
+            s->setOpenAt(mShadeGroup->openAt());
+            s->setCloseAt(mShadeGroup->closeAt());
+        }
+        else {
+            s->setDays(mNeighbours->at(p)->days());
+            s->setOpenAt(mNeighbours->at(p)->openAt());
+            s->setCloseAt(mNeighbours->at(p)->closeAt());
+        }
         p++;
     }
 

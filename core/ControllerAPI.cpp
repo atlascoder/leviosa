@@ -143,6 +143,7 @@ void ControllerAPI::scheduleFinished()
 void ControllerAPI::setConfig(const ControllerConfig &config)
 {
     mControllerConfig = config;
+    mMac = mControllerConfig.mac();
     setControllerState(Wlan);
 }
 

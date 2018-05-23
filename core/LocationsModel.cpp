@@ -1,11 +1,18 @@
 #include "LocationsModel.h"
 #include "UserData.h"
 #include "TimeZoneModel.h"
+#include "ControllerConnectionsManager.h"
+#include "aws/CognitoSyncCommand.h"
+
 
 #include <QMutexLocker>
 #include <QTime>
 #include <QDate>
 #include <QTimeZone>
+#include <QStringList>
+#include <QtConcurrent>
+#include <memory>
+
 using namespace std;
 
 LocationsModel::LocationsModel(QObject* parent):
@@ -134,4 +141,44 @@ void LocationsModel::updateTime()
     QVector<int> roles;
     roles.append(Roles::LocationTime);
     emit dataChanged(index(0), index(rowCount()-1), roles);
+}
+
+void LocationsModel::commandShades(const int command)
+{
+    QtConcurrent::run(this, &LocationsModel::sendCommandToShades, command);
+}
+
+void LocationsModel::sendCommandToShades(const int command)
+{
+    auto locations = UserData::instance().locations();
+
+    QStringList locations_wan;
+
+    for (auto& location: *locations) {
+        if (NetworkMonitor::instance().isOnWlan() && location->bssid() == NetworkMonitor::instance().bssid()) {
+            // send via http
+            auto controllers = UserData::instance().controllers();
+            for (auto& controller: *controllers) {
+                auto api = ControllerConnectionsManager::instance().controllerAPI(controller->uuid());
+                if (api->onWlan()) {
+                    api->shadeCmd(0, command);
+                }
+                else {
+                    qDebug() << "Controller is not discovered";
+                }
+            }
+        }
+        else {
+            // prepare to send via WAN
+            locations_wan.append(location->uuid());
+        }
+    }
+
+    if (!locations_wan.empty()) {
+        // send via WAN
+        unique_ptr<CognitoSyncCommand> commander(new CognitoSyncCommand);
+        QString cmd = ControllerAPI::commandCode2String(command);
+        QString loc_list = locations_wan.join(",");
+        commander->sendCommand(loc_list, cmd, 0);
+    }
 }

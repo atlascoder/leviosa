@@ -4,6 +4,8 @@
 #include <QtConcurrent>
 
 #include "ControllerConnectionsManager.h"
+#include "ControllerSchedule.h"
+#include "Schedule.h"
 #include "aws/CognitoSyncCommand.h"
 #include "TimeZoneModel.h"
 #include "UserData.h"
@@ -12,7 +14,8 @@ using namespace std;
 
 LocationModel::LocationModel(QObject* parent):
     QAbstractListModel(parent),
-    mLocation(new Location),
+    mLocationUuid(QUuid::createUuid().toString()),
+    mLocation(new Location(mLocationUuid)),
     mIsNew(true),
     mNeighbours(new vector<shared_ptr<Location>>),
     mControllers(new vector<shared_ptr<Controller>>),
@@ -27,6 +30,7 @@ void LocationModel::saveChanges()
 {
     int pos = mLocation->position();
     mLocation->setChanged(true);
+    bool timezone_updated = mOldTimezone != mLocation->timezone();
     if (mOldPosition != pos) {
         auto curr = find_if(mNeighbours->begin(), mNeighbours->end(), [this](const shared_ptr<Location>& _g)->bool{ return _g->uuid() == this->mLocation->uuid();});
         if (curr != mNeighbours->end())
@@ -42,6 +46,24 @@ void LocationModel::saveChanges()
     }
     else {
         UserData::instance().persistChanged(mLocation);
+    }
+    if (timezone_updated) {
+        // update schedules for location
+        auto controllers = UserData::instance().controllersForLocation(mLocationUuid);
+        for (auto& c: *controllers) {
+            auto api = ControllerConnectionsManager::instance().controllerAPI(c->uuid());
+            if (api->onWlan()) {
+                ControllerSchedule schedule;
+                schedule.timezone = mLocation->timezone();
+                auto groups = UserData::instance().shadeGroupsForController(c->mac());
+                for (auto& g: *groups) {
+                    schedule.schedules[(size_t)g->channel()-1].setOpenAt(g->openAt());
+                    schedule.schedules[(size_t)g->channel()-1].setCloseAt(g->closeAt());
+                    schedule.schedules[(size_t)g->channel()-1].setDays(g->days());
+                }
+                api->updateSchedule(schedule.json());
+            }
+        }
     }
 }
 
@@ -78,9 +100,17 @@ void LocationModel::deleteLocation()
 
 void LocationModel::reloadData()
 {
+    mLocation = UserData::instance().location(mLocationUuid);
+    mNeighbours = UserData::instance().locations();
+    mOldPosition = mLocation->position();
+    mOldTimezone = mLocation->timezone();
+    emit uuidChanged();
     beginResetModel();
     mControllers = UserData::instance().controllersForLocation(mLocation->uuid());
     endResetModel();
+    emit nameChanged();
+    emit bssidChanged();
+    emit positionChanged();
     emit nameChanged();
     emit timezoneChanged();
     emit zonesChanged();
@@ -170,15 +200,9 @@ QString LocationModel::uuid() const
 
 void LocationModel::setUuid(const QString &uuid)
 {
-    if (uuid.isEmpty() || uuid == mLocation->uuid()) return;
-    mLocation = UserData::instance().location(uuid);
-    mNeighbours = UserData::instance().locations();
-    mOldPosition = mLocation->position();
+    if (uuid.isEmpty() || uuid == mLocationUuid) return;
     setNew(false);
-    emit uuidChanged();
-    emit nameChanged();
-    emit bssidChanged();
-    emit positionChanged();
+    mLocationUuid = uuid;
     reloadData();
 }
 
@@ -217,18 +241,6 @@ void LocationModel::setPosition(int position)
     mLocation->setPosition(position);
     emit positionChanged();
 }
-
-//int LocationModel::utcOffset() const
-//{
-//    return mLocation->utcOffset();
-//}
-
-//void LocationModel::setUtcOffset(int utcOffset)
-//{
-//    if (utcOffset == mLocation->utcOffset()) return;
-//    mLocation->setUtcOffset(utcOffset);
-//    emit utcOffsetChanged();
-//}
 
 QString LocationModel::timezone() const
 {
@@ -304,7 +316,8 @@ bool LocationModel::single() const
 void LocationModel::commandShade(const int command)
 {
     shared_ptr<vector<shared_ptr<Controller>>> controllers = UserData::instance().controllersForLocation(mLocation->uuid());
-    if (NetworkMonitor::instance().isOnWlan() && mLocation->bssid() == NetworkMonitor::instance().getBssid()) {
+    // sending separately for online and offline locations via HTTP and AWS
+    if (NetworkMonitor::instance().isOnWlan() && mLocation->bssid() == NetworkMonitor::instance().bssid()) {
         for (auto& c : *controllers) {
             shared_ptr<ControllerAPI> api = ControllerConnectionsManager::instance().controllerAPI(c->uuid());
             api->shadeCmd(0, command);
@@ -321,8 +334,3 @@ void LocationModel::commandAwsLocation(const int command)
     QString cmd = ControllerAPI::commandCode2String(command);
     commander->sendCommand(mLocation->uuid(), cmd, 0);
 }
-
-//QString LocationModel::timezoneName() const
-//{
-//    return TimeZoneModel::signatureByOffset(mLocation->utcOffset());
-//}

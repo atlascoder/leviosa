@@ -1,5 +1,4 @@
 #include "Positioned.h"
-#include <QStringList>
 Positioned::Positioned():
     mPosition(0)
 {

@@ -1,19 +1,20 @@
 #include "NetworkMonitor.h"
 #include <QDebug>
 #include <QNetworkInterface>
+#include <QStringList>
 
 #define CON_STATE_NAME (mConnectionState == Disconnected ? "offline" : (mConnectionState==Wifi ? "WLAN" : "WAN"))
+
+#ifdef Q_OS_ANDROID
+#include <QtAndroidExtras/QAndroidJniObject>
+#include <QtAndroid>
+#endif
 
 NetworkMonitor& NetworkMonitor::instance()
 {
     static NetworkMonitor sInstance;
     return sInstance;
 }
-
-#ifdef Q_OS_ANDROID
-#include <QtAndroidExtras/QAndroidJniObject>
-#include <QtAndroid>
-#endif
 
 NetworkMonitor::NetworkMonitor(QObject *parent) :
     QObject(parent),
@@ -27,11 +28,15 @@ NetworkMonitor::NetworkMonitor(QObject *parent) :
     if(status() == utility::NotReachable){
         setConnectionState(Disconnected);
     } else if(status() == utility::ReachableViaWiFi){
+        mLastBssid = getBssid();
         setConnectionState(Wifi);
     }
     else{
         setConnectionState(NotWifi);
     }
+    mTimer.setInterval(1000);
+    mTimer.setSingleShot(false);
+    connect(&mTimer, &QTimer::timeout, this, &NetworkMonitor::checkBssid);
 #elif defined Q_OS_ANDROID
     connect(&mgr, &QNetworkConfigurationManager::onlineStateChanged, this, &NetworkMonitor::setIsOnline);
     connect(&mgr, &QNetworkConfigurationManager::configurationChanged, this, &NetworkMonitor::netChanged);
@@ -39,8 +44,8 @@ NetworkMonitor::NetworkMonitor(QObject *parent) :
     if(!mgr.isOnline() && mConnectionState != Disconnected){
         setConnectionState(Disconnected);
     }
-    else if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN && (mConnectionState != Wifi || mLastBssid != bssid())){
-        mLastBssid = bssid();
+    else if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN && (mConnectionState != Wifi || mLastBssid != getBssid())){
+        mLastBssid = getBssid();
         setConnectionState(Wifi);
     }
     else if(mConnectionState != NotWifi){
@@ -55,9 +60,9 @@ NetworkMonitor::NetworkMonitor(QObject *parent) :
 
 void NetworkMonitor::setIsOnline(bool online){
     qDebug() << "isOnline triggered: " << online;
-    if(online){
-        if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN){
-            mLastBssid = bssid();
+    if (online) {
+        if (mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN) {
+            mLastBssid = getBssid();
             setConnectionState(Wifi);
         }
         else
@@ -72,7 +77,7 @@ void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
     qDebug() << "netChanges triggered: " << conf.bearerTypeName();
     if (mgr.isOnline()) {
         if (mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN) {
-            const QString curr_bssid = bssid();
+            const QString curr_bssid = getBssid();
             if (curr_bssid != mLastBssid) {
                 mLastBssid = curr_bssid;
                 setConnectionState(Wifi);
@@ -93,18 +98,28 @@ void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
 #ifdef Q_OS_IOS
 void NetworkMonitor::statusChanged(utility::NetworkStatus n)
 {
+    mTimer.stop();
     if(n == utility::NotReachable){
         setConnectionState(Disconnected);
     }
     else if(n == utility::ReachableViaWiFi){
+        mLastBssid = getBssid();
         setConnectionState(Wifi);
+        mTimer.start();
     }
     else{
         setConnectionState(NotWifi);
     }
     qDebug() << "NETWORK " << CON_STATE_NAME;
     if(mConnectionState == Wifi)
-        qDebug() << "SSID " << getSsid() << " / " << QString::fromStdString(bssid_ios()) << " / " << getWlanIp();
+        qDebug() << "SSID " << getSsid() << " / " << getBssid() << " / " << getWlanIp();
+}
+
+void NetworkMonitor::checkBssid()
+{
+    if (getBssid() == mLastBssid) return;
+    mLastBssid = getBssid();
+    emit connectionStateChanged();
 }
 #endif
 
@@ -123,34 +138,49 @@ QString NetworkMonitor::getSsid() const
     else return mgr.defaultConfiguration().name();
 }
 
-QString NetworkMonitor::getBssid() const
-{
-    return mLastBssid;
-}
-
 QString NetworkMonitor::bssid() const
 {
+#ifdef Q_OS_IOS
+    return getBssid();
+#else
+    return mLastBssid;
+#endif
+}
+
+QString NetworkMonitor::getBssid() const
+{
     QString _bssid;
-    if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN){
 #ifdef Q_OS_IOS
         _bssid = QString::fromStdString(bssid_ios());
+        if (_bssid.length() != 17) {
+            QStringList bssid_vals = _bssid.split(":");
+            QString __bssid;
+            for (int i = 0; i < bssid_vals.length(); i++) {
+                if (bssid_vals[i].length() == 1)
+                    bssid_vals[i] = "0" + bssid_vals[i];
+            }
+            _bssid = bssid_vals.join(":");
+        }
 #elif defined Q_OS_ANDROID
+    if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN){
         QAndroidJniObject j_bssid = QtAndroid::androidActivity().callObjectMethod(
                     "getBssid",
                     "()Ljava/lang/String;"
                     );
         _bssid = j_bssid.toString();
+    }
 #else
-    QList<QNetworkInterface> ifs = QNetworkInterface::allInterfaces();
-    for(int i = 0; i < ifs.size(); i++){
-        QString cname = mgr.defaultConfiguration().name();
-        if(ifs.at(i).name() == cname){
-            _bssid = QString::fromStdString(ifs.at(i).hardwareAddress().toStdString());
-            break;
+    if(mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN){
+        QList<QNetworkInterface> ifs = QNetworkInterface::allInterfaces();
+        for(int i = 0; i < ifs.size(); i++){
+            QString cname = mgr.defaultConfiguration().name();
+            if(ifs.at(i).name() == cname){
+                _bssid = QString::fromStdString(ifs.at(i).hardwareAddress().toStdString());
+                break;
+            }
         }
     }
 #endif
-    }
     return _bssid;
 }
 
@@ -181,16 +211,15 @@ void NetworkMonitor::setConnectionState(ConnectionState connectionState)
     emit connectionStateChanged();
 }
 
-void NetworkMonitor::setOnWlan(bool onWlan){
-    mLastBssid = "";
-    if(mgr.isOnline()){
-        if(onWlan){
-            mLastBssid = bssid();
-            setConnectionState(Wifi);
-        }
-        else
-            setConnectionState(NotWifi);
+void NetworkMonitor::onApplicationStateChanged(const Qt::ApplicationState state)
+{
+#ifdef Q_OS_IOS
+    if (state == Qt::ApplicationActive && isOnWlan()){
+        checkBssid();
+        mTimer.start();
     }
-    else
-        setConnectionState(Disconnected);
+    else {
+        mTimer.stop();
+    }
+#endif
 }

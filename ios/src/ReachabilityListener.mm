@@ -80,7 +80,7 @@
     for (NSString *name in interFaceNames) {
         NSDictionary *info = (__bridge_transfer id)CNCopyCurrentNetworkInfo((__bridge CFStringRef)name);
         
-        if (info[@"SSID"]) {
+        if (info[@"BSSID"]) {
             wifiName = info[@"BSSID"];
         }
     }

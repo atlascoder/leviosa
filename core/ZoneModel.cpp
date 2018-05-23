@@ -76,6 +76,7 @@ void ZoneModel::setUuid(const QString &uuid)
     emit controllerChanged();
     emit positionChanged();
     emit nameChanged();
+    emit timezoneChanged();
     reloadShadeGroups();
 }
 
@@ -91,6 +92,7 @@ void ZoneModel::reloadShadeGroups()
     endResetModel();
     emit shadeGroupsChanged();
     emit nameChanged();
+    emit timezoneChanged();
     emit controllerStatusChanged();
 }
 
@@ -215,7 +217,7 @@ QString ZoneModel::title() const
     auto location = UserData::instance().location(mController->locationUuid());
     QString locationName = location.get() == nullptr ? "My Home" : location->name();
 
-    if (UserData::instance().locationsCount() > 1)
+    if (UserData::instance().locationsCount() > 1 || mNeighbours->size() > 1)
         return locationName + " - " + mController->name();
     else
         return locationName;

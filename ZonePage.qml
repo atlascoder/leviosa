@@ -11,6 +11,7 @@ LeviosaPage {
 
     property alias uuid : zoneModel.uuid
     property alias single: zoneModel.single
+    property alias locationUuid: zoneModel.locationUuid
 
     enableMenuAction: zoneModel.single
     enableAddAction: zoneModel.count < 6

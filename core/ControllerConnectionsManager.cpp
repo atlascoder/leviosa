@@ -71,7 +71,7 @@ inline QString sanitizeMac(const QString& mac)
 
 void ControllerConnectionsManager::onDiscoveryStarted()
 {
-    QString bssid = mNetworkMonitor->getBssid();
+    QString bssid = mNetworkMonitor->bssid();
     bool isOnWlan = mNetworkMonitor->isOnWlan();
     for (auto& api : *mAPIs) {
         if (isOnWlan && api->bssid() == bssid) {
@@ -95,14 +95,14 @@ void ControllerConnectionsManager::onDiscovered(const QString &ip, const QString
             shared_ptr<ControllerAPI> new_api(new ControllerAPI);
             new_api->setIpAddress(ip);
             new_api->setConfig(temp_conf);
-            new_api->setBssid(mNetworkMonitor->getBssid());
+            new_api->setBssid(mNetworkMonitor->bssid());
             mAPIs->push_back(new_api);
         }
         else {
             // update existing controller API
             api->get()->setIpAddress(ip);
             api->get()->setConfig(temp_conf);
-            api->get()->setBssid(mNetworkMonitor->getBssid());
+            api->get()->setBssid(mNetworkMonitor->bssid());
         }
     }
     else {

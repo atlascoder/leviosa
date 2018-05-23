@@ -20,7 +20,6 @@ class LocationModel : public QAbstractListModel
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString bssid READ bssid WRITE setBssid NOTIFY bssidChanged)
     Q_PROPERTY(int position READ position WRITE setPosition NOTIFY positionChanged)
-//    Q_PROPERTY(int utcOffset READ utcOffset WRITE setUtcOffset NOTIFY utcOffsetChanged)
     Q_PROPERTY(QString timezone READ timezone WRITE setTimezone NOTIFY timezoneChanged)
     Q_PROPERTY(QStringList positionOrder READ getPositionOrder NOTIFY zonesChanged)
     Q_PROPERTY(bool isNew READ isNew NOTIFY isNewChanged)
@@ -58,9 +57,6 @@ public:
     int position() const;
     void setPosition(int position);
 
-//    int utcOffset() const;
-//    void setUtcOffset(int utcOffset);
-
     QString timezone() const;
     void setTimezone(const QString& timezone);
 
@@ -75,7 +71,6 @@ signals:
     void nameChanged();
     void bssidChanged();
     void positionChanged();
-//    void utcOffsetChanged();
     void timezoneChanged();
     void currentBssidChanged();
     void isNewChanged();
@@ -94,10 +89,12 @@ private slots:
 private:
 
     bool isIndexValid(const QModelIndex& index) const;
+    QString mLocationUuid;
     shared_ptr<Location> mLocation;
     bool mIsNew;
     shared_ptr<vector<shared_ptr<Location>>> mNeighbours;
     int mOldPosition;
+    QString mOldTimezone;
     shared_ptr<vector<shared_ptr<Controller>>> mControllers;
 
     unique_ptr<queue<pair<int, int>>> mCommandsQueue;

@@ -44,6 +44,7 @@ signals:
 
 public slots:
     void reloadData();
+    void commandShades(const int command);
 
 private slots:
 
@@ -59,6 +60,8 @@ private:
     shared_ptr<vector<shared_ptr<Location>>> mLocations;
 
     void updateTime();
+
+    void sendCommandToShades(const int command);
 
 };
 

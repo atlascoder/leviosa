@@ -12,7 +12,6 @@ class Location : public Positioned, public Syncable
     QString mBssid;
     QString mName;
     QString mTimezone;
-    int mUtcOffset;
     bool mIsOnWlan;
     bool mIsOnline;
 public:
@@ -28,9 +27,6 @@ public:
 
     QString timezone() const;
     void setTimezone(const QString &tzone);
-
-//    int utcOffset() const;
-//    void setUtcOffset(int offset);
 
     bool isOnWlan() const;
     void setIsOnWlan(bool onWlan);
