@@ -86,7 +86,7 @@ ApplicationWindow {
             item.onSignedIn.connect(openSyncPage)
             item.onRestore.connect(openRestorePage)
             item.onRemoved.connect(function(){ source = "" })
-            pager.replace(pager.currentItem, item)
+            pager.replace(pager.initialItem, item)
         }
     }
 
@@ -104,7 +104,7 @@ ApplicationWindow {
             item.onVerificate.connect(openVerifyPage)
             item.onFirstLogin.connect(doLogin)
             item.onRemoved.connect(function(){ source = "" })
-            pager.replace(pager.currentItem, item)
+            pager.replace(pager.initialItem, item)
         }
     }
 
@@ -121,7 +121,8 @@ ApplicationWindow {
             item.onSignIn.connect(openAuthPage)
             item.onSignedIn.connect(openSyncPage)
             item.onRemoved.connect(function(){ source = "" })
-            pager.replace(pager.currentItem, item)
+            pager.clear()
+            pager.push(item)
         }
     }
 
@@ -155,7 +156,7 @@ ApplicationWindow {
             item.onSignedIn.connect(doLogin)
             item.onSignUp.connect(openRegPage)
             item.onRemoved.connect(function(){ source = "" })
-            pager.replace(pager.currentItem, item)
+            pager.replace(pager.initialItem, item)
         }
     }
 
@@ -533,7 +534,7 @@ ApplicationWindow {
 
             Button {
                 width: parent.width
-                text: "Setup Controller"
+                text: "Setup New Zone"
                 onClicked: {
                     closeDrawer()
                     openSetupControllerPage()

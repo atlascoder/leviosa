@@ -14,6 +14,7 @@
 #include "aws/CognitoSyncAPI.h"
 #include "aws/ControllerThing.h"
 #include "core/ControllerHTTPClient.h"
+#include "core/ControllerConfig.h"
 
 #define VERSION "0.1"
 
@@ -59,6 +60,8 @@ public:
 
     QString controllerUuid(const QString& mac) const;
     QString controllerTimezone(const QString& uuid) const;
+
+    shared_ptr<ControllerConfig> controllerConfig(const QString& controllerMac) const;
 
     shared_ptr<Location> locationOfGroup(const QString& groupUuid) const;
     shared_ptr<Location> locationOfController(const QString& controllerUuid) const;

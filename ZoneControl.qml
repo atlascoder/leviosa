@@ -76,7 +76,7 @@ Control {
 
             PropertyChanges {
                 target: controllerIndicator
-                color: "#2c72fd"
+                color: "transparent"
             }
         },
         State {

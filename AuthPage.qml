@@ -60,6 +60,7 @@ WelcomeBrandPage {
                 horizontalAlignment: Text.AlignHCenter
                 anchors.verticalCenter: parent.verticalCenter
                 font.pixelSize: parent.height / 3
+                font.capitalization: Font.AllLowercase
                 Text {
                     anchors.fill: parent
                     visible: !(parent.focus || parent.text.length > 0)

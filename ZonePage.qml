@@ -39,8 +39,13 @@ LeviosaPage {
         userData.sync()
     }
 
-    StackView.onActivated: reload()
+    StackView.onActivated: {
+        reload()
+    }
 
+    StackView.onDeactivating: {
+        zoneModel.resetControls()
+    }
 
     ZoneModel {
         id: zoneModel

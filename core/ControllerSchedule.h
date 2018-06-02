@@ -12,6 +12,8 @@ public:
     ControllerSchedule();
 
     ControllerSchedule& operator=(const ControllerSchedule& other);
+    bool operator==(const ControllerSchedule& other) const;
+    bool operator!=(const ControllerSchedule& other) const;
 
     QString json() const;
     bool parseJson(const QJsonObject& json);

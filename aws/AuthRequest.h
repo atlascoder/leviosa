@@ -5,6 +5,7 @@
 #include <QByteArray>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <aws/cognito-idp/CognitoIdentityProviderClient.h>
+#include <aws/core/utils/memory/stl/AWSMap.h>
 #include <memory>
 
 class AuthRequest
@@ -40,6 +41,7 @@ public:
     void signOut();
     void restorePassword(const QString& email);
     void changePassword(const QString& email, const QString& newPassword, const QString& password);
+    void updateIdentityIdAttribute(const QString& token);
 
     QString getIdToken() const { return mIdToken; }
     QString getAccessToken() const { return mAccessToken; }

@@ -69,6 +69,7 @@ void ControllerThing::setupController(const QString &mac)
     create_req.SetThingName(String(device_uuid.toStdString().c_str()));
     IoT::Model::AttributePayload attrs;
     attrs.AddAttributes("mac", String(mac.toStdString().c_str()));
+    attrs.AddAttributes("identity", AwsApi::instance().getIdentityId());
     create_req.SetAttributePayload(attrs);
 
     buildClient();

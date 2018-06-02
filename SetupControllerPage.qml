@@ -56,20 +56,21 @@ LeviosaPage {
             spacing: 5
 
             Image {
+                id: image
                 width: parent.width * 0.8
                 anchors.horizontalCenter: parent.horizontalCenter
                 fillMode: Image.PreserveAspectFit
                 source: "img/password.png"
             }
 
-            Text {
-                width: parent.width
-                text: "Provide WiFi credentials"
-                font.pixelSize: parent.width/16
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
+//            Text {
+//                width: parent.width
+//                text: "Provide WiFi credentials"
+//                font.pixelSize: parent.width/16
+//                font.bold: true
+//                horizontalAlignment: Text.AlignHCenter
+//                wrapMode: Text.WordWrap
+//            }
 
             Rectangle {
                 height: rootItem.height * 0.02
@@ -81,11 +82,44 @@ LeviosaPage {
             Text {
                 id: ssidIntro
                 width: parent.width
-                text: "Check that the current WiFi network is the really network you want connect WiShadeController to!"
+                text: "Setup of Zone:"
                 font.pixelSize: parent.width / 20
-                horizontalAlignment: Text.AlignHCenter
+                horizontalAlignment: Text.AlignLeft
                 wrapMode: Text.WordWrap
                 font.bold: true
+            }
+
+            Text {
+                id: ssidIntro1
+                width: parent.width
+                anchors.topMargin: 6
+                text: "1. Ensure the Leviosa Zone is powered (green light glows on back of Zone)"
+                font.pixelSize: parent.width / 20
+                font.bold: false
+                horizontalAlignment: Text.AlignLeft
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                id: ssidIntro2
+                width: parent.width
+                anchors.topMargin: 6
+                text: "2. To the left, the Yellow light should blink slowly (1/sec).\nIf not, press/hold the Reset button for 8 seconds, and wait for the yellow light to blink"
+                font.pixelSize: parent.width / 20
+                font.bold: false
+                horizontalAlignment: Text.AlignLeft
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                id: ssidIntro3
+                width: parent.width
+                anchors.topMargin: 6
+                text: "3. Confirm via device Settings this App is on the same network named below, and enter network password"
+                font.pixelSize: parent.width / 20
+                font.bold: false
+                horizontalAlignment: Text.AlignLeft
+                wrapMode: Text.WordWrap
             }
 
             Rectangle {
@@ -264,6 +298,7 @@ LeviosaPage {
             }
 
             Text {
+                id: text2
                 width: parent.width
                 text: "1. Ensure the controller is plugged in and controller 'power' light is on.\nThe controller must be located in an active WiFi zone"
                 font.pixelSize: parent.width / 20
@@ -385,6 +420,11 @@ LeviosaPage {
             PropertyChanges {
                 target: ssidIntro
                 font.bold: false
+            }
+
+            PropertyChanges {
+                target: image
+                width: parent.width * 0.5
             }
         },
         State {

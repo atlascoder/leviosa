@@ -144,7 +144,6 @@ void ControllerAPI::setConfig(const ControllerConfig &config)
 {
     mControllerConfig = config;
     mMac = mControllerConfig.mac();
-    setControllerState(Wlan);
 }
 
 ControllerConfig& ControllerAPI::currentConfig()
@@ -224,4 +223,10 @@ void ControllerAPI::setBssid(const QString &bssid)
 QString ControllerAPI::bssid() const
 {
     return mBssid;
+}
+
+void ControllerAPI::postSchedule()
+{
+    const QString scheduleJson = mControllerConfig.schedule()->json();
+    updateSchedule(scheduleJson);
 }

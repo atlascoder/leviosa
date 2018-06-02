@@ -11,7 +11,7 @@ import "DefaultTheme.js" as DefTheme
 
 LeviosaPage {
     id: rootItem
-    title: "Locations"
+    title: "Networks"
 
     signal openLocation(string uuid)
     signal editLocation(string uuid)
@@ -65,7 +65,6 @@ LeviosaPage {
 
 	GridView {
 		id: gridView
-//        anchors.fill: parent
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -98,17 +97,17 @@ LeviosaPage {
                     color: DefTheme.mainColorLight
                 }
 
-                Text {
-                    id: timeline
-                    width: parent.width
-                    anchors.top: parent.top
-                    anchors.margins: height / 3
-                    horizontalAlignment: Qt.AlignHCenter
-                    color: DefTheme.mainTextColor
-                    font.pixelSize: parent.height / 10
-                    text: locationTime
-                    elide: Text.ElideRight
-                }
+//                Text {
+//                    id: timeline
+//                    width: parent.width
+//                    anchors.top: parent.top
+//                    anchors.margins: height / 3
+//                    horizontalAlignment: Qt.AlignHCenter
+//                    color: DefTheme.mainTextColor
+//                    font.pixelSize: parent.height / 10
+//                    text: locationTime
+//                    elide: Text.ElideRight
+//                }
 
                 Text {
                     id: nameLine
@@ -124,9 +123,11 @@ LeviosaPage {
                 Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.top: timeline.bottom
+//                    anchors.top: timeline.bottom
+                    anchors.top: parent.top
                     anchors.bottom: nameLine.top
                     anchors.margins: parent.width / 12
+                    anchors.topMargin: parent.height / 6
                     Image {
                         id: icon
                         anchors.fill: parent

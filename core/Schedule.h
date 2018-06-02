@@ -10,6 +10,9 @@ public:
 
     enum class WeekDay { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
 
+    bool operator==(const Schedule& other) const;
+    bool operator!=(const Schedule& other) const;
+
     int days() const;
     void setDays(int days);
 

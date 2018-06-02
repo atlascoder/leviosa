@@ -28,6 +28,8 @@
 #include <aws/cognito-idp/model/InitiateAuthResult.h>
 #include <aws/cognito-idp/model/RespondToAuthChallengeRequest.h>
 #include <aws/cognito-idp/model/RespondToAuthChallengeResult.h>
+#include <aws/cognito-idp/model/UpdateUserAttributesRequest.h>
+#include <aws/cognito-idp/model/UpdateUserAttributesResult.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/utils/memory/stl/AWSMap.h>
 
@@ -285,7 +287,8 @@ void AuthRequest::signIn(const QString& email, const QString& password)
         mRefreshToken = QString(authResp.GetResult().GetAuthenticationResult().GetRefreshToken().c_str());
         mRefreshTokenExpiration = QDateTime::currentSecsSinceEpoch() + 86400*3600;
         mSuccessful = true;
-    } else {
+    }
+    else {
         mLastMessage = QString(authResp.GetError().GetMessage().c_str());
     }
     destroyClient();
@@ -411,5 +414,28 @@ void AuthRequest::restorePassword(const QString& email)
         mSuccessful = true;
     else
         mLastMessage = QString(resp.GetError().GetMessage().c_str());
+    destroyClient();
+}
+
+void AuthRequest::updateIdentityIdAttribute(const QString& token)
+{
+    mSuccessful = false;
+    Aws::CognitoIdentityProvider::Model::UpdateUserAttributesRequest upd_idpid;
+    Aws::CognitoIdentityProvider::Model::AttributeType attr;
+    if (mCancelled) return;
+    buildClient();
+
+    attr.SetName("custom:cognitoId");
+    attr.SetValue(AwsApi::instance().getIdentityId());
+    upd_idpid.SetAccessToken(token.toStdString());
+    upd_idpid.AddUserAttributes(attr);
+    if (mCancelled) return;
+    Aws::CognitoIdentityProvider::Model::UpdateUserAttributesOutcome updResp = mClient->UpdateUserAttributes(upd_idpid);
+    if (updResp.IsSuccess()) {
+        mSuccessful = true;
+    }
+    else {
+        mLastMessage = QString(updResp.GetError().GetMessage().c_str());
+    }
     destroyClient();
 }

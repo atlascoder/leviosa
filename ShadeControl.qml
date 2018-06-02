@@ -65,7 +65,7 @@ Control {
             font.bold: true
             horizontalAlignment: Text.AlignHCenter
             visible: rootItem.days != 0
-            font.pixelSize: parent.height / 5
+            font.pixelSize: parent.height / 4
         }
 
         SequentialAnimation {
@@ -132,7 +132,7 @@ Control {
             verticalAlignment: Text.AlignBottom
             horizontalAlignment: Text.AlignHCenter
             visible: rootItem.days != 0
-            font.pixelSize: parent.height / 5
+            font.pixelSize: parent.height / 4
         }
 
         SequentialAnimation {
@@ -222,15 +222,15 @@ Control {
             anchors.right: parent.right
             anchors.rightMargin: 2
             spacing: 2
-            property int itemWidth : (width - spacing*6) / 7
+            property int itemWidth : (width - spacing * 6) / 7
             Repeater {
-                model: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                model: ["S", "M", "T", "W", "T", "F", "S"]
                 delegate : Rectangle {
                     width: daysRow.itemWidth
                     color: (rootItem.days & (1 << index)) == 0 ? "#00000000" : DefTheme.mainColor
                     Text {
                         width: daysRow.itemWidth
-                        font.pixelSize: width * 0.4
+                        font.pixelSize: width * 0.6
                         text: modelData
                         horizontalAlignment: Text.AlignHCenter
                         color: (rootItem.days & (1 << index)) == 0 ? "#000000" : "#ffffff"
@@ -262,7 +262,7 @@ Control {
 
     Timer {
         id: actionTimer
-        interval: 5000
+        interval: DefTheme.animationDuration
     }
 
     state: "interim"
@@ -351,7 +351,7 @@ Control {
 
             PropertyChanges {
                 target: upIcon
-                source: "img/ic_open.png"
+                source: "img/ic_up.png"
                 visible: true
             }
             PropertyChanges {

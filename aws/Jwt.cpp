@@ -82,6 +82,7 @@ bool Jwt::parsePayload(const QJsonObject &payload)
 bool Jwt::checkSignature(const QByteArray &signature)
 {
     // TODO
+    Q_UNUSED(signature);
     return true;
 }
 

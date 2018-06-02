@@ -13,6 +13,7 @@
 
 #include "aws/ControllerThing.h"
 #include "core/TimeZoneModel.h"
+#include "core/ControllerSchedule.h"
 
 using namespace std;
 
@@ -113,7 +114,9 @@ void UserData::loadItems()
     sortOrdered<Location>(mLocations);
     sortOrdered<Controller>(mControllers);
     sortOrdered<ShadeGroup>(mShadeGroups);
-    sync();
+    if (mUser.authState() == CurrentUser::Authenticated) {
+        sync();
+    }
 }
 
 void UserData::stopRequests()
@@ -173,8 +176,8 @@ void UserData::setState(SyncState state)
     if(state == mSyncState) return;
     mSyncState = state;
     if(mSyncState == SyncState::Clean) {
+        loadItems();
         if (mSyncer->isUpdated()) {
-            loadItems();
             emit dataUpdated();
         }
         emit synced();
@@ -596,4 +599,20 @@ QString UserData::defaultLocationName() const
     } while (find_if(mLocations->begin(), mLocations->end(), [&name](const shared_ptr<Location>& _l)->bool{ return _l->name() == name; }) != mLocations->end());
 
     return name;
+}
+
+shared_ptr<ControllerConfig> UserData::controllerConfig(const QString &controllerMac) const
+{
+    shared_ptr<ControllerConfig> config(new ControllerConfig);
+    QString uuid = controllerUuid(controllerMac);
+    if (!uuid.isEmpty()) {
+        config->setTimezone(controllerTimezone(uuid));
+        config->setMac(controllerMac);
+        for (shared_ptr<ShadeGroup> group : *mShadeGroups) {
+            if (group->controllerMac() == controllerMac)
+                config->setGroupSchedule(group->channel()-1, group->days(), group->openAt(), group->closeAt());
+        }
+        config->setValid(true);
+    }
+    return config;
 }

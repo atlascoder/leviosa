@@ -65,19 +65,16 @@ void ShadeGroupModel::saveChanges()
         saveAll = true;
     }
 
-    QString controllerUuid = UserData::instance().controllerUuid(mShadeGroup->controllerMac());
-    {
-        shared_ptr<ControllerAPI> api = ControllerConnectionsManager::instance().controllerAPI(controllerUuid);
-
-        schedule.timezone = UserData::instance().controllerTimezone(controllerUuid);
-        QString schedule_json = schedule.json();
-        api->updateSchedule(schedule_json);
-    }
-
     if (saveAll)
         UserData::instance().persistChanges(mNeighbours);
     else
         UserData::instance().persistChanged(mShadeGroup);
+
+    QString controllerUuid = UserData::instance().controllerUuid(mShadeGroup->controllerMac());
+    {
+        shared_ptr<ControllerAPI> api = ControllerConnectionsManager::instance().controllerAPI(controllerUuid);
+        api->postSchedule();
+    }
 
 }
 

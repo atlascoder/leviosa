@@ -75,6 +75,7 @@ public:
     static QString commandCode2String(int command);
 
     void updateSchedule(const QString& scheduleJson);
+    void postSchedule();
 
 signals:
     void ipAddressChanged();

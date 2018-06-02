@@ -177,7 +177,7 @@ Rectangle {
 
     Timer {
         id: actionTimer
-        interval: 5000
+        interval: DefTheme.animationDuration
     }
 
     function updateShadeState(shadeState){

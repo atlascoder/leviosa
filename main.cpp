@@ -56,9 +56,9 @@ int main(int argc, char *argv[])
     controllerAPIs.setNetworkMonitor(&netMon);
 
     ctx->setContextProperty("qGuiApp", &app);
-#ifdef Q_OS_IOS
+
     QObject::connect(&app, &QGuiApplication::applicationStateChanged, &netMon, &NetworkMonitor::onApplicationStateChanged);
-#endif
+
     ctx->setContextProperty("userData", &userData);
     ctx->setContextProperty("currentUser", &currentUser);
     ctx->setContextProperty("netMonitor", &netMon);

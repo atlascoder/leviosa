@@ -22,6 +22,17 @@ ControllerConfig& ControllerConfig::operator=(const ControllerConfig &config)
     return *this;
 }
 
+bool ControllerConfig::operator==(const ControllerConfig& other) const
+{
+    return this->mMac == other.mac() && *this->mControllerSchedule == *other.schedule();
+
+}
+
+bool ControllerConfig::operator!=(const ControllerConfig& other) const
+{
+    return !(*this == other);
+}
+
 int ControllerConfig::utcOffset(const QString& abbr)
 {
     if(abbr == "EST")   return -18000;
@@ -118,7 +129,7 @@ void ControllerConfig::setGroupSchedule(int group, int dayUS, int openAt, int cl
     if (group < 0 || group >= ControllerSchedule::GROUPS_COUNT) return;
     mControllerSchedule->schedules[group].setOpenAt(openAt);
     mControllerSchedule->schedules[group].setCloseAt(closeAt);
-    mControllerSchedule->schedules[group].setDays(daysUStoEU(dayUS));
+    mControllerSchedule->schedules[group].setDays(dayUS);
 }
 
 void ControllerConfig::cleanSchedule()

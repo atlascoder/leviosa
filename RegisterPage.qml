@@ -55,9 +55,9 @@ WelcomeBrandPage {
                 anchors.rightMargin: 10
                 height: emailIcon.height
                 horizontalAlignment: Text.AlignHCenter
-                font.capitalization: Font.MixedCase
                 anchors.verticalCenter: parent.verticalCenter
                 font.pixelSize: parent.height / 3
+                font.capitalization: Font.AllLowercase
                 Text {
                     anchors.fill: parent
                     visible: !(parent.focus || parent.text.length > 0)

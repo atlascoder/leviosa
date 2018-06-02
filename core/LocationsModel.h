@@ -47,11 +47,11 @@ public slots:
     void commandShades(const int command);
 
 private slots:
+//    void onTimer();
 
-    void onTimer();
 private:
     bool mIsActive;
-    QTimer* mTimer;
+//    QTimer* mTimer;
 
     bool active() const;
     void setActive(bool isActive);
@@ -59,7 +59,7 @@ private:
     bool isIndexValid(const QModelIndex& index) const;
     shared_ptr<vector<shared_ptr<Location>>> mLocations;
 
-    void updateTime();
+//    void updateTime();
 
     void sendCommandToShades(const int command);
 

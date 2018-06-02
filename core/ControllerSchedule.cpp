@@ -22,6 +22,24 @@ ControllerSchedule& ControllerSchedule::operator=(const ControllerSchedule& othe
     return *this;
 }
 
+bool ControllerSchedule::operator==(const ControllerSchedule& other) const
+{
+    if (this->timezone == other.timezone) {
+        for (int i = 0; i < GROUPS_COUNT; i++) {
+            if (this->schedules[i] != other.schedules[i])
+                return false;
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
+bool ControllerSchedule::operator!=(const ControllerSchedule& other) const
+{
+    return !(*this == other);
+}
+
 void ControllerSchedule::clean()
 {
     for (int i = 0; i < GROUPS_COUNT; i++) {
@@ -31,7 +49,6 @@ void ControllerSchedule::clean()
 
 QString ControllerSchedule::json() const
 {
-    QJsonDocument doc;
     QJsonObject root_obj;
     root_obj.insert("timeZone", timezone);
     QJsonArray schedules_arr;
@@ -47,7 +64,6 @@ QString ControllerSchedule::json() const
     }
 
     root_obj.insert("schedule", schedules_arr);
-
     return QJsonDocument(root_obj).toJson(QJsonDocument::Compact);
 }
 

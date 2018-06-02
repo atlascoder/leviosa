@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "UserData.h"
+#include "ControllerAPI.h"
 #include "Controller.h"
 #include "ShadeGroup.h"
 
@@ -56,6 +57,7 @@ public:
 
     Q_INVOKABLE void reloadShadeGroups();
     Q_INVOKABLE void commandController(const QString& groupUuid, int command);
+    Q_INVOKABLE void resetControls();
 signals:
     void controllerChanged();
     void nameChanged();

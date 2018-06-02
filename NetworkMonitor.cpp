@@ -34,9 +34,6 @@ NetworkMonitor::NetworkMonitor(QObject *parent) :
     else{
         setConnectionState(NotWifi);
     }
-    mTimer.setInterval(1000);
-    mTimer.setSingleShot(false);
-    connect(&mTimer, &QTimer::timeout, this, &NetworkMonitor::checkBssid);
 #elif defined Q_OS_ANDROID
     connect(&mgr, &QNetworkConfigurationManager::onlineStateChanged, this, &NetworkMonitor::setIsOnline);
     connect(&mgr, &QNetworkConfigurationManager::configurationChanged, this, &NetworkMonitor::netChanged);
@@ -56,6 +53,9 @@ NetworkMonitor::NetworkMonitor(QObject *parent) :
     connect(&mgr, &QNetworkConfigurationManager::configurationChanged, this, &NetworkMonitor::netChanged);
     setIsOnline(mgr.isOnline());
 #endif
+    mTimer.setInterval(1000);
+    mTimer.setSingleShot(false);
+    connect(&mTimer, &QTimer::timeout, this, &NetworkMonitor::checkBssid);
 }
 
 void NetworkMonitor::setIsOnline(bool online){
@@ -115,13 +115,20 @@ void NetworkMonitor::statusChanged(utility::NetworkStatus n)
         qDebug() << "SSID " << getSsid() << " / " << getBssid() << " / " << getWlanIp();
 }
 
+#endif
+
 void NetworkMonitor::checkBssid()
 {
+    qDebug() << "check bssid";
+#ifdef Q_OS_IOS
     if (getBssid() == mLastBssid) return;
     mLastBssid = getBssid();
     emit connectionStateChanged();
-}
+#elif defined Q_OS_ANDROID
+    QNetworkConfiguration conf = mgr.defaultConfiguration();
+    netChanged(conf);
 #endif
+}
 
 QString NetworkMonitor::getSsid() const
 {
@@ -213,13 +220,19 @@ void NetworkMonitor::setConnectionState(ConnectionState connectionState)
 
 void NetworkMonitor::onApplicationStateChanged(const Qt::ApplicationState state)
 {
+    if (state == Qt::ApplicationActive) {
+        mTimer.setInterval(1000);
 #ifdef Q_OS_IOS
-    if (state == Qt::ApplicationActive && isOnWlan()){
-        checkBssid();
+        if (isOnWlan()) checkBssid();
+        mTimer.setSingleShot(false);
+#elif defined Q_OS_ANDROID
+        QNetworkConfiguration conf = mgr.defaultConfiguration();
+        netChanged(conf);
+        mTimer.setSingleShot(true);
+#endif
         mTimer.start();
     }
     else {
         mTimer.stop();
     }
-#endif
 }

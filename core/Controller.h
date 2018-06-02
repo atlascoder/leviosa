@@ -7,9 +7,6 @@
 #include "Schedule.h"
 #include "Positioned.h"
 #include "Syncable.h"
-#include "LocalCache.h"
-#include "ControllerAPI.h"
-#include <memory>
 
 class Controller: public Shade, public Positioned, public Syncable
 {
@@ -19,7 +16,13 @@ class Controller: public Shade, public Positioned, public Syncable
     int mId;
     bool mMatchPrevious;
 public:
-    Controller(): mMac("0000000000"), mLocationUuid(""), mName("A Zone"), mId(1), mMatchPrevious(false) {}
+    Controller():
+        mMac("0000000000"),
+        mLocationUuid(""),
+        mName("A Zone"),
+        mId(1),
+        mMatchPrevious(false)
+    { }
 
     Controller(const Controller& c) :
         Positioned(c),

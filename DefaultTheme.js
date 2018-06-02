@@ -24,3 +24,5 @@ var secTextColor = "#000000";
 
 var toolbarHeight = 54;
 var buttonHeight = 48;
+
+var animationDuration = 20000;

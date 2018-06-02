@@ -228,6 +228,8 @@ void CurrentUser::authenticateUser()
         logins[ClientConfig::instance().loginPoint] = tok;
         AwsApi::instance().persistLogins(logins);
 
+        mAuthRequest->updateIdentityIdAttribute(mAuthRequest->getAccessToken());
+
         setLastMessage("Authenticated");
         setAuthState(Authenticated);
         emit signedIn();
@@ -293,8 +295,9 @@ void CurrentUser::requestPasswordChange()
 
 void CurrentUser::setEmail(const QString &email)
 {
-    if(email == mEmail) return;
-    mEmail = email;
+    QString _email = email.toLower();
+    if(_email == mEmail) return;
+    mEmail = _email;
     emit emailChanged();
 }
 
@@ -324,11 +327,11 @@ void CurrentUser::checkEmailPassword()
 {
     if(mEmail == "change@password.my"){
         if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
-            setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+            setLastMessage("Enter password comprising at least 8 letters and numbers");
             setReady(false);
         }
         else if(mPassword.length() != mPassword2.length()){
-            setLastMessage("Enter the same password as comformation");
+            setLastMessage("Enter the same password as confirmation");
             setReady(false);
         }
         else if(mPassword != mPassword2){
@@ -350,11 +353,11 @@ void CurrentUser::checkEmailPassword()
             setReady(false);
         }
         else if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
-            setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+            setLastMessage("Enter password comprising at least 8 letters and numbers");
             setReady(false);
         }
         else if(mPassword.length() != mPassword2.length()){
-            setLastMessage("Enter the same password as comformation");
+            setLastMessage("Enter the same password as confirmation");
             setReady(false);
         }
         else if(mPassword != mPassword2){
@@ -371,15 +374,15 @@ void CurrentUser::checkEmailPassword()
 void CurrentUser::checkCodeAndPasswords()
 {
     if(!QRegExp("\\d{6}").exactMatch(mPassword3)){
-        setLastMessage("Verification code should contain 6 numbers");
+        setLastMessage("Check you email for a verification code of 6 numbers. Enter those numbers below.");
         setReady(false);
     }
     else if(mPassword.length() < 8 || !QRegExp(".*\\d+.*").exactMatch(mPassword) || !QRegExp(".*\\D+.*").exactMatch(mPassword)){
-        setLastMessage("Enter password comprising at least 8 characters from letters AND numbers");
+        setLastMessage("Enter password comprising at least 8 letters and numbers");
         setReady(false);
     }
     else if(mPassword.length() != mPassword2.length()){
-        setLastMessage("Enter the same password as comformation");
+        setLastMessage("Enter the same password as confirmation");
         setReady(false);
     }
     else if(mPassword != mPassword2){
@@ -395,7 +398,7 @@ void CurrentUser::checkCodeAndPasswords()
 void CurrentUser::checkVerification()
 {
     if(!QRegExp("\\d{6}").exactMatch(mPassword3)){
-        setLastMessage("Verification code should contain 6 numbers");
+        setLastMessage("Check you email for a verification code of 6 numbers. Enter those numbers below.");
         setReady(false);
     }
     else{

@@ -6,8 +6,18 @@
 
 Schedule::Schedule():
     mDaysMask(DEFAULT_DAYS_MASK), mOpenAt(DEFAULT_OPEN_AT), mCloseAt(DEFAULT_CLOSE_AT)
-{
+{ }
 
+bool Schedule::operator==(const Schedule& other) const
+{
+    return this->mDaysMask == other.mDaysMask
+            && this->mOpenAt == other.mOpenAt
+            && this->mCloseAt == other.mCloseAt;
+}
+
+bool Schedule::operator!=(const Schedule& other) const
+{
+    return !(*this == other);
 }
 
 int Schedule::days() const
@@ -77,7 +87,7 @@ void Schedule::cleanScheduledForDay(WeekDay weekDay)
 
 void Schedule::clean()
 {
-    mDaysMask = DEFAULT_OPEN_AT;
+    mDaysMask = (char)DEFAULT_OPEN_AT;
     mOpenAt = DEFAULT_OPEN_AT;
     mCloseAt = DEFAULT_CLOSE_AT;
 }

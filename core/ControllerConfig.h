@@ -22,16 +22,20 @@ class ControllerConfig
     shared_ptr<ControllerSchedule> mControllerSchedule;
 
 public:
-    ControllerConfig() : mControllerSchedule(new ControllerSchedule) {}
+    ControllerConfig() : mIsValid(false), mControllerSchedule(new ControllerSchedule) {}
     ControllerConfig& operator=(const ControllerConfig&);
+    bool operator==(const ControllerConfig& other) const;
+    bool operator!=(const ControllerConfig& other) const;
 
     void parse(const QString& jsonized);
     shared_ptr<ControllerSchedule> schedule() const { return mControllerSchedule; }
 
 
-    QString mac() const {return mMac; }
+    QString mac() const { return mMac; }
+    void setMac(const QString& mac) { mMac = mac; }
 
     bool isValid() const { return mIsValid; }
+    void setValid(bool isValid) { mIsValid = isValid; }
 
     char days(int channel) const;
 
@@ -39,7 +43,7 @@ public:
 
     int closeAt(int channel) const;
 
-    void setGroupSchedule(int channel, int day, int openAt, int closeAt);
+    void setGroupSchedule(int group, int day, int openAt, int closeAt);
 
     void cleanSchedule();
 

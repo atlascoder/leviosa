@@ -20,9 +20,9 @@ LocationsModel::LocationsModel(QObject* parent):
     mIsActive(false),
     mLocations(new vector<shared_ptr<Location>>)
 {
-    mTimer = new QTimer(this);
-    mTimer->setSingleShot(true);
-    connect(mTimer, &QTimer::timeout, this, &LocationsModel::onTimer);
+//    mTimer = new QTimer(this);
+//    mTimer->setSingleShot(true);
+//    connect(mTimer, &QTimer::timeout, this, &LocationsModel::onTimer);
     connect(&UserData::instance(), &UserData::dataUpdated, this, &LocationsModel::reloadData);
     reloadData();
 }
@@ -48,7 +48,7 @@ QVariant LocationsModel::data(const QModelIndex &index, int role) const
 
     shared_ptr<Location> location = mLocations->at(index.row());
 
-    switch(role){
+    switch (role) {
     case Roles::UuidRole:
         return location->uuid();
     case Roles::NameRole:
@@ -60,11 +60,10 @@ QVariant LocationsModel::data(const QModelIndex &index, int role) const
     case Roles::TimeZoneRole:
         return location->timezone();
     case Roles::LocationTime: {
-        QDate today = QDate::currentDate();
-        QTime now = QTime::currentTime();
-        QTimeZone tz(location->timezone().toLatin1());
-        QDateTime time(today, now, tz);
-        return time.toLocalTime().toString("HH:mm ") + location->timezone();
+        QString s = location->timezone();
+        QTimeZone tz(s.toLatin1());
+        QDateTime utc = QDateTime::currentDateTimeUtc();
+        return utc.toTimeZone(tz).toString("hh:mm ") + location->timezone();
     }
     default:
         return QVariant();
@@ -118,30 +117,30 @@ void LocationsModel::setActive(bool isActive)
 {
     if (isActive == mIsActive) return;
     mIsActive = isActive;
-    if (mIsActive) {
-        updateTime();
-        mTimer->setInterval(60000 - QTime::currentTime().msecsSinceStartOfDay() % 60000);
-        mTimer->start();
-    }
-    else {
-        mTimer->stop();
-    }
+//    if (mIsActive) {
+//        updateTime();
+//        mTimer->setInterval(60000 - QTime::currentTime().msecsSinceStartOfDay() % 60000);
+//        mTimer->start();
+//    }
+//    else {
+//        mTimer->stop();
+//    }
     emit activeChanged();
 }
 
-void LocationsModel::onTimer()
-{
-    updateTime();
-    mTimer->setInterval(60000 - QTime::currentTime().msecsSinceStartOfDay() % 60000);
-    if (mIsActive) mTimer->start();
-}
+//void LocationsModel::onTimer()
+//{
+//    updateTime();
+//    mTimer->setInterval(60000 - QTime::currentTime().msecsSinceStartOfDay() % 60000);
+//    if (mIsActive) mTimer->start();
+//}
 
-void LocationsModel::updateTime()
-{
-    QVector<int> roles;
-    roles.append(Roles::LocationTime);
-    emit dataChanged(index(0), index(rowCount()-1), roles);
-}
+//void LocationsModel::updateTime()
+//{
+//    QVector<int> roles;
+//    roles.append(Roles::LocationTime);
+//    emit dataChanged(index(0), index(rowCount()-1), roles);
+//}
 
 void LocationsModel::commandShades(const int command)
 {

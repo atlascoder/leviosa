@@ -87,7 +87,7 @@ QString TimeZoneModel::signatureByIndex(const int index) const
     else
         result = mCurrentTimezone;
 
-    qDebug() << "Timezone [" << index <<"] => " << result;
+    qDebug() << "Timezone [" << index << "] => " << result;
     return result;
 }
 

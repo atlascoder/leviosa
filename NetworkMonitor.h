@@ -6,9 +6,9 @@
 #include <QList>
 #include <QNetworkSession>
 #include <QPointer>
+#include <QTimer>
 
 #ifdef Q_OS_IOS
-#include <QTimer>
 #include "ios/src/ReachabilityListener.h"
 #endif
 
@@ -39,9 +39,7 @@ public slots:
 
 private slots:
     void setIsOnline(bool online);
-#ifdef Q_OS_IOS
     void checkBssid();
-#endif
 
 public:
 
@@ -64,10 +62,8 @@ private:
     QPointer<QNetworkSession> session;
     ConnectionState mConnectionState;
     QString mLastBssid;
-
-#ifdef Q_OS_IOS
     QTimer mTimer;
-#endif
+
     NetworkMonitor(QObject *parent = 0);
 
 #ifdef Q_OS_IOS

@@ -277,6 +277,15 @@ void ZoneModel::commandController(const QString& groupUuid, int command)
     }
 }
 
+void ZoneModel::resetControls()
+{
+    size_t idx = 0;
+    while(idx < mShadeGroups->size()) {
+        setData(index(idx), ShadeGroup::Interim, Roles::ShadeStateRole);
+        idx++;
+    }
+}
+
 QString ZoneModel::controllerStatus() const
 {
     if (mController == nullptr) return "";
