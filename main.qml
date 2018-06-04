@@ -5,7 +5,7 @@ import "DefaultTheme.js" as DefTheme
 
 ApplicationWindow {
 	id: applicationWindow
-	visible: true
+    visible: false
 	width: 480
 	height: 800
 	color: DefTheme.mainColorBg
@@ -19,6 +19,21 @@ ApplicationWindow {
 	signal signedUp
 	signal espTouchStart
 	signal espTouchFinish
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutQuad
+        }
+    }
+
+    opacity: 0
+
+    Component.onCompleted: {
+        doLogin()
+        applicationWindow.visible = true
+        applicationWindow.opacity = 1
+    }
 
     Connections {
         target: qGuiApp
@@ -400,10 +415,8 @@ ApplicationWindow {
 		anchors.fill: parent
 	}
 
-    Component.onCompleted: doLogin()
-
 	onClosing: {
-        if (Qt.platform.os == "android" && pager.depth > 1 && !pager.currentItem.enableMenuAction) {
+        if (Qt.platform.os == "android" && pager.depth > 1 && !pager.currentItem.enableMenuAction && netMonitor.connected) {
 			close.accepted = false;
 			pager.pop();
 		}

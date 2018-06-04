@@ -22,10 +22,6 @@ android {
 
     ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
-    # ZeroConf
-    LIBS += -L$$PWD/../../qt-zero-conf/build-Android-arm/android-build/lib -lQtZeroConf
-    INCLUDEPATH += $$PWD/../qt-zero-conf/QtZeroConf
-
     # AWS libs
     AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/android/aws-cpp-sdk
     LIBS += \
@@ -60,10 +56,6 @@ ios {
     app_launch_images.files = $$PWD/ios/SplashScreen.xib $$PWD/ios/leviosa-logo.png
     QMAKE_BUNDLE_DATA = app_launch_images
     QMAKE_INFO_PLIST = $$PWD/ios/Info.plist
-
-    #ZeroConf
-    include(QtZeroConf/qtzeroconf.pri)
-    DEFINES= QZEROCONF_STATIC
 
     # EspTouch backport
     SC_IOS = $$PWD/../../esptouch-qt-ios
@@ -135,10 +127,6 @@ ios {
 # macOS specifics
 macos {
 
-    # import QtZeroConf https://github.com/jbagg/QtZeroConf
-    include(QtZeroConf/qtzeroconf.pri)
-    DEFINES= QZEROCONF_STATIC
-
     AWS = $$DEV_LIBS_PATH/aws-sdk-cpp/host/aws-cpp-sdk
 
     LIBS += \
@@ -187,7 +175,6 @@ SOURCES += \
     aws/CognitoSyncCommand.cpp \
     aws/ControllerThing.cpp \
     core/ControllerHTTPClient.cpp \
-    core/ControllerScan.cpp \
     aws/PersistentCredentialsProviderSQL.cpp \
     core/CredentialsDAO.cpp \
     aws/AwsApi.cpp \
@@ -204,7 +191,6 @@ SOURCES += \
     core/ShadeGroupModel.cpp \
     core/DatabaseManager.cpp \
     core/LocationModel.cpp \
-    core/ControllerDiscovery.cpp \
     core/Positioned.cpp \
     core/Schedule.cpp \
     core/Shade.cpp \
@@ -237,7 +223,6 @@ HEADERS += \
     core/timeaux.h \
     aws/CognitoSyncCommand.h \
     aws/ControllerThing.h \
-    core/ControllerScan.h \
     aws/PersistentCredentialsProviderSQL.h \
     core/CredentialsDAO.h \
     aws/AwsApi.h \
@@ -257,7 +242,6 @@ HEADERS += \
     core/Positioned.h \
     core/Schedule.h \
     core/Shade.h \
-    core/ControllerDiscovery.h \
     NetworkMonitor.h \
     core/ZoneModel.h \
     core/ControllerConnectionsManager.h \

@@ -228,7 +228,7 @@ void NetworkMonitor::onApplicationStateChanged(const Qt::ApplicationState state)
 #elif defined Q_OS_ANDROID
         QNetworkConfiguration conf = mgr.defaultConfiguration();
         netChanged(conf);
-        mTimer.setSingleShot(true);
+        mTimer.setSingleShot(false);
 #endif
         mTimer.start();
     }

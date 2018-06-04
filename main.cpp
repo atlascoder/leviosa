@@ -7,8 +7,6 @@
 #include "core/LocationModel.h"
 #include "core/ControllerModel.h"
 #include "core/ShadeGroupModel.h"
-#include "core/ControllerDiscovery.h"
-#include "core/ControllerScan.h"
 #include "core/Shade.h"
 #include "core/ControllerAPI.h"
 #include "core/ZoneModel.h"
@@ -45,7 +43,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<ShadeGroupModel>("com.atlascoder.ShadeGroupModel", 1, 0, "ShadeGroupModel");
     qmlRegisterType<EspTouchSetup>("com.atlascoder.EspTouch", 1, 0, "EspTouch");
     qmlRegisterType<ControllerAPI>("com.atlascoder.ControllerAPI", 1, 0, "ControllerAPI");
-
     qmlRegisterType<Shade>("com.atlascoder.Shade", 1, 0, "Shade");
 
     UserData& userData(UserData::instance());
