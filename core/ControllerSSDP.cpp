@@ -1,5 +1,4 @@
 #include "ControllerSSDP.h"
-#include "mdnsdiscothread.h"
 #include <QNetworkInterface>
 #include <QNetworkAddressEntry>
 #include <QDebug>

@@ -1,0 +1,72 @@
+End-User License Agreement of Leviosa Motor Shades
+
+This End-User License Agreement ("EULA") is a legal agreement between you and Leviosa Motor Shades.
+
+
+This EULA agreement governs your acquisition and use of our Leviosa Motor Shades Application ("Application") directly from Leviosa Motor Shades or indirectly through online applications stores (a "Distributor").
+
+
+Please read this EULA agreement carefully before completing the installation process and using the Leviosa Motor Shades software. It provides a license to use the Leviosa Motor Shades software and contains warranty information and liability disclaimers.
+
+
+By clicking "ACCEPT" or installing and/or using the Leviosa Motor Shades Application, you are confirming your acceptance of the Application and agreeing to become bound by the terms of this EULA agreement.
+
+
+If you are entering into this EULA agreement on behalf of a company or other legal entity, you represent that you have the authority to bind such entity and its affiliates to these terms and conditions. If you do not have such authority or if you do not agree with the terms and conditions of this EULA agreement, do not install or use the Software, and you must not accept this EULA agreement.
+
+
+This EULA agreement shall apply only to the Software supplied by Leviosa Motor Shades herewith regardless of whether other software is referred to or described herein. The terms also apply to any Leviosa Motor Shades updates, supplements, Internet-based services, and support services for the Software, unless other terms accompany those items on delivery. If so, those terms apply.
+
+
+License Grant
+
+
+Leviosa Motor Shades hereby grants you a personal, non-transferable, non-exclusive license to use the Leviosa Motor Shades Application on your devices in accordance with the terms of this EULA agreement.
+
+
+You are permitted to:
+
+- Load the Leviosa Motor Shades Application under your control. You are responsible for ensuring your device meets the minimum requirements of the Leviosa Motor Shades Application.
+
+- Use Corresponding Application Code from public repository at https://github.com/atlascoder/leviosa to build Application with another versions of Qt5 libraries in compliance to terms of LGPLv3.
+
+
+You are not permitted to:
+
+- edit, alter, modify, adapt, translate or otherwise change the Application code nor permit the whole or any part of the Software to be combined with or become incorporated in any other software, excepting rebuilding Application with modified Qt5 libraries
+
+- reproduce, copy, distribute, resell or otherwise use the Application for any commercial purpose
+
+- Allow any third party to use the Application on behalf of or for the benefit of any third party
+
+- Use the Application in any way which breaches any applicable local, national or international law
+
+- Use the Application for any purpose that Leviosa Motor Shades considers a breach of this EULA agreement
+
+
+Intellectual Property and Ownership
+
+
+Leviosa Motor Shades shall at all times retain ownership of the Application as originally downloaded by you and all subsequent downloads of the Software by you. The Software (and the copyright, and other intellectual property rights of whatever nature in the Software, including any modifications made thereto) are and shall remain the property of Leviosa Motor Shades.
+
+
+Application compiled with third-part libraries that are owned by their publishers:
+
+- Qt5 library (using LGPLv3) that is property of The Qt Company
+
+- AWS-SDK-CPP library (using Apache License Version 2) that is property of Amazon Web Services, Inc
+
+- Boost Libraries (using Boost Software License Version 1) that is property of Boost Community
+
+- Espressif EspTouch library (using ESPRSSIF MIT License) that is property of Epressif Systems
+
+
+Termination
+
+
+This EULA agreement is effective from the date you first use the Software and shall continue perpetual.
+
+It will terminate immediately if you fail to comply with any term of this EULA agreement. Upon such termination, the licenses granted by this EULA agreement will immediately terminate and you agree to stop all access and use of the Software. The provisions that by their nature continue and survive will survive any termination of this EULA agreement.
+
+
+This EULA agreement, and any dispute arising out of or in connection with this EULA agreement, shall be governed by and construed in accordance with the laws of United States.

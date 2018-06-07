@@ -20,6 +20,10 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import android.os.Bundle;
+
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 public class MainActivity extends QtActivity{
 
@@ -27,6 +31,13 @@ public class MainActivity extends QtActivity{
     IEsptouchResult mResult;
     Object mEsptouchLock = new Object();
     boolean mIsRunning = false;
+    ConnectivityManager mConnManager;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState){
+        super.onCreate(savedInstanceState);
+        mConnManager =  (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+    }
 
     public String runEsptouch(String apSsid, String apBssid, String apPass){
         if(mIsRunning) return "cancelled";
@@ -131,6 +142,28 @@ public class MainActivity extends QtActivity{
         return ssidAscii;
     }
 
+    boolean mWiFiConnected = false;
+
+    // 0 - no network
+    // 1 - mobile network
+    // 2 - WiFi network
+    public int getConnectionState() {
+        NetworkInfo wifi = mConnManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        NetworkInfo mobile = mConnManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+
+        if (wifi.isConnected() || (wifi.isConnectedOrConnecting() && mWiFiConnected)) {
+            mWiFiConnected = true;
+            return 2;
+        }
+        else if (mobile.isConnected()) {
+            mWiFiConnected = false;
+            return 1;
+        }
+        else {
+            mWiFiConnected = false;
+            return 0;
+        }
+    }
 
 
 }

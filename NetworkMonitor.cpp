@@ -74,7 +74,26 @@ void NetworkMonitor::setIsOnline(bool online){
 
 void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
 {
-    qDebug() << "netChanges triggered: " << conf.bearerTypeName();
+//    qDebug() << "netChanges triggered: " << conf.bearerTypeName();
+#ifdef Q_OS_ANDROID
+    int conn_state = getConnectionType();
+    if (conn_state == 2) {
+        const QString curr_bssid = getBssid();
+        if (curr_bssid != mLastBssid) {
+            mLastBssid = getBssid();
+            setConnectionState(Wifi);
+            emit bssidChanged();
+        }
+    }
+    else if (conn_state == 1) {
+        if (!mLastBssid.isEmpty()) mLastBssid = "";
+        setConnectionState(NotWifi);
+    }
+    else {
+        if (!mLastBssid.isEmpty()) mLastBssid = "";
+        setConnectionState(Disconnected);
+    }
+#else
     if (mgr.isOnline()) {
         if (mgr.defaultConfiguration().bearerType() == QNetworkConfiguration::BearerWLAN) {
             const QString curr_bssid = getBssid();
@@ -93,6 +112,8 @@ void NetworkMonitor::netChanged(const QNetworkConfiguration &conf)
         mLastBssid = "";
         setConnectionState(Disconnected);
     }
+#endif
+    emit descriptionChanged();
 }
 
 #ifdef Q_OS_IOS
@@ -236,3 +257,31 @@ void NetworkMonitor::onApplicationStateChanged(const Qt::ApplicationState state)
         mTimer.stop();
     }
 }
+
+QString NetworkMonitor::description() const
+{
+    QString bearerTypes[] = { "BearerUnknown",
+                                     "BearerEthernet",
+                                     "BearerWLAN",
+                                     "Bearer2G",
+                                     "BearerCDMA2000",
+                                     "BearerWCDMA",
+                                     "BearerHSPA",
+                                     "BearerBluetooth",
+                                     "BearerWiMAX",
+                                     "BearerEVDO",
+                                     "BearerLTE",
+                                     "Bearer3G",
+                                     "Bearer4G"};
+    return "Bearer: " + bearerTypes[mgr.defaultConfiguration().bearerType()] +
+            ", online: " +
+            (mgr.isOnline() ? "YES" : "NO");
+}
+
+
+#ifdef Q_OS_ANDROID
+int NetworkMonitor::getConnectionType() const
+{
+    return QtAndroid::androidActivity().callMethod<jint>("getConnectionState");
+}
+#endif

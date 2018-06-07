@@ -215,7 +215,7 @@ QString ZoneModel::title() const
 {
     if (mController == nullptr) return "";
     auto location = UserData::instance().location(mController->locationUuid());
-    QString locationName = location.get() == nullptr ? "My Home" : location->name();
+    QString locationName = location.get() == nullptr ? "Home" : location->name();
 
     if (UserData::instance().locationsCount() > 1 || mNeighbours->size() > 1)
         return locationName + " - " + mController->name();

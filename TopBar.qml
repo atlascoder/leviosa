@@ -24,6 +24,8 @@ ToolBar {
     property bool showStatusText : false
     property string statusText
 
+    property bool hideMenuButton : false
+
     height: DefTheme.toolbarHeight
     background: Rectangle {
         anchors.fill: parent
@@ -52,6 +54,8 @@ ToolBar {
                 anchors.margins: parent.height / 4
             }
             onClicked: menuAction()
+            opacity: hideMenuButton ? 0 : 1
+            enabled: !hideMenuButton
         }
         Item {
             id: pageTitle

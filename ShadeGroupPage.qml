@@ -172,7 +172,7 @@ LeviosaPage {
                         width: parent.width
                         font.underline: true
                         font.bold: true
-                        text: "Open at"
+                        text: "Full open time"
                         font.pointSize: width / 22
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -262,7 +262,7 @@ LeviosaPage {
                         width: parent.width
                         font.underline: true
                         font.bold: true
-                        text: "Close at"
+                        text: "Full close time"
                         font.pixelSize: width / 22
                         horizontalAlignment: Text.AlignHCenter
                     }

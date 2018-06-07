@@ -8,7 +8,8 @@ DatabaseManager::DatabaseManager(const QString& path):
     mDatabase(new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"))),
     userDAO(*mDatabase),
     credentialsDAO(*mDatabase),
-    cognitoSyncDAO(*mDatabase)
+    cognitoSyncDAO(*mDatabase),
+    licenseDAO(*mDatabase)
 {
 #ifdef Q_OS_DARWIN
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
@@ -21,6 +22,7 @@ DatabaseManager::DatabaseManager(const QString& path):
     userDAO.init();
     credentialsDAO.init();
     cognitoSyncDAO.init();
+    licenseDAO.init();
 }
 
 DatabaseManager::~DatabaseManager()

@@ -3,7 +3,6 @@ CONFIG += c++11
 
 DEV_LIBS_PATH = /Users/anton.titkov/DevLibs
 
-
 # Android specifics
 android {
     QT += androidextras
@@ -34,9 +33,8 @@ android {
                 -L$$AWS-identity-management -laws-cpp-sdk-identity-management \
                 -L$$AWS-logs -laws-cpp-sdk-logs \
                 -L$$AWS-core -laws-cpp-sdk-core \
-                -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/curl/lib -lcurl \
-                -L/Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/lib -lssl -lcrypto \
-#                -L/Users/anton.titkov/DevLibs/openssl/android -lssl -lcrypto
+                -L$$DEV_LIBS_PATH/aws-sdk-cpp/android/external/curl/lib -lcurl \
+                -L$$DEV_LIBS_PATH/aws-sdk-cpp/android/external/openssl/lib -lssl -lcrypto \
 
     INCLUDEPATH += \
                 Users/anton.titkov/DevLibs/aws-sdk-cpp/android/external/openssl/include
@@ -56,6 +54,8 @@ ios {
     app_launch_images.files = $$PWD/ios/SplashScreen.xib $$PWD/ios/leviosa-logo.png
     QMAKE_BUNDLE_DATA = app_launch_images
     QMAKE_INFO_PLIST = $$PWD/ios/Info.plist
+
+    PRODUCT_BUNDLE_IDENTIFIER = ZA64J3S592.com.leviosashades.app
 
     # EspTouch backport
     SC_IOS = $$PWD/../../esptouch-qt-ios
@@ -168,7 +168,6 @@ SOURCES += \
     CurrentUser.cpp \
     aws/AuthRequest.cpp \
     UserData.cpp \
-    core/mdnsdiscothread.cpp \
     main.cpp \
     core/ControllerConfig.cpp \
     core/ControllerAPI.cpp \
@@ -201,7 +200,8 @@ SOURCES += \
     core/LocationsModel.cpp \
     core/TimeZoneModel.cpp \
     core/ControllerSSDP.cpp \
-    core/ControllerSchedule.cpp
+    core/ControllerSchedule.cpp \
+    core/LicenseDAO.cpp
 
 # own codebase
 HEADERS += \
@@ -214,7 +214,6 @@ HEADERS += \
     CurrentUser.h \
     aws/AuthRequest.h \
     UserData.h \
-    core/mdnsdiscothread.h \
     core/Syncable.h \
     core/ControllerConfig.h \
     NAM.h \
@@ -248,7 +247,8 @@ HEADERS += \
     core/LocationsModel.h \
     core/TimeZoneModel.h \
     core/ControllerSSDP.h \
-    core/ControllerSchedule.h
+    core/ControllerSchedule.h \
+    core/LicenseDAO.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

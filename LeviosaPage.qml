@@ -25,6 +25,7 @@ Page {
     property bool enableAddAction : false
     property bool showLogo : true
 
+    property alias hideMenuButton : toolbar.hideMenuButton
     property alias showStatusText: toolbar.showStatusText
     property alias statusText: toolbar.statusText
 

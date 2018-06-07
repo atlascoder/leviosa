@@ -3,7 +3,7 @@
 #include <QJsonObject>
 
 Location::Location():
-    Syncable(), mName("My Home"), mTimezone("EST"), mIsOnWlan(false), mIsOnline(false)
+    Syncable(), mName("Home"), mTimezone("EST"), mIsOnWlan(false), mIsOnline(false)
 {
     setUuid(QUuid::createUuid().toString());
 }

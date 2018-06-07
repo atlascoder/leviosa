@@ -370,7 +370,7 @@ void UserData::addFirstController(const QString &mac, const QString &bssid)
     }
 
     shared_ptr<Location> l(new Location);
-    l->setName("My Home");
+    l->setName("Home");
     l->setBssid(bssid);
     l->setTimezone(TimeZoneModel::defaultTimezone());
     l->setPosition(0);
@@ -591,7 +591,7 @@ void UserData::setupController(const QString &mac, const QString &bssid)
 
 QString UserData::defaultLocationName() const
 {
-    if (mLocations->empty()) return "My Home";
+    if (mLocations->empty()) return "Home";
     int n = 1;
     QString name;
     do {

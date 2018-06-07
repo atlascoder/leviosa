@@ -32,8 +32,7 @@ void CognitoSyncDAO::init() const
 void CognitoSyncDAO::clear() const
 {
     QSqlQuery query(mDatabase);
-    if (query.exec("DELETE FROM "  TABLE_NAME)
-    )
+    if (query.exec("DELETE FROM "  TABLE_NAME))
         qDebug() << "Table " << TABLE_NAME << " cleared";
     else
         qDebug() << "Table " << TABLE_NAME << " not cleared: " << query.lastError().text();

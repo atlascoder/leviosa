@@ -23,6 +23,8 @@ class CurrentUser : public QObject
     Q_PROPERTY(QString password3 READ password3 WRITE setPassword3 NOTIFY password3Changed)
 
     Q_PROPERTY(AuthState authState READ authState WRITE setAuthState NOTIFY authStateChanged)
+
+    Q_PROPERTY(bool licenseAgreed READ licenseAgreed WRITE setLicenseAgreed NOTIFY licenseAgreedChanged)
     Q_PROPERTY(bool isAuthenticated READ isAuthenticated NOTIFY authStateChanged)
 
     Q_PROPERTY(QString lastMessage READ lastMessage NOTIFY lastMessageChanged)
@@ -83,6 +85,9 @@ public:
     int shadeGroupsSynced() const { return mUser.shadeGroupsSynced(); }
     void setShadeGroupsSynced(bool synced) { mUser.setShadeGroupsSynced(synced); }
 
+    bool licenseAgreed() const;
+    void setLicenseAgreed(const bool agreed);
+
     void persistUserDataModified();
 
     void stopRequests();
@@ -131,6 +136,7 @@ signals:
     void requireConfirmationChanged();
     void failedChanged();
     void lastMessageChanged();
+    void licenseAgreedChanged();
 private:
     User mUser;
     DatabaseManager& mDb;

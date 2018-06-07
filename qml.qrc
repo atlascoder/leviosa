@@ -96,5 +96,6 @@
         <file>Splash.qml</file>
         <file>ZonePage.qml</file>
         <file>ZoneControl.qml</file>
+        <file>EULA.qml</file>
     </qresource>
 </RCC>

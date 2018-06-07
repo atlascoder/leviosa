@@ -23,6 +23,7 @@ class NetworkMonitor : public QObject
     Q_PROPERTY(QString bssid READ bssid NOTIFY bssidChanged)
     Q_PROPERTY(QString wlanIp READ getWlanIp NOTIFY wlanIpChanged)
     Q_PROPERTY(bool onWlan READ isOnWlan NOTIFY connectionStateChanged)
+    Q_PROPERTY(QString description READ description NOTIFY descriptionChanged)
 
 signals:
     void currentStateChanged(const QString &state);
@@ -33,6 +34,7 @@ signals:
     void wlanIpChanged();
 
     void connectionStateChanged();
+    void descriptionChanged();
 public slots:
     void netChanged(const QNetworkConfiguration &conf);
     void onApplicationStateChanged(const Qt::ApplicationState state);
@@ -70,7 +72,13 @@ private:
     void statusChanged(utility::NetworkStatus n) override;
 #endif
 
+#ifdef Q_OS_ANDROID
+    int getConnectionType() const;
+#endif
+
     QString getBssid() const;
+
+    QString description() const;
 
     ConnectionState connectionState() const { return mConnectionState; }
     void setConnectionState(ConnectionState connectionState);

@@ -470,3 +470,13 @@ void CurrentUser::clearInputs()
     clearPasswords();
     setEmail("");
 }
+
+bool CurrentUser::licenseAgreed() const
+{
+    return mDb.licenseDAO.agreed();
+}
+
+void CurrentUser::setLicenseAgreed(const bool agreed)
+{
+    if (agreed) mDb.licenseDAO.persistAgree();
+}

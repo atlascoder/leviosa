@@ -45,6 +45,24 @@ ApplicationWindow {
         }
     }
 
+    // EULA
+
+    Loader {
+        id: eulaPageLoader
+        onLoaded: {
+            item.onAgree.connect(doLogin)
+            item.onDecline.connect(function(){ Qt.quit() })
+            item.onGoBack.connect(pager.pop)
+            item.StackView.onRemoved.connect(function(){ source = "" })
+            item.hideMenuButton = (pager.depth == 0)
+            pager.push(item)
+        }
+    }
+
+    function openEulaPage(){
+        eulaPageLoader.source = "EULA.qml"
+    }
+
     // Welcome
 
     Loader {
@@ -199,34 +217,39 @@ ApplicationWindow {
     // doLogin function
 
     function doLogin() {
-        if(currentUser.isAuthenticated){
-            var n = userData.locationsCount
-            if (n > 0) {
-                if (n === 1 && (pager.currentItem == null || pager.currentItem != locationPageLoader.item)) {
-                    console.log("Opening single location")
-                    pager.clear()
-                    openLocationsPage()
-                    openLocationPage(userData.firstLocationUuid)
-                }
-                else if (n > 1 && (pager.currentItem == null || pager.currentItem != locationsPageLoader.item)) {
-                    console.log("Opening locations")
-                    pager.clear()
-                    openLocationsPage()
-                    console.log("StackView depth " + pager.depth + ", w/h: " + pager.width + "/" + pager.height)
+        if (currentUser.licenseAgreed) {
+            if(currentUser.isAuthenticated){
+                var n = userData.locationsCount
+                if (n > 0) {
+                    if (n === 1 && (pager.currentItem == null || pager.currentItem != locationPageLoader.item)) {
+                        console.log("Opening single location")
+                        pager.clear()
+                        openLocationsPage()
+                        openLocationPage(userData.firstLocationUuid)
+                    }
+                    else if (n > 1 && (pager.currentItem == null || pager.currentItem != locationsPageLoader.item)) {
+                        console.log("Opening locations")
+                        pager.clear()
+                        openLocationsPage()
+                        console.log("StackView depth " + pager.depth + ", w/h: " + pager.width + "/" + pager.height)
+                    }
+                    else {
+                        console.log("Nothing to change - already opened! Current item = " + pager.currentItem)
+                    }
                 }
                 else {
-                    console.log("Nothing to change - already opened! Current item = " + pager.currentItem)
+                    pager.clear()
+                    openEmptyAccountPage()
                 }
             }
-            else {
-                pager.clear()
-                openEmptyAccountPage()
-            }
+            else if(currentUser.requireConfirmation)
+                openVerifyPage()
+            else
+                openWelcomePage()
         }
-        else if(currentUser.requireConfirmation)
-            openVerifyPage()
-        else
-            openWelcomePage()
+        else {
+            openEulaPage()
+        }
     }
 
     // Locations
@@ -456,6 +479,30 @@ ApplicationWindow {
                 font.bold: true
                 font.pixelSize: width / 12
             }
+//            Text {
+//                id: descriptionText
+//                anchors.left: parent.left
+//                anchors.right: parent.right
+//                horizontalAlignment: Qt.AlignHCenter
+//                text: netMonitor.description
+//                font.bold: true
+//                font.pixelSize: width / 24
+//                color: "red"
+//                NumberAnimation on opacity {
+//                    id: opaAnim
+//                    from: 0.0
+//                    to: 1.0
+//                }
+//                Connections {
+//                    target: netMonitor
+//                    onDescriptionChanged: {
+//                        opaAnim.loops = 1
+//                        opaAnim.start()
+//                    }
+//                }
+
+//                wrapMode: Text.WordWrap
+//            }
             Text {
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -563,6 +610,15 @@ ApplicationWindow {
 
             Button {
                 width: parent.width
+                text: "License"
+                onClicked: {
+                    closeDrawer()
+                    openEulaPage()
+                }
+            }
+
+            Button {
+                width: parent.width
                 text: "Open WebSite"
                 onClicked: {
                     closeDrawer()
@@ -597,14 +653,14 @@ ApplicationWindow {
             }
         }
 
-        Text{
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: 6
-            text: "version: " + userData.version
-            font.pixelSize: 8
-            font.italic: true
-            color: "#a0000000"
-        }
+//        Text{
+//            anchors.bottom: parent.bottom
+//            anchors.right: parent.right
+//            anchors.rightMargin: 6
+//            text: "version: " + userData.version
+//            font.pixelSize: 8
+//            font.italic: true
+//            color: "#a0000000"
+//        }
     }
 }

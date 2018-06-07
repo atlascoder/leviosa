@@ -6,6 +6,7 @@
 #include "UserDAO.h"
 #include "CredentialsDAO.h"
 #include "CognitoSyncDAO.h"
+#include "LicenseDAO.h"
 
 class QSqlDatabase;
 
@@ -22,6 +23,7 @@ public:
     const UserDAO userDAO;
     const CredentialsDAO credentialsDAO;
     const CognitoSyncDAO cognitoSyncDAO;
+    const LicenseDAO licenseDAO;
     void clear() const;
 protected:
     DatabaseManager(const QString &path = DATABASE_FILENAME);
