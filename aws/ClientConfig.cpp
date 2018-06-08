@@ -29,8 +29,8 @@ ClientConfig::ClientConfig()
 {
     region = AWS_REGION;
     scheme = Aws::Http::Scheme::HTTPS;
-    connectTimeoutMs = 40000;
-    requestTimeoutMs = 60000;
+    connectTimeoutMs = 5000;
+    requestTimeoutMs = 10000;
     clientId = AWS_CLIENT_ID;
     userPoolName = AWS_POOL_NAME;
     userPoolId = region + "_" + userPoolName;

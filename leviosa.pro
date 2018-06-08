@@ -201,7 +201,9 @@ SOURCES += \
     core/TimeZoneModel.cpp \
     core/ControllerSSDP.cpp \
     core/ControllerSchedule.cpp \
-    core/LicenseDAO.cpp
+    core/LicenseDAO.cpp \
+    AlertBox.cpp \
+    ReplyTimeout.cpp
 
 # own codebase
 HEADERS += \
@@ -248,7 +250,9 @@ HEADERS += \
     core/TimeZoneModel.h \
     core/ControllerSSDP.h \
     core/ControllerSchedule.h \
-    core/LicenseDAO.h
+    core/LicenseDAO.h \
+    AlertBox.h \
+    ReplyTimeout.h
 
 # Boost lib for multiprecision ints
 INCLUDEPATH += $$DEV_LIBS_PATH/boost-cpp

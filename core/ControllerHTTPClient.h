@@ -28,6 +28,7 @@ public slots:
     void postSetup(const QString& ip, const QByteArray& pubKey, const QByteArray& priKey, const QByteArray& cert, const int controllerId, const QByteArray& schedule);
 private slots:
     void finishedPost() { if(cmdReply) emit requestFinished(cmdReply); }
+    void postFailed(QNetworkReply::NetworkError code);
     void onPostKeysFinished();
 public:
     ControllerHTTPClient(QObject *parent=nullptr);

@@ -19,6 +19,7 @@
 #include "AwsApi.h"
 #include "CurrentUser.h"
 #include "ClientConfig.h"
+#include "AlertBox.h"
 
 using namespace Aws;
 using namespace std;
@@ -64,11 +65,21 @@ void CognitoSyncCommand::sendCommand(const QString &controllerMac, const QString
             qDebug() << "Command has been sent: " << cmdLine;
         }
         else{
-            qDebug() << "Command failed: " << cmdLine << " with error " << uResp.GetError().GetMessage().c_str();
+            AlertBox::instance().showMessage(
+                        "Cloud Error",
+                        resp.GetError().GetMessage().c_str(),
+                        "Check Internet connection or do relogin"
+                        );
+//            qDebug() << "Command failed: " << cmdLine << " with error " << uResp.GetError().GetMessage().c_str();
         }
     }
     else{
-        qDebug() << "Command preparing failed: " << " with error " << resp.GetError().GetMessage().c_str();
+        AlertBox::instance().showMessage(
+                    "Cloud Error",
+                    resp.GetError().GetMessage().c_str(),
+                    "Check Internet connection or do relogin"
+                    );
+//        qDebug() << "Command preparing failed: " << " with error " << resp.GetError().GetMessage().c_str();
     }
     AwsApi::instance().recycleClient(mClient);
 }

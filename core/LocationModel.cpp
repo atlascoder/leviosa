@@ -101,20 +101,22 @@ void LocationModel::deleteLocation()
 void LocationModel::reloadData()
 {
     mLocation = UserData::instance().location(mLocationUuid);
-    mNeighbours = UserData::instance().locations();
-    mOldPosition = mLocation->position();
-    mOldTimezone = mLocation->timezone();
-    emit uuidChanged();
-    beginResetModel();
-    mControllers = UserData::instance().controllersForLocation(mLocation->uuid());
-    endResetModel();
-    emit nameChanged();
-    emit bssidChanged();
-    emit positionChanged();
-    emit nameChanged();
-    emit timezoneChanged();
-    emit zonesChanged();
-    emit positionChanged();
+    if (mLocation.get()) {
+        mNeighbours = UserData::instance().locations();
+        mOldPosition = mLocation->position();
+        mOldTimezone = mLocation->timezone();
+        emit uuidChanged();
+        beginResetModel();
+        mControllers = UserData::instance().controllersForLocation(mLocation->uuid());
+        endResetModel();
+        emit nameChanged();
+        emit bssidChanged();
+        emit positionChanged();
+        emit nameChanged();
+        emit timezoneChanged();
+        emit zonesChanged();
+        emit positionChanged();
+    }
 }
 
 int LocationModel::rowCount(const QModelIndex &parent) const

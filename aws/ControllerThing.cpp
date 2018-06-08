@@ -23,6 +23,8 @@
 
 #include "aws/AwsApi.h"
 
+#include "AlertBox.h"
+
 using namespace Aws;
 
 ControllerThing::ControllerThing(): mCancelled(false), mClient(nullptr)
@@ -99,16 +101,40 @@ void ControllerThing::setupController(const QString &mac)
                 if(policy_resp.IsSuccess()){
                     mIsSuccessful = true;
                 }
-                else
+                else {
+                    AlertBox::instance().showMessage(
+                                "Controller Setup Error",
+                                create_resp.GetError().GetMessage().c_str(),
+                                "Check Internet connection or restart controller setup, preferrbly, relogin firstly"
+                            );
                     qDebug() << "An Error while attaching policy: " << policy_resp.GetError().GetMessage().c_str();
+                }
             }
-            else
+            else {
+                AlertBox::instance().showMessage(
+                            "Controller Setup Error",
+                            create_resp.GetError().GetMessage().c_str(),
+                            "Check Internet connection or restart controller setup, preferrbly, relogin firstly"
+                        );
                 qDebug() << "An Error while attaching cert: " << attach_resp.GetError().GetMessage().c_str();
+            }
         }
-        else
+        else {
+            AlertBox::instance().showMessage(
+                        "Controller Setup Error",
+                        create_resp.GetError().GetMessage().c_str(),
+                        "Check Internet connection or restart controller setup, preferrbly, relogin firstly"
+                    );
             qDebug() << "An Error while creating keys: " << create_resp.GetError().GetMessage().c_str();
+        }
     }
-    else
+    else {
+        AlertBox::instance().showMessage(
+                    "Controller Setup Error",
+                    create_resp.GetError().GetMessage().c_str(),
+                    "Check Internet connection or restart controller setup, preferrbly, relogin firstly"
+                );
         qDebug() << "An Error while creating thing: " << create_resp.GetError().GetMessage().c_str();
+    }
     destroyClient();
 }

@@ -1,5 +1,4 @@
 #include "ControllerAPI.h"
-#include "Shade.h"
 #include <QThread>
 
 #include <QApplication>
@@ -7,11 +6,12 @@
 
 #include <QHttpMultiPart>
 #include <memory>
-
-#include "aws/CognitoSyncCommand.h"
-
-#include "NAM.h"
 #include <QDebug>
+
+#include "Shade.h"
+#include "aws/CognitoSyncCommand.h"
+#include "NAM.h"
+#include "AlertBox.h"
 
 ControllerAPI::ControllerAPI(QObject *parent):
     QThread(parent),
@@ -43,9 +43,18 @@ void ControllerAPI::run(){
 
     connect(this, &ControllerAPI::httpPost, client, &ControllerHTTPClient::post);
     connect(client, &ControllerHTTPClient::requestFinished, this, &ControllerAPI::commandFinished);
-
+    connect(client, &ControllerHTTPClient::failed, this, &ControllerAPI::httpCommandFailed);
     exec();
     client->deleteLater();
+}
+
+void ControllerAPI::httpCommandFailed()
+{
+    AlertBox::instance().showMessage(
+                "Network error",
+                "1. Check the network connection of this device.\n2. Check for power to the Zone (solid green and yellow lights)",
+                ""
+            );
 }
 
 void ControllerAPI::setIpAddress(const QString &ipAddress)
@@ -101,11 +110,22 @@ void ControllerAPI::commandFinished(QNetworkReply *reply)
     if(reply != nullptr){
         if (reply->error() == QNetworkReply::NoError)
             emit commandSuccessful();
-        else
+        else {
+            AlertBox::instance().showMessage(
+                        "Network error",
+                        "1. Check the network connection of this device.\n2. Check for power to the Zone (solid green and yellow lights)",
+                        ""
+                    );
             emit commandFailed();
+        }
         reply->deleteLater();
     }
     else{
+        AlertBox::instance().showMessage(
+                    "Network error",
+                    "1. Check the network connection of this device.\n2. Check for power to the Zone (solid green and yellow lights)",
+                    ""
+                );
         emit commandFailed();
     }
 }
@@ -136,8 +156,14 @@ void ControllerAPI::scheduleFinished()
         mScheduleReply=nullptr;
         sendSchedule();
     }
-    else
+    else {
+        AlertBox::instance().showMessage(
+                    "Network error",
+                    "An error occured when connecting to controller.",
+                    "Check network connection and controller state."
+                );
         emit scheduleFailed();
+    }
 }
 
 void ControllerAPI::setConfig(const ControllerConfig &config)
@@ -153,8 +179,8 @@ ControllerConfig& ControllerAPI::currentConfig()
 
 void ControllerAPI::setControllerState(ControllerState state)
 {
-    qDebug() << "Set controller state [" << mMac << "] : " << mControllerState << " => " << state;
     if(mControllerState == state) return;
+    qDebug() << "Set controller state [" << mMac << "] : " << mControllerState << " => " << state;
     mControllerState = state;
     emit controllerStateChanged(mMac);
 }
@@ -201,6 +227,11 @@ void ControllerAPI::sendAwsCommand(const QString& command, int channel)
     }
     else {
         qDebug() << "Sending trough AWS failed";
+        AlertBox::instance().showMessage(
+                    "Cloud Connection Error",
+                    "An error occured when connecting to cloud.",
+                    "Check your Internet connection or try to relogin into application."
+                );
         emit cloudCommandFailed();
     }
 }

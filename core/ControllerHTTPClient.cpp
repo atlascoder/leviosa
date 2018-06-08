@@ -1,4 +1,6 @@
 #include "ControllerHTTPClient.h"
+#include "AlertBox.h"
+#include "ReplyTimeout.h"
 
 ControllerHTTPClient::ControllerHTTPClient(QObject *parent):
     QObject(parent),
@@ -14,6 +16,12 @@ ControllerHTTPClient::~ControllerHTTPClient()
     if(mSetupReply) mSetupReply->deleteLater();
     if(mMultipart) mMultipart->deleteLater();
     mQnam->deleteLater();
+}
+
+void ControllerHTTPClient::postFailed(QNetworkReply::NetworkError code)
+{
+    Q_UNUSED(code);
+    emit failed();
 }
 
 void ControllerHTTPClient::postSetup(const QString &ip, const QByteArray &pubKey, const QByteArray &priKey, const QByteArray &cert, const int controllerId, const QByteArray& schedule)
@@ -52,6 +60,11 @@ void ControllerHTTPClient::onPostKeysFinished()
     }
     else {
         qDebug() << "Keys setting error: " << mSetupReply->errorString();
+        AlertBox::instance().showMessage(
+                    "Networking error",
+                    "An error occured when connecting controller.",
+                    "Please, perform Controller Setup again."
+                    );
         emit setKeysFailed(mSetupReply->errorString());
     }
     mSetupReply->deleteLater();
@@ -64,4 +77,5 @@ void ControllerHTTPClient::post(const QString &url, const QByteArray& data)
 {
     cmdReply = mQnam->post(QNetworkRequest(QUrl::fromUserInput(url)), data);
     connect(cmdReply, &QNetworkReply::finished, this, &ControllerHTTPClient::finishedPost);
+    ReplyTimeout::set(cmdReply, 2000);
 }

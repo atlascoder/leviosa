@@ -30,9 +30,19 @@ LeviosaPage {
         id: locationsModel
     }
 
+    Connections {
+        target: alertBox
+        onActiveChanged: {
+            if (alertBox.active) {
+                allShadesControl.reset()
+            }
+        }
+    }
+
     StackView.onActivated: {
         locationsModel.reloadData()
         locationsModel.active = true
+        allShadesControl.reset()
     }
 
     StackView.onDeactivating: {

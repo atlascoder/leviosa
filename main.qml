@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
+import QtGraphicalEffects 1.0
 
 import "DefaultTheme.js" as DefTheme
 
@@ -222,19 +223,13 @@ ApplicationWindow {
                 var n = userData.locationsCount
                 if (n > 0) {
                     if (n === 1 && (pager.currentItem == null || pager.currentItem != locationPageLoader.item)) {
-                        console.log("Opening single location")
                         pager.clear()
                         openLocationsPage()
                         openLocationPage(userData.firstLocationUuid)
                     }
                     else if (n > 1 && (pager.currentItem == null || pager.currentItem != locationsPageLoader.item)) {
-                        console.log("Opening locations")
                         pager.clear()
                         openLocationsPage()
-                        console.log("StackView depth " + pager.depth + ", w/h: " + pager.width + "/" + pager.height)
-                    }
-                    else {
-                        console.log("Nothing to change - already opened! Current item = " + pager.currentItem)
                     }
                 }
                 else {
@@ -445,84 +440,126 @@ ApplicationWindow {
 		}
 	}
 
-    Rectangle {
+    Item {
+        id: alertScreen
         anchors.fill: parent
-        id: disconnected
-        color: DefTheme.mainModalBg
-        visible: !netMonitor.connected
+        visible: true
+        z: -1
+
+        ParallelAnimation {
+            id: showAlertAnim
+            NumberAnimation { target: msgBoxBg; property: "opacity"; to: 0.2; duration: 200 }
+            NumberAnimation { target: msgBoxScaler; property: "xScale"; to: 1; duration: 200 }
+            onStarted: {
+                msgBoxBg.opacity = 0
+                msgBoxScaler.xScale = 0
+                alertScreen.z = 1
+            }
+        }
+
+        ParallelAnimation {
+            id: hideAlertAnim
+            NumberAnimation { target: msgBoxBg; property: "opacity"; from: 0.2; to: 0; duration: 100 }
+            NumberAnimation { target: msgBoxScaler; property: "xScale"; from: 1; to: 0; duration: 100 }
+            onStopped: {
+                alertScreen.z = -1
+            }
+        }
+
+        Connections {
+            target: alertBox
+            onActiveChanged: {
+                showAlertAnim.loops = 1
+                hideAlertAnim.loops = 1
+                if (alertBox.active) {
+                    showAlertAnim.start()
+                }
+                else {
+                    alertScreen.z = -1
+                }
+            }
+        }
+
+        Rectangle {
+            id: msgBoxBg
+            anchors.fill: parent
+            color: "black"
+            opacity: 0.25
+        }
+
+        Rectangle {
+            id: msgBox
+            anchors.centerIn: parent
+            width: parent.width * 0.8
+            height: parent.height / 5
+            layer.enabled: true
+            radius : 6
+            color: "white"
+            layer.effect: DropShadow {
+                transparentBorder: true
+                radius: parent.down ? 1 : 4
+            }
+
+            transform: Scale {
+                id: msgBoxScaler
+                origin.x: msgBox.width / 2
+                xScale: 0
+            }
+
+            Text {
+                id: msgHeading
+                width: parent.width
+                anchors.top: parent.top
+                anchors.margins: 6
+                text: alertBox.title
+                elide: Text.ElideRight
+                font.pixelSize: 18
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Rectangle {
+                id: msgHeadingLine
+                anchors.top: msgHeading.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width * 0.9
+                height: 1
+                color: "black"
+            }
+
+            Item {
+                anchors.top: msgHeadingLine.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 6
+
+                Column {
+                    width: parent.width
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3
+                    Text {
+                        width: parent.width
+                        text: alertBox.message
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 14
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Text {
+                        width: parent.width
+                        text: alertBox.description
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 14
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
-            enabled: parent.visible
+            onClicked: alertBox.hide()
         }
-
-        Image {
-            id: sadIcon
-            fillMode: Image.PreserveAspectFit
-            width: parent.width / 4
-            source: "img/sad.png"
-            anchors.centerIn: parent
-        }
-
-        Column {
-            anchors.top: sadIcon.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: width / 12
-            anchors.rightMargin: width / 12
-            spacing: width / 12
-            Text {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                horizontalAlignment: Qt.AlignHCenter
-                text: "Network unavailable"
-                font.bold: true
-                font.pixelSize: width / 12
-            }
-//            Text {
-//                id: descriptionText
-//                anchors.left: parent.left
-//                anchors.right: parent.right
-//                horizontalAlignment: Qt.AlignHCenter
-//                text: netMonitor.description
-//                font.bold: true
-//                font.pixelSize: width / 24
-//                color: "red"
-//                NumberAnimation on opacity {
-//                    id: opaAnim
-//                    from: 0.0
-//                    to: 1.0
-//                }
-//                Connections {
-//                    target: netMonitor
-//                    onDescriptionChanged: {
-//                        opaAnim.loops = 1
-//                        opaAnim.start()
-//                    }
-//                }
-
-//                wrapMode: Text.WordWrap
-//            }
-            Text {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                horizontalAlignment: Qt.AlignHCenter
-                text: "The application is working only with network connection."
-                font.bold: true
-                font.pixelSize: width / 20
-                wrapMode: Text.Wrap
-            }
-            Text {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                horizontalAlignment: Qt.AlignHCenter
-                text: "This screen will disappear once some connection established."
-                font.italic: true
-                font.pixelSize: width / 20
-                wrapMode: Text.Wrap
-            }
-        }
-
     }
 
     function openDrawer() {
@@ -652,15 +689,5 @@ ApplicationWindow {
                 }
             }
         }
-
-//        Text{
-//            anchors.bottom: parent.bottom
-//            anchors.right: parent.right
-//            anchors.rightMargin: 6
-//            text: "version: " + userData.version
-//            font.pixelSize: 8
-//            font.italic: true
-//            color: "#a0000000"
-//        }
     }
 }

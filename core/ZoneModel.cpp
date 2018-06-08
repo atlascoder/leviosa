@@ -2,6 +2,7 @@
 
 #include "ControllerConnectionsManager.h"
 #include "TimeZoneModel.h"
+#include "AlertBox.h"
 
 ZoneModel::ZoneModel(QObject *parent):
     QAbstractListModel(parent),
@@ -260,19 +261,35 @@ QString ZoneModel::locationBssid() const
 
 void ZoneModel::commandController(const QString& groupUuid, int command)
 {
-    size_t idx = 0;
-    if (groupUuid.isEmpty()) {
-        // send command to all channels
-        mControllerAPI->shadeCmd(0, command);
+    if (mControllerAPI->controllerState() == ControllerAPI::NotFound) {
+        AlertBox::instance().showMessage(
+                    "Zone Not Found",
+                    "Confirm Zone for power (green light) and network (yellow solid light), then press back to refresh",
+                    ""
+                );
+    }
+    else if (mControllerAPI->controllerState() == ControllerAPI::Searching) {
+        AlertBox::instance().showMessage(
+                    "Zone Not Found",
+                    "Zone Controller is still searched.",
+                    "Close this message and try to command."
+                );
     }
     else {
-        while(idx < mShadeGroups->size()) {
-            if (mShadeGroups->at(idx)->uuid()==groupUuid) {
-                setData(index(idx), command, Roles::ShadeStateRole);
-                mControllerAPI->shadeCmd(mShadeGroups->at(idx)->channel(), command);
-                return;
+        size_t idx = 0;
+        if (groupUuid.isEmpty()) {
+            // send command to all channels
+            mControllerAPI->shadeCmd(0, command);
+        }
+        else {
+            while(idx < mShadeGroups->size()) {
+                if (mShadeGroups->at(idx)->uuid()==groupUuid) {
+                    setData(index(idx), command, Roles::ShadeStateRole);
+                    mControllerAPI->shadeCmd(mShadeGroups->at(idx)->channel(), command);
+                    return;
+                }
+                idx++;
             }
-            idx++;
         }
     }
 }
@@ -305,8 +322,16 @@ QString ZoneModel::controllerStatus() const
 
 void ZoneModel::controllerStateChanged(const QString &mac)
 {
-    if (mac == mController->mac())
+    if (mac == mController->mac()) {
+        if (mControllerAPI->controllerState() == ControllerAPI::NotFound) {
+            AlertBox::instance().showMessage(
+                        "Zone Not Found",
+                        "Confirm Zone for power (green light) and network (yellow solid light), then press back to refresh",
+                        ""
+                    );
+        }
         emit controllerStatusChanged();
+    }
 }
 
 bool ZoneModel::single() const

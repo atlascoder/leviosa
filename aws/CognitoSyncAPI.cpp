@@ -17,6 +17,7 @@
 
 #include "core/LocalCache.h"
 #include "aws/AwsApi.h"
+#include "AlertBox.h"
 
 using namespace Aws;
 using namespace Aws::Auth;
@@ -202,11 +203,21 @@ void CognitoSyncAPI::syncData(const shared_ptr<vector<shared_ptr<Syncable>>>& ca
         }
         else {
             mLastMessage = update_response.GetError().GetMessage().c_str();
+            AlertBox::instance().showMessage(
+                        "Cloud synchronization error",
+                        mLastMessage,
+                        ""
+                        );
             qDebug() << "Error while updating r-cache: " << mLastMessage;
         }
     }
     else {
         mLastMessage = resp.GetError().GetMessage().c_str();
+        AlertBox::instance().showMessage(
+                    "Cloud synchronization error",
+                    mLastMessage,
+                    ""
+                    );
         qDebug() << "Error while getting remote cache: " << mLastMessage;
     }
 }

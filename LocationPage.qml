@@ -37,6 +37,15 @@ LeviosaPage {
     StackView.onActivated: fireRefresh()
 
     Connections {
+        target: alertBox
+        onActiveChanged: {
+            if (alertBox.active) {
+                allShadesControl.reset()
+            }
+        }
+    }
+
+    Connections {
         target: qGuiApp
         onApplicationStateChanged: {
             console.log("Application state: " + state);
@@ -100,68 +109,4 @@ LeviosaPage {
         }
     }
 
-    Rectangle {
-        id: setupInquiry
-        anchors.centerIn: parent
-        width: parent.width * 0.8
-        visible: false
-        radius: 10
-        color: DefTheme.mainColorLight
-
-        layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true
-            radius: 0
-        }
-
-        Text {
-            id: setupIntro
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.topMargin: 10
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            wrapMode: Text.WordWrap
-            font.pixelSize: parent.width / 16
-            text: "No controllers were found in the location."
-            font.italic: true
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-            color: DefTheme.mainTextColor
-        }
-
-        Rectangle {
-            id: setupButton
-            anchors.top: setupIntro.bottom
-            anchors.topMargin: 20
-            anchors.horizontalCenter: parent.horizontalCenter
-            height: DefTheme.toolbarHeight
-            width: DefTheme.toolbarHeight * 4
-            radius: 6
-            color: DefTheme.mainColorDark
-            border.color: "#00000000"
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                radius: setupMouse.pressed ? 1 : 4
-            }
-            Text {
-                height: parent.height
-                anchors.horizontalCenter: parent.horizontalCenter
-                verticalAlignment: Text.AlignVCenter
-                text: "SETUP"
-                font.bold: true
-                font.pixelSize: height / 2
-                color: DefTheme.mainTextColor
-            }
-            MouseArea {
-                id: setupMouse
-                anchors.fill: parent
-                onClicked: setupController(locationUuid)
-            }
-        }
-
-        height: childrenRect.height + 30
-    }
 }

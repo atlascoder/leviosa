@@ -96,6 +96,7 @@ signals:
 
 private slots:
     void commandFinished(QNetworkReply *reply);
+    void httpCommandFailed();
     void scheduleFinished();
 
     void commandHTTPRequest(int channel, int command);

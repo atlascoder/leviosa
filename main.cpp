@@ -4,6 +4,7 @@
 #include <QtConcurrent>
 
 #include "NetworkMonitor.h"
+#include "AlertBox.h"
 #include "core/LocationModel.h"
 #include "core/ControllerModel.h"
 #include "core/ShadeGroupModel.h"
@@ -45,6 +46,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<ControllerAPI>("com.atlascoder.ControllerAPI", 1, 0, "ControllerAPI");
     qmlRegisterType<Shade>("com.atlascoder.Shade", 1, 0, "Shade");
 
+    AlertBox& alertBox(AlertBox::instance());
+
     UserData& userData(UserData::instance());
     CurrentUser& currentUser(CurrentUser::instance());
     ControllerConnectionsManager& controllerAPIs(ControllerConnectionsManager::instance());
@@ -53,6 +56,7 @@ int main(int argc, char *argv[])
     controllerAPIs.setNetworkMonitor(&netMon);
 
     ctx->setContextProperty("qGuiApp", &app);
+    ctx->setContextProperty("alertBox", &alertBox);
 
     QObject::connect(&app, &QGuiApplication::applicationStateChanged, &netMon, &NetworkMonitor::onApplicationStateChanged);
 

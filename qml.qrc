@@ -76,7 +76,6 @@
         <file>RestorePage.qml</file>
         <file>ChangePwdPage.qml</file>
         <file>img/robo.png</file>
-        <file>AlertMessage.qml</file>
         <file>BlockScreen.qml</file>
         <file>img/smile.png</file>
         <file>img/sad.png</file>

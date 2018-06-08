@@ -24,11 +24,10 @@ Control {
     signal doCommandShade(int command)
 
     MouseArea {
+        id: clickListener
         anchors.fill: parent
-        onClicked: open()
         onPressAndHold: edit()
     }
-
 
     background: Rectangle {
         radius: 6
@@ -73,38 +72,46 @@ Control {
         State {
             name: "Wan"
             when: controllerState == 0
-
-            PropertyChanges {
-                target: controllerIndicator
-                color: "transparent"
-            }
+            PropertyChanges { target: controllerIndicator; color: "transparent" }
+            PropertyChanges { target: clickListener; onClicked: { open() } }
         },
         State {
             name: "Searching"
             when: controllerState == 1
-
-            PropertyChanges {
-                target: controllerIndicator
-                color: "#eff946"
-            }
+            PropertyChanges { target: controllerIndicator; color: "#eff946" }
+            PropertyChanges { target: clickListener; onClicked: { open() } }
+//            PropertyChanges {
+//                target: clickListener
+//                onClicked: {
+//                    alertBox.showMessage(
+//                                "Zone Controller Not Ready",
+//                                "Close this screen and try to command",
+//                                ""
+//                            )
+//                }
+//            }
         },
         State {
             name: "NotFound"
             when: controllerState == 2
-
-            PropertyChanges {
-                target: controllerIndicator
-                color: "#e00000"
-            }
+            PropertyChanges { target: controllerIndicator; color: "#e00000" }
+            PropertyChanges { target: clickListener; onClicked: { open() } }
+//            PropertyChanges {
+//                target: clickListener
+//                onClicked: {
+//                    alertBox.showMessage(
+//                                "Zone Controller Error",
+//                                "1. Check the network connection of this device.\n2. Check for power to the Zone (solid green and yellow lights)",
+//                                ""
+//                            )
+//                }
+//            }
         },
         State {
             name: "Wlan"
             when: controllerState == 3
-
-            PropertyChanges {
-                target: controllerIndicator
-                color: "#87fb5b"
-            }
+            PropertyChanges { target: controllerIndicator; color: "#87fb5b" }
+            PropertyChanges { target: clickListener; onClicked: { open() } }
         }
     ]
 }
