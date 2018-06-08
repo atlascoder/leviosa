@@ -31,6 +31,6 @@ Android Leviosa Application is linking dynamically with the Qt5 libraries. Modif
 6. Rename _new\_leviosa.zip_ to _new\_leviosa.apk_
 7. The _new\_leviosa.apk_ is ready to setup on Android device and run.
 
-#iOS
+# iOS
 
 The android application is distributing and built only for armv7 architecture.
