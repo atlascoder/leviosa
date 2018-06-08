@@ -1,6 +1,6 @@
 # Leviosa Motor Shades application
 
-This repository contains object files of iOS and Android versions of Leviosa application and instructions for anyone who want to rebuild (relink to) the application with custom Qt5 builds in accordance to LGPL version 3.
+This repository contains Corresponding Application Code of iOS and Android versions of Leviosa application and instructions for anyone who want to rebuild (relink to) the application with custom Qt5 builds in accordance to LGPL version 3.
 
 **Leviosa Application** is a *Combined work* in terms of LGPL version 3.
 
